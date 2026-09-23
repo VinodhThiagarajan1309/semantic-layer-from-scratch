@@ -124,7 +124,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
     <div class="rule"></div>
   </header>
 
-  <p class="lede">A riddle to start. You tell a reasoner one rule: "only orders can be <em>purchased by</em> someone." Then a buggy loader writes a single triple saying that product 268, a box of Wax Paper, was purchased by Carolyn. A database would reject the row with a foreign-key error. The reasoner does not complain at all: it concludes, with perfect logic, that Wax Paper is an order. By the end of this chapter you will know why, why the c360 kit is written so that this cannot happen, and you will have the kit's complete ontology (all 161 triples) loaded into Stardog as build step 2.</p>
+  <p class="lede">One line in an ontology can look like a check but isn't. Take <code>:purchasedBy rdfs:domain :Order</code>. A property's <em>domain</em> is the kind of thing the property is used on: the subject, the left-hand side of the triple (Section 6.2 covers it properly). The line reads like "only orders can have <code>:purchasedBy</code>." What it actually tells Stardog is: "if something has <code>:purchasedBy</code>, label it an Order." So if bad data says Wax Paper <code>:purchasedBy</code> Carolyn, Stardog doesn't refuse it. With reasoning on, it quietly labels Wax Paper an Order. That is wrong: Wax Paper is a product. This chapter shows why it happens, how the c360 kit avoids it, and ends with the full ontology (161 triples) loaded as build step 2.</p>
 
   <h2><span class="sn">6.1</span>Properties: the columns and foreign keys of a graph</h2>
   <p>The ten classes from <a href="ch05.html">Chapter 5</a> have no columns: our <code>:Customer</code> has no name, no email, no address. That is deliberate. In a graph, columns and foreign keys are played by a <dfn>property</dfn>: anything used as the predicate of a triple, such as <code>:firstName</code> or <code>:purchasedBy</code>. A property has its own IRI and is declared on its own, outside any class, so that many classes can share it and the model can say things about the property itself (its label, what it connects). OWL splits properties into two kinds:</p>
@@ -871,7 +871,7 @@ bookAnim('f62', (tl, cap) => {
   tl.from('#f62 .rule', {opacity: 0, y: -12, duration: 0.6});
   cap(tl, 'Step 2: A loader bug writes one triple: product 268 (Wax Paper) was purchased by customer 225.', '+=1.4');
   tl.from('#f62 .bad', {opacity: 0, x: -30, duration: 0.6});
-  cap(tl, 'Step 3: A database would stop here with a foreign-key error...', '+=1.4');
+  cap(tl, 'Step 3: Stardog does not refuse the bad triple...', '+=1.4');
   tl.to('#f62 .sqlv', {opacity: 1, duration: 0.4});
   cap(tl, 'Step 4: ...but RDFS accepts it. The domain rule fires on the subject and derives a new type.', '+=1.6');
   tl.to('#f62 .rdfv', {opacity: 1, duration: 0.4});

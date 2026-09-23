@@ -213,12 +213,26 @@ record Vendor(String name)  implements Named {}</pre></div>
   </table></div>
 
   <h2><span class="sn">6.2</span>rdfs:domain and rdfs:range: rules, not checks</h2>
-  <p>RDFS attaches a property to classes with <dfn>rdfs:domain</dfn> (the class of the subject) and <dfn>rdfs:range</dfn> (the class of the object). <code>:purchasedBy rdfs:domain :Order ; rdfs:range :Customer .</code> Every SQL person reads that as a constraint: "only orders may have <code>:purchasedBy</code>, and its value must be a customer." That reading is wrong, and why is the most useful idea in this chapter.</p>
-  <p>In RDFS, domain and range are <strong>inference rules</strong>:</p>
+  <p>RDFS describes a property with two statements. Here they are for <code>:purchasedBy</code>, written the textbook way:</p>
+<pre>:purchasedBy rdfs:domain :Order ;
+             rdfs:range  :Customer .</pre>
+  <p>The semicolon makes this two triples, and the subject of both is the property itself, <code>:purchasedBy</code>. So these are facts <em>about the property</em>, not about any particular order or customer:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead>
+    <tbody>
+      <tr><td><code>:purchasedBy</code></td><td><code>rdfs:domain</code></td><td><code>:Order</code></td></tr>
+      <tr><td><code>:purchasedBy</code></td><td><code>rdfs:range</code></td><td><code>:Customer</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>To read them, picture a real data triple that uses the property:</p>
+<pre>order:0e7e…   :purchasedBy   customer:225
+ left side                   right side</pre>
   <ul>
-    <li>If <code>P rdfs:domain C</code> and the graph has <code>x P y</code>, conclude <code>x a C</code>.</li>
-    <li>If <code>P rdfs:range D</code> and the graph has <code>x P y</code>, conclude <code>y a D</code>.</li>
+    <li><dfn>rdfs:domain</dfn> <code>:Order</code> says the <strong>left side</strong> of a <code>:purchasedBy</code> triple is an Order.</li>
+    <li><dfn>rdfs:range</dfn> <code>:Customer</code> says the <strong>right side</strong> is a Customer.</li>
   </ul>
+  <p>In plain words: "purchasedBy goes from an Order to a Customer." Every SQL person reads that as a check: "only orders may have <code>:purchasedBy</code>, and its value must be a customer." That reading is wrong, and why is the most useful idea in this chapter.</p>
+  <p>With reasoning on, Stardog doesn't check these two statements; it <strong>applies</strong> them. Whatever appears on the left of a <code>:purchasedBy</code> triple gets labelled an Order, and whatever appears on the right gets labelled a Customer.</p>
   <p>Nothing is ever rejected. In an open world (<a href="ch05.html">Chapter 5</a>) the reasoner assumes the data is right and the type merely unstated, so it fills it in.</p>
 
   <figure class="fig anim" id="f62">

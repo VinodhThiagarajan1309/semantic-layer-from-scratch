@@ -171,7 +171,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
     so:domainIncludes :Customer ;
     so:rangeIncludes xsd:string .</pre></div>
 
-  <p>The last two lines say which class the property is for and what kind of value it takes. Why they use <code>so:</code> rather than the textbook <code>rdfs:</code> is the story of the riddle.</p>
+  <p>The last two lines say which class the property is used on (<code>Customer</code>) and what kind of value it takes (a string). <code>so:</code> is short for <a href="https://schema.org/">schema.org</a>, a shared vocabulary for describing data on the web. The textbook way to write these two facts is <code>rdfs:domain</code> and <code>rdfs:range</code>, but that way has a trap (the Wax Paper problem from the opening). Sections 6.2 and 6.3 show the trap and why the kit uses <code>so:</code> instead.</p>
   <aside class="box java">
     <p>A datatype property is a <code>String</code>, <code>int</code> or <code>LocalDate</code> field; an object property is a reference to another object. The big difference is where the property lives.</p>
     <div class="sbs">

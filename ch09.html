@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 9 · Federation: where the magic happens</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 9</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 9</div>
+    <h1>Federation: where the magic happens</h1>
+    <p class="sub">Customers in Aurora, purchases in Redshift, one query. Who knows where the data lives, where SPARQL turns into SQL, and where the two halves finally meet.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">Monday, 9:04 a.m. A message from your VP: "Who are our top spenders, and what state are they in? Need it for the 10 o'clock." Easy, you think, and open DBeaver. Then it sinks in. Names and states live in Aurora; purchases live in Redshift; no SQL statement you can type joins across both. You <em>can</em> answer the question, the slow way. By the end of this chapter you'll answer it with one query, and you'll be able to point at the exact place, inside Stardog, where the two databases meet.</p>
+
+  <h2><span class="sn">9.1</span>The slow way (do this once, so you feel it)</h2>
+  <p>Here's the SQL-only route. First Redshift, which knows spend per customer <em>number</em>:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>-- Redshift (dev.c360)
+SELECT cid, SUM(price * quantity) AS spend
+FROM c360.purchase
+GROUP BY cid
+ORDER BY spend DESC
+LIMIT 3;</pre></div>
+  <p>Top row: <code>225</code>, <code>502529.42</code>. Redshift has no idea who 225 is. So you copy the three <code>cid</code>s out of the result grid and paste them into a second query, on Aurora:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>-- Aurora (c360.c360). Paste the cids from the Redshift result.
+SELECT c.cid, c.full_name, a.state
+FROM c360.customer c
+JOIN c360.address  a ON a.id = c.location
+WHERE c.cid IN (225 /*, second cid, third cid */);</pre></div>
+  <p>Then you match the two grids by eye. That last step is a join, and <em>you</em> are the join engine. It works for three rows. It doesn't work for "spend per state across all 500 customers", it can't be handed to an AI agent, and the usual ways out (a pipeline, Redshift federated query, a lake) all move data or bolt the two systems together. The rest of the chapter makes that go away.</p>
+
+  <h2><span class="sn">9.2</span>Who knows that customers are in Aurora and purchases are in Redshift?</h2>
+  <p>Not the ontology, and not either database: the <strong>mappings</strong>, stored in Stardog as part of each virtual graph's definition. Here are the three layers you've built:</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 350" role="img" aria-label="Three layers. Top: the ontology says what Customer, Order and purchasedBy mean, and knows nothing about databases. Middle: the virtual graph definitions stored in Stardog, each a data source plus a mapping, say where each term's data lives and how to get it. Bottom: Aurora and Redshift hold rows and know nothing about each other or the ontology.">
+      <rect x="10" y="10" width="660" height="88" rx="10" style="fill:var(--soft);stroke:var(--model)" stroke-width="1.5"/>
+      <text x="26" y="34" font-size="13" font-weight="700" style="fill:var(--model)">1. Ontology (T-Box): MEANING</text>
+      <text x="26" y="54" font-size="11.5" style="fill:var(--ink)">:Customer, :Order, :purchasedBy, :purchasePrice (decimal), :address, :state …</text>
+      <text x="26" y="72" font-size="11" style="fill:var(--muted)">Knows what a customer is. Has no idea Aurora or Redshift exist.</text>
+      <text x="26" y="88" font-size="11" style="fill:var(--muted)">Lives in the named graph &lt;urn:stardog:training-c360:1.0:model&gt; (Chapters 5 and 6).</text>
+      <rect x="10" y="126" width="660" height="118" rx="10" style="fill:var(--paper);stroke:var(--accent)" stroke-width="2.5"/>
+      <text x="26" y="150" font-size="13" font-weight="700" style="fill:var(--accent)">2. Virtual graph definitions, stored in Stardog: WHERE and HOW</text>
+      <rect x="26" y="162" width="300" height="72" rx="6" style="fill:var(--soft);stroke:var(--line)"/>
+      <text x="36" y="182" font-size="11.5" font-weight="700" style="fill:var(--ink)">virtual://aurora_c360_safe</text>
+      <text x="36" y="200" font-size="11" style="fill:var(--muted)">data source aurora_c360 (JDBC → Aurora)</text>
+      <text x="36" y="218" font-size="11" style="fill:var(--muted)">mapping: :Customer ⇐ c360.customer, :Address ⇐ …</text>
+      <rect x="354" y="162" width="300" height="72" rx="6" style="fill:var(--soft);stroke:var(--line)"/>
+      <text x="364" y="182" font-size="11.5" font-weight="700" style="fill:var(--ink)">virtual://redshift_c360</text>
+      <text x="364" y="200" font-size="11" style="fill:var(--muted)">data source redshift_c360 (JDBC → Redshift)</text>
+      <text x="364" y="218" font-size="11" style="fill:var(--muted)">mapping: :Order, :purchasedBy ⇐ c360.purchase …</text>
+      <rect x="10" y="272" width="320" height="68" rx="10" style="fill:var(--soft);stroke:var(--accent2)" stroke-width="1.5"/>
+      <text x="26" y="296" font-size="13" font-weight="700" style="fill:var(--accent2)">3a. Aurora: ROWS</text>
+      <text x="26" y="316" font-size="11" style="fill:var(--muted)">customer, address, credit_card, rewards_account</text>
+      <text x="26" y="332" font-size="11" style="fill:var(--muted)">never heard of Redshift or the ontology</text>
+      <rect x="350" y="272" width="320" height="68" rx="10" style="fill:var(--soft);stroke:var(--accent2)" stroke-width="1.5"/>
+      <text x="366" y="296" font-size="13" font-weight="700" style="fill:var(--accent2)">3b. Redshift: ROWS</text>
+      <text x="366" y="316" font-size="11" style="fill:var(--muted)">purchase, product, category, vendor</text>
+      <text x="366" y="332" font-size="11" style="fill:var(--muted)">cid is just an integer here</text>
+      <path d="M176 124 L176 102" style="stroke:var(--model)" stroke-width="1.8"/>
+      <polygon points="171,106 181,106 176,98" style="fill:var(--model)"/>
+      <text x="184" y="118" font-size="10.5" style="fill:var(--model)">TO { … } uses ontology terms</text>
+      <path d="M176 236 L176 268" style="stroke:var(--accent2)" stroke-width="1.8"/>
+      <polygon points="171,264 181,264 176,272" style="fill:var(--accent2)"/>
+      <text x="184" y="258" font-size="10.5" style="fill:var(--accent2)">FROM SQL { … }</text>
+      <path d="M504 236 L504 268" style="stroke:var(--accent2)" stroke-width="1.8"/>
+      <polygon points="499,264 509,264 504,272" style="fill:var(--accent2)"/>
+      <text x="512" y="258" font-size="10.5" style="fill:var(--accent2)">FROM SQL { … }</text>
+    </svg>
+    <figcaption>Figure 9.1: Meaning, location, rows. Only the middle layer knows that <code>:purchasedBy</code> comes from Redshift and <code>:name</code> from Aurora.</figcaption>
+  </figure>
+
+  <p>Each virtual graph is a <strong>name + a data source + a mapping</strong>, saved on the Stardog server (<code>GET /admin/virtual_graphs</code> lists them). The data source says <em>which database</em> (a JDBC connection, Chapter 7). The mapping's <code>TO</code> block says <em>which ontology terms</em> this graph can produce, and its <code>FROM SQL</code> says <em>from which table</em>. Together, a routing table: ":purchasedBy? That's the purchase block of <code>redshift_c360</code>. :name on a customer? The customer block of <code>aurora_c360_safe</code>."</p>
+  <p>Proof: this chapter's federated query never touches the T-Box. The mappings and the SPARQL mention <code>:purchasedBy</code> as the same plain IRI, and Stardog matches them. The ontology is still the shared vocabulary that reasoning and Voicebox depend on, but the "where" is entirely in the mappings. If you know Trino, layer 2 is its catalog, except it maps <em>terms</em> to tables.</p>
+
+  <h2><span class="sn">9.3</span>The Redshift mapping and the line that matters</h2>
+  <p>Redshift needs its own virtual graph. The full <code>redshift_c360.sms</code> is in the Try box; here's the purchase block, the one that makes federation possible:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>MAPPING &lt;urn:c360:redshift:purchase&gt;
+FROM SQL {
+  SELECT id, pid, "date" AS pdate, "time" AS ptime, quantity, price, cid, card, reward_account,
+         CAST("date" AS varchar) || ' ' || "time" || ' - $' || CAST(price AS varchar) AS label
+  FROM c360.purchase
+}
+TO {
+  ?iri a :Order ; rdfs:label ?label ;
+    :purchasePrice ?p ; :quantity ?q ; :purchaseTime ?ptime ; :purchaseDate ?dt ;
+    :purchasedBy ?cust_iri ; :itemPurchased ?product ; :cardUsed ?cc ; :rewardsAccountUsed ?rewardsIri .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:purchase:us:pos{id}") AS ?iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust_iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:product:{pid}") AS ?product)
+  BIND(TEMPLATE("urn:stardog:demos:c360:cards:{card}") AS ?cc)
+  BIND(TEMPLATE("urn:stardog:demos:c360:rewards:{reward_account}") AS ?rewardsIri)
+  BIND(xsd:decimal(?price) AS ?p)
+  BIND(xsd:integer(?quantity) AS ?q)
+  BIND(xsd:date(?pdate) AS ?dt)
+}</pre></div>
+  <p>Chapter 8's tools read all of it: each row is an <code>:Order</code>; four foreign keys become four arrows; the label is concatenated in SQL; three casts pin the datatypes. The quoted <code>"date"</code> and <code>"time"</code> and the <code>xsd:decimal</code> each have a story (Section 9.9). But one line is the whole chapter:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust_iri)   -- Redshift, purchase block
+BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?iri)        -- Aurora, customer block (Chapter 8)</pre></div>
+  <p>Character for character, the same template. Redshift's <code>purchase.cid = 225</code> and Aurora's <code>customer.cid = 225</code> both become the IRI <code>&lt;urn:stardog:demos:c360:customer:225&gt;</code>, and in RDF a node <em>is</em> its IRI (Chapter 3). So Aurora's facts about customer 225 and Redshift's orders "purchased by" customer 225 are facts about one and the same node. As the Redshift DDL's comment puts it: <em>the cross-engine "join" is the shared IRI template, not a foreign key.</em></p>
+  <p>The other three blocks (product, category, vendor) use the same ideas, with two details: vendors are matched <em>by name</em> (<code>vendor:{brand}</code> on products, <code>vendor:{vendor_name}</code> on vendors, percent-encoded because names contain spaces), and a product's list price stays <code>xsd:float</code> because the ontology declares <code>:hasPrice</code> as float and nothing ever sums it.</p>
+
+  <h2><span class="sn">9.4</span>Where exactly does SPARQL get converted to SQL?</h2>
+  <p>Inside the Stardog server's query planner, before a byte goes to AWS. Studio just sends text over HTTPS, and Aurora and Redshift only run the SQL that comes out at the end. The planner, in order:</p>
+  <ol>
+    <li><strong>Parse.</strong> The SPARQL text becomes an algebra tree: triple patterns, joins, a group, an order, a limit.</li>
+    <li><strong>Route each triple pattern to a mapping.</strong> Which mapping blocks have a matching pattern in their <code>TO</code>? <code>?o :purchasedBy ?c</code> matches only the purchase block of <code>redshift_c360</code>; <code>?c :name ?name</code> matches the customer block of <code>aurora_c360_safe</code> (layer 2 of Figure 9.1 at work).</li>
+    <li><strong>Group by source.</strong> Patterns answerable by the same virtual graph are bundled, because one SQL statement can answer the bundle. Bundled patterns that share a variable built from matching templates (customer <code>:address</code> ↔ address subject) become a SQL <code>JOIN</code>.</li>
+    <li><strong>Rewrite each bundle into the source's SQL dialect.</strong> Stardog's virtual-graph engine is built on <dfn>Apache Calcite</dfn>, an open-source SQL parser and query-algebra framework. Stardog uses it to parse your mapping's <code>FROM SQL</code>, combine it with the query's needs, and print SQL in Postgres or Redshift flavor. You've met Calcite already: <code>Object 'customer' not found within 'c360'</code> (Section 7.5) is its wording, and real query plans print Calcite operators such as <code>LogicalProject</code> and <code>JdbcTableScan</code>.</li>
+    <li><strong>Plan the rest.</strong> Whatever can't be pushed into a source (the cross-source join, and anything that depends on it) becomes Stardog operators above the SQL leaves.</li>
+  </ol>
+  <p>Step 4's "do as much as possible in the source" is <strong>pushdown</strong> (introduced in Section 7.3): moving computation to the data is almost always cheaper than moving data to the computation.</p>
+  <aside class="box java">
+    <p>For one source, this is what Hibernate does with HQL: the mapping plus a dialect print SQL, with the <code>WHERE</code> in the SQL instead of the JVM. Stardog's mapping is the entity annotation, Calcite is the <code>Dialect</code>, and pushdown is the <code>where</code> clause landing in the database.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">SPARQL, and the SQL Stardog sends</p><pre>GRAPH &lt;virtual://aurora_c360_safe&gt; {
+  ?c :name ?name ; :address ?a .
+  ?a :state "Texas" .
+}
+
+# Stardog (Calcite, Postgres dialect),
+# roughly:
+# SELECT c.full_name, a.state
+# FROM c360.customer c
+# JOIN c360.address a ON c.location = a.id
+# WHERE a.state = 'Texas'</pre></div>
+      <div class="col"><p class="lbl">Java 21 + Hibernate</p><pre>List&lt;Object[]&gt; rows = em.createQuery("""
+        select c.fullName, a.state
+        from Customer c join c.address a
+        where a.state = :st""", Object[].class)
+    .setParameter("st", "Texas")
+    .getResultList();
+
+// Hibernate (PostgreSQLDialect), roughly:
+// select c1_0.full_name, a1_0.state
+// from c360.customer c1_0
+// join c360.address a1_0 on a1_0.id = c1_0.location
+// where a1_0.state = ?</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> a Hibernate persistence unit has one <code>DataSource</code> and one dialect, so HQL cannot join an Aurora <code>Customer</code> to a Redshift <code>Order</code>. Stardog routes each pattern to its own source and dialect, then does the cross-source join itself (the Java version is in Section 9.6).</p>
+  </aside>
+
+  <h3>How Stardog knows which graphs to look in: GRAPH vs virtual transparency</h3>
+  <p>Our queries name their sources with <code>GRAPH &lt;virtual://…&gt; { … }</code>. That's explicit routing: the patterns inside may only match that virtual graph. By default, a query with no <code>GRAPH</code> block reads the local default graph and <strong>does not</strong> see virtual graphs at all; you'd get zero rows. With the database option <code>virtual.transparency=true</code>, Stardog adds every virtual graph the user may access to the query's dataset, so you can drop the <code>GRAPH</code> blocks and each pattern is matched against whichever graph can answer it. One subtlety from the docs: a <code>GRAPH ?g { … }</code> block still forces all its patterns to match within <em>one</em> graph, so patterns split across Aurora and Redshift return nothing inside a single <code>GRAPH ?g</code>.</p>
+  <p>We keep explicit <code>GRAPH</code> blocks in this book: they make the routing visible and Chapter 12's security demo easy to reason about, and Chapter 14's agent uses them too.</p>
+
+  <h2><span class="sn">9.5</span>Sometimes Aurora, sometimes Redshift, sometimes both</h2>
+  <p>Routing is per pattern, so the same endpoint sends SQL to one database, the other, or both, depending on which terms your query uses. Three examples from the blog's sample questions (SQL shown is <strong>illustrative</strong>; Section 9.8 shows how to see the real text):</p>
+  <h3>Aurora only: customers by state</h3>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?state (COUNT(?c) AS ?n)
+WHERE { GRAPH &lt;virtual://aurora_c360_safe&gt; { ?c a :Customer ; :address ?a . ?a :state ?state } }
+GROUP BY ?state ORDER BY DESC(?n) LIMIT 5</pre></div>
+  <p>Every pattern routes to Aurora, so the whole thing, join, group, sort and limit, is pushed down as one statement, roughly <code>SELECT a.state, COUNT(*) FROM customer c JOIN address a ON c.location = a.id GROUP BY a.state ORDER BY 2 DESC LIMIT 5</code>. Redshift stays asleep. Five rows cross the wire (Texas 53, California 51, Florida 48, …; you ran this in Chapter 8).</p>
+  <h3>Redshift only: top products by units sold</h3>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?product (SUM(?qty) AS ?units)
+WHERE { GRAPH &lt;virtual://redshift_c360&gt; { ?o :itemPurchased ?p ; :quantity ?qty . ?p :name ?product } }
+GROUP BY ?product ORDER BY DESC(?units) LIMIT 10</pre></div>
+  <p>All patterns route to Redshift. The purchase-to-product hop matches templates (<code>product:{pid}</code> ↔ <code>product:{id}</code>), so it becomes a SQL join, roughly <code>SELECT p.name, SUM(u.quantity) FROM purchase u JOIN product p ON u.pid = p.id GROUP BY p.name ORDER BY 2 DESC LIMIT 10</code>. Aurora stays paused.</p>
+  <h3>Both: top spenders with their state</h3>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?name ?state (SUM(?price * ?qty) AS ?spend)
+WHERE {
+  GRAPH &lt;virtual://redshift_c360&gt; {
+    ?o a :Order ; :purchasedBy ?c ; :purchasePrice ?price ; :quantity ?qty .
+  }
+  GRAPH &lt;virtual://aurora_c360_safe&gt; {
+    ?c :name ?name ; :address ?a .
+    ?a :state ?state .
+  }
+}
+GROUP BY ?c ?name ?state
+ORDER BY DESC(?spend)
+LIMIT 10</pre></div>
+  <p>Now <code>?c</code> appears in both blocks. Chapter 4 said "a shared variable is a join"; here the shared variable crosses two databases. Stardog sends one SQL statement to each side:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>-- Illustrative: to Redshift. The mapping's SQL becomes a subquery; only needed columns are selected.
+SELECT "cid", "price", "quantity"
+FROM (SELECT id, pid, "date" AS pdate, "time" AS ptime, quantity, price, cid, card, reward_account,
+             CAST("date" AS varchar) || ' ' || "time" || ' - $' || CAST(price AS varchar) AS label
+      FROM c360.purchase) AS "t"
+WHERE "cid" IS NOT NULL AND "price" IS NOT NULL AND "quantity" IS NOT NULL
+
+-- Illustrative: to Aurora. The join condition location = id was derived from matching templates.
+SELECT "t0"."cid", "t0"."full_name", "t1"."state"
+FROM (SELECT cid, first_name, last_name, email, phone, location, full_name FROM c360.customer) AS "t0"
+JOIN (SELECT id, city, state, zip, ... FROM c360.address) AS "t1" ON "t0"."location" = "t1"."id"</pre></div>
+  <p>And here's the catch. The <code>SUM</code> is grouped by name and state, from Aurora, over prices from Redshift. Neither database has both, so neither can compute it. That brings us to the heart of the chapter.</p>
+
+  <h2><span class="sn">9.6</span>Where the data lands, and how the answer is rolled up</h2>
+  <p>No database ever joins Aurora to Redshift. Stardog does, in memory, for the duration of one query. Press Play to follow it.</p>
+
+  <figure class="fig anim" id="f-9-2">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 -34 690 634" role="img" aria-label="Sequence diagram of one federated query: Studio sends SPARQL to the Stardog planner, which routes patterns to mappings, splits them by source and rewrites them to SQL. The executor sends one SQL query to Redshift and one to Aurora, receives rows back, turns each cid into the customer IRI, hash-joins on that IRI in memory, then sums, sorts and limits, and returns ten rows to Studio.">
+      <g class="heads">
+        <rect x="10" y="14" width="100" height="40" rx="6" style="fill:var(--soft);stroke:var(--ink)"/>
+        <text x="60" y="38" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--ink)">You (Studio)</text>
+        <rect x="150" y="14" width="120" height="40" rx="6" style="fill:var(--soft);stroke:var(--accent)"/>
+        <text x="210" y="31" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">Stardog</text>
+        <text x="210" y="46" text-anchor="middle" font-size="10.5" style="fill:var(--accent)">planner</text>
+        <rect x="300" y="14" width="120" height="40" rx="6" style="fill:var(--soft);stroke:var(--accent)"/>
+        <text x="360" y="31" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">Stardog</text>
+        <text x="360" y="46" text-anchor="middle" font-size="10.5" style="fill:var(--accent)">executor (memory)</text>
+        <rect x="455" y="14" width="100" height="40" rx="6" style="fill:var(--soft);stroke:var(--accent2)"/>
+        <text x="505" y="38" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent2)">Aurora</text>
+        <rect x="580" y="14" width="100" height="40" rx="6" style="fill:var(--soft);stroke:var(--accent2)"/>
+        <text x="630" y="38" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent2)">Redshift</text>
+        <line x1="60" y1="56" x2="60" y2="580" style="stroke:var(--line)" stroke-width="2" stroke-dasharray="4 4"/>
+        <line x1="210" y1="56" x2="210" y2="580" style="stroke:var(--line)" stroke-width="2" stroke-dasharray="4 4"/>
+        <line x1="360" y1="56" x2="360" y2="580" style="stroke:var(--line)" stroke-width="2" stroke-dasharray="4 4"/>
+        <line x1="505" y1="56" x2="505" y2="580" style="stroke:var(--line)" stroke-width="2" stroke-dasharray="4 4"/>
+        <line x1="630" y1="56" x2="630" y2="580" style="stroke:var(--line)" stroke-width="2" stroke-dasharray="4 4"/>
+      </g>
+      <g class="s1">
+        <line class="ar" x1="60" y1="86" x2="204" y2="86" style="stroke:var(--ink)" stroke-width="1.8"/>
+        <polygon points="200,81 210,86 200,91" style="fill:var(--ink)"/>
+        <text x="66" y="80" font-size="11" style="fill:var(--ink)">1  SPARQL query</text>
+      </g>
+      <g class="s2">
+        <rect x="150" y="100" width="290" height="28" rx="5" style="fill:var(--paper);stroke:var(--accent)"/>
+        <text x="160" y="118" font-size="11" style="fill:var(--ink)">2  route each pattern to a mapping block</text>
+      </g>
+      <g class="s3">
+        <rect x="150" y="134" width="290" height="28" rx="5" style="fill:var(--paper);stroke:var(--accent)"/>
+        <text x="160" y="152" font-size="11" style="fill:var(--ink)">3  split: 4 Redshift patterns | 3 Aurora patterns</text>
+      </g>
+      <g class="s4">
+        <rect x="150" y="168" width="290" height="28" rx="5" style="fill:var(--paper);stroke:var(--accent)"/>
+        <text x="160" y="186" font-size="11" style="fill:var(--ink)">4  rewrite each bundle to SQL (Calcite, pushdown)</text>
+      </g>
+      <g class="s5">
+        <line class="ar" x1="210" y1="222" x2="354" y2="222" style="stroke:var(--ink)" stroke-width="1.8"/>
+        <polygon points="350,217 360,222 350,227" style="fill:var(--ink)"/>
+        <text x="216" y="216" font-size="11" style="fill:var(--ink)">5  plan: 2 SQL leaves + join</text>
+      </g>
+      <g class="s6">
+        <line class="ar" x1="360" y1="262" x2="624" y2="262" style="stroke:var(--accent2)" stroke-width="1.8"/>
+        <polygon points="620,257 630,262 620,267" style="fill:var(--accent2)"/>
+        <text x="368" y="256" font-size="11" style="fill:var(--accent2)">6  SQL → purchase: cid, price, quantity</text>
+        <rect x="590" y="270" width="80" height="34" rx="4" style="fill:var(--soft);stroke:var(--accent2)"/>
+        <text x="630" y="291" text-anchor="middle" font-size="10" style="fill:var(--muted)">scan 2,500 rows</text>
+      </g>
+      <g class="s7">
+        <line class="ar" x1="360" y1="300" x2="499" y2="300" style="stroke:var(--accent2)" stroke-width="1.8"/>
+        <polygon points="495,295 505,300 495,305" style="fill:var(--accent2)"/>
+        <text x="368" y="294" font-size="11" style="fill:var(--accent2)">7  SQL → customer ⋈ address</text>
+        <rect x="465" y="308" width="80" height="34" rx="4" style="fill:var(--soft);stroke:var(--accent2)"/>
+        <text x="505" y="329" text-anchor="middle" font-size="10" style="fill:var(--muted)">join 500 × 500</text>
+      </g>
+      <g class="s8">
+        <line class="al" x1="630" y1="366" x2="366" y2="366" style="stroke:var(--accent2)" stroke-width="1.8" stroke-dasharray="6 4"/>
+        <polygon points="370,361 360,366 370,371" style="fill:var(--accent2)"/>
+        <text x="376" y="360" font-size="11" style="fill:var(--accent2)">8  2,500 rows (cid, price, quantity)</text>
+      </g>
+      <g class="s9">
+        <line class="al" x1="505" y1="398" x2="366" y2="398" style="stroke:var(--accent2)" stroke-width="1.8" stroke-dasharray="6 4"/>
+        <polygon points="370,393 360,398 370,403" style="fill:var(--accent2)"/>
+        <text x="376" y="392" font-size="11" style="fill:var(--accent2)">9  500 rows (cid, name, state)</text>
+      </g>
+      <g class="s10">
+        <rect x="226" y="414" width="268" height="54" rx="6" style="fill:var(--soft);stroke:var(--subj)" stroke-width="2.5"/>
+        <text x="236" y="433" font-size="11" font-weight="700" style="fill:var(--subj)">10  cid → customer:{cid} on both sides;</text>
+        <text x="236" y="449" font-size="11" font-weight="700" style="fill:var(--subj)">      hash join on ?c: THE FEDERATION</text>
+        <text x="236" y="462" font-size="9.5" style="fill:var(--muted)">       in Stardog's memory, never stored</text>
+      </g>
+      <g class="s11">
+        <rect x="226" y="476" width="268" height="28" rx="6" style="fill:var(--paper);stroke:var(--accent)"/>
+        <text x="236" y="494" font-size="11" style="fill:var(--ink)">11  SUM(price×qty) per ?c; sort; LIMIT 10</text>
+      </g>
+      <g class="s12">
+        <line class="al" x1="360" y1="530" x2="66" y2="530" style="stroke:var(--ink)" stroke-width="1.8" stroke-dasharray="6 4"/>
+        <polygon points="70,525 60,530 70,535" style="fill:var(--ink)"/>
+        <text x="76" y="524" font-size="11" style="fill:var(--ink)">12  10 rows: Carolyn Inworth · Wisconsin · 502529.42 …</text>
+      </g>
+      <circle class="pk pkR" cx="360" cy="262" r="6" opacity="0" style="fill:var(--accent2)"/>
+      <circle class="pk pkA" cx="360" cy="300" r="6" opacity="0" style="fill:var(--accent2)"/>
+      <circle class="pk pkR2" cx="630" cy="366" r="6" opacity="0" style="fill:var(--obj)"/>
+      <circle class="pk pkA2" cx="505" cy="398" r="6" opacity="0" style="fill:var(--obj)"/>
+      <text x="345" y="592" text-anchor="middle" font-size="10.5" style="fill:var(--muted)">SQL is illustrative. Steps 6 and 7 may run concurrently, or one side's keys may be fed into the other's SQL (a bind join).</text>
+    </svg>
+    <p class="stepcap">Press ▶ Play to watch one query travel from Studio to both databases and back, step by step.</p>
+    <figcaption>Figure 9.2: One federated query, start to finish. Aurora and Redshift never talk to each other; the join is step 10, inside Stardog.</figcaption>
+  </figure>
+
+  <p>Step 10 answers "without a JOIN across two engines, how does the data come together?"</p>
+  <ul>
+    <li><strong>Where the rows land.</strong> Each SQL result streams back over JDBC into Stardog's query engine, where it lives in memory as <em>bindings</em> (variable → value rows, like a result set) for the life of this one query. Nothing is written into <code>kit-c360</code>. (Very large joins may spill to temporary disk; still scratch space, not stored data.)</li>
+    <li><strong>How keys become the same key.</strong> Each Redshift row's <code>cid</code> goes through the purchase mapping's template and binds <code>?c</code> to <code>customer:225</code>; each Aurora row's goes through the customer mapping's template to the same IRI. Because the templates are identical, Stardog can compare the underlying values rather than long strings, but logically it joins on the IRI.</li>
+    <li><strong>How the join runs.</strong> Typically a <em>hash join</em>: build a hash table from the smaller side (500 customers, keyed by <code>?c</code>), then stream the 2,500 purchase rows through it. The planner can also choose a <em>bind join</em>: run one side first, then send its keys into the other side's SQL (think <code>WHERE cid IN (225, …)</code>), which wins when one side is tiny, such as "top spenders in Wisconsin". The docs show plans combining virtual graphs under a <code>ServiceJoin</code> operator; the strategy is the optimizer's call, and your plan (Section 9.8) tells you.</li>
+    <li><strong>Only then, the rollup.</strong> Stardog computes <code>SUM(?price * ?qty)</code> per customer (on exact <code>xsd:decimal</code> values), sorts, and keeps ten. An aggregate grouped by Aurora's columns over Redshift's numbers can't be pushed to either source.</li>
+  </ul>
+  <aside class="box java">
+    <p>Here is step 10 of Figure 9.2 by hand: two <code>DataSource</code>s, one query each, a <code>Map</code> keyed by <code>cid</code>, then group, sum, sort and limit in the JVM. Without a semantic layer, you'd write and maintain this for every cross-database question.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">SPARQL (the federated query, trimmed)</p><pre>SELECT ?name ?state
+       (SUM(?price * ?qty) AS ?spend)
+WHERE {
+  GRAPH &lt;virtual://redshift_c360&gt; {
+    ?o :purchasedBy ?c ;
+       :purchasePrice ?price ;
+       :quantity ?qty .
+  }
+  GRAPH &lt;virtual://aurora_c360_safe&gt; {
+    ?c :name ?name ; :address ?a .
+    ?a :state ?state .
+  }
+}
+GROUP BY ?c ?name ?state
+ORDER BY DESC(?spend)
+LIMIT 10</pre></div>
+      <div class="col"><p class="lbl">Java 21 (Spring JdbcTemplate)</p><pre>record Order(int cid, BigDecimal price, int qty) {}
+record Cust(String name, String state) {}
+record Row(String name, String state, BigDecimal spend) {}
+
+// A: Redshift, one row per order
+List&lt;Order&gt; orders = redshift.query(
+    "SELECT cid, price, quantity FROM c360.purchase",
+    (rs, i) -&gt; new Order(rs.getInt(1),
+        rs.getBigDecimal(2), rs.getInt(3)));
+
+// B: Aurora, customers with their state, keyed by cid
+Map&lt;Integer, Cust&gt; byCid = aurora.query("""
+        SELECT c.cid, c.full_name, a.state
+        FROM c360.customer c
+        JOIN c360.address a ON a.id = c.location""",
+    (rs, i) -&gt; Map.entry(rs.getInt(1),
+        new Cust(rs.getString(2), rs.getString(3))))
+    .stream()
+    .collect(Collectors.toMap(Map.Entry::getKey,
+                              Map.Entry::getValue));
+
+// join on cid, then group + sum (exact decimals)
+Map&lt;Integer, BigDecimal&gt; spend = orders.stream()
+    .filter(o -&gt; byCid.containsKey(o.cid()))
+    .collect(Collectors.groupingBy(Order::cid,
+        Collectors.reducing(BigDecimal.ZERO,
+            o -&gt; o.price().multiply(
+                     BigDecimal.valueOf(o.qty())),
+            BigDecimal::add)));
+
+// sort + limit
+List&lt;Row&gt; top10 = spend.entrySet().stream()
+    .map(e -&gt; { var c = byCid.get(e.getKey());
+                return new Row(c.name(), c.state(), e.getValue()); })
+    .sorted(Comparator.comparing(Row::spend).reversed())
+    .limit(10)
+    .toList();</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> the Java is frozen to this one question. Ask for "top spenders in Wisconsin" and you rewrite both SQL strings and choose the join strategy yourself; Stardog generates the SQL from the mappings, pushes down what it can (Section 9.7), and picks the join per query. And your code joins on a bare <code>int cid</code>, trusting both databases mean the same thing by it; in Stardog that agreement is written down as the shared IRI template.</p>
+  </aside>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Where the rows physically are at each stage: at rest in Aurora (500 customers) and Redshift (2,500 purchases); on the wire as two SQL result sets; in Stardog memory as a hash table of 500 customers probed by 2,500 purchase rows giving 2,500 joined rows; aggregated into 500 groups, sorted, limited to 10; and 10 rows returned to Studio.">
+      <g font-size="11">
+        <rect x="8" y="30" width="118" height="190" rx="8" style="fill:var(--soft);stroke:var(--accent2)"/>
+        <text x="67" y="22" text-anchor="middle" font-weight="700" style="fill:var(--accent2)">1 At rest</text>
+        <text x="18" y="60" style="fill:var(--ink)">Aurora disk</text>
+        <text x="18" y="76" style="fill:var(--muted)">500 customers</text>
+        <text x="18" y="92" style="fill:var(--muted)">500 addresses</text>
+        <text x="18" y="140" style="fill:var(--ink)">Redshift disk</text>
+        <text x="18" y="156" style="fill:var(--muted)">2,500 purchases</text>
+        <rect x="142" y="30" width="118" height="190" rx="8" style="fill:var(--paper);stroke:var(--line)"/>
+        <text x="201" y="22" text-anchor="middle" font-weight="700" style="fill:var(--ink)">2 On the wire</text>
+        <text x="152" y="60" style="fill:var(--ink)">JDBC over TLS</text>
+        <text x="152" y="76" style="fill:var(--muted)">500 rows</text>
+        <text x="152" y="92" style="fill:var(--muted)">(cid, name, state)</text>
+        <text x="152" y="140" style="fill:var(--muted)">2,500 rows</text>
+        <text x="152" y="156" style="fill:var(--muted)">(cid, price, qty)</text>
+        <rect x="276" y="30" width="128" height="190" rx="8" style="fill:var(--soft);stroke:var(--subj)" stroke-width="2"/>
+        <text x="340" y="22" text-anchor="middle" font-weight="700" style="fill:var(--subj)">3 Stardog memory</text>
+        <text x="286" y="60" style="fill:var(--ink)">hash table:</text>
+        <text x="286" y="76" style="fill:var(--muted)">500 × ?c → name, state</text>
+        <text x="286" y="110" style="fill:var(--ink)">probe with</text>
+        <text x="286" y="126" style="fill:var(--muted)">2,500 purchase rows</text>
+        <text x="286" y="160" style="fill:var(--ink)">= 2,500 joined</text>
+        <text x="286" y="176" style="fill:var(--muted)">bindings</text>
+        <rect x="420" y="30" width="118" height="190" rx="8" style="fill:var(--soft);stroke:var(--accent)"/>
+        <text x="479" y="22" text-anchor="middle" font-weight="700" style="fill:var(--accent)">4 Rolled up</text>
+        <text x="430" y="60" style="fill:var(--ink)">GROUP BY ?c</text>
+        <text x="430" y="76" style="fill:var(--muted)">≤ 500 totals</text>
+        <text x="430" y="110" style="fill:var(--ink)">ORDER BY</text>
+        <text x="430" y="126" style="fill:var(--muted)">DESC(?spend)</text>
+        <text x="430" y="160" style="fill:var(--ink)">LIMIT 10</text>
+        <rect x="554" y="30" width="118" height="190" rx="8" style="fill:var(--paper);stroke:var(--ink)"/>
+        <text x="613" y="22" text-anchor="middle" font-weight="700" style="fill:var(--ink)">5 To you</text>
+        <text x="564" y="60" style="fill:var(--ink)">HTTPS</text>
+        <text x="564" y="76" style="fill:var(--muted)">10 rows</text>
+        <text x="564" y="110" style="fill:var(--muted)">then memory</text>
+        <text x="564" y="126" style="fill:var(--muted)">is released</text>
+        <path d="M128 125 L140 125 M262 125 L274 125 M406 125 L418 125 M540 125 L552 125" style="stroke:var(--muted)" stroke-width="2"/>
+        <text x="340" y="242" text-anchor="middle" style="fill:var(--muted)">Nothing from stages 2 to 4 is saved in kit-c360. Run the query again and it all happens again, live.</text>
+      </g>
+    </svg>
+    <figcaption>Figure 9.3: Where the rows physically are, stage by stage, for the top-spenders query.</figcaption>
+  </figure>
+
+  <h3>The trade-offs, honestly</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Concern</th><th>What it means here</th></tr></thead>
+    <tbody>
+      <tr><td>Data volume on the wire</td><td>Anything that can't be pushed down gets pulled: here one row per <em>order</em>. 2,500 rows is nothing; 2.5 billion would be a problem.</td></tr>
+      <tr><td>Pushdown</td><td>Single-source work runs in the database; cross-source joins and anything above them run in Stardog. Query shape decides (next section).</td></tr>
+      <tr><td>Latency</td><td>At least the slower source's time plus transfer. Our Aurora adds 15 to 20 seconds after a pause.</td></tr>
+      <tr><td>Cost</td><td>You pay each source's compute per query (Redshift bills a 60-second minimum per wake-up) and Stardog's memory for the join.</td></tr>
+      <tr><td>Freshness</td><td>The upside for all of the above: every run reads live data. No pipeline, no copy.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="sn">9.7</span>Helping pushdown: put single-source work inside one source</h2>
+  <p>You can <em>restructure</em> the query so most of the work is single-source: sum per customer inside Redshift first, then join the totals to Aurora:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?name ?state ?spend
+WHERE {
+  {
+    SELECT ?c (SUM(?price * ?qty) AS ?spend)
+    WHERE {
+      GRAPH &lt;virtual://redshift_c360&gt; {
+        ?o :purchasedBy ?c ; :purchasePrice ?price ; :quantity ?qty .
+      }
+    }
+    GROUP BY ?c
+  }
+  GRAPH &lt;virtual://aurora_c360_safe&gt; {
+    ?c :name ?name ; :address ?a .
+    ?a :state ?state .
+  }
+}
+ORDER BY DESC(?spend)
+LIMIT 10</pre></div>
+  <p>The subquery touches only Redshift, so Stardog can push the whole <code>GROUP BY</code> into it (roughly <code>SELECT cid, SUM(price * quantity) FROM purchase GROUP BY cid</code>), and Redshift returns about one row per customer instead of one per order. Same answer, far fewer rows. Whether your version pushes this aggregate is what the plan will tell you.</p>
+
+  <h2><span class="sn">9.8</span>Seeing the real plan</h2>
+  <p>Figure 9.2 shows how Stardog works in general; your endpoint can show what it actually does. Studio's Workspace can show a query's plan (the docs call it the place to "write, execute, and see query plans"); look for a plan or explain control near Run. The CLI equivalent is <code>stardog query explain</code>. In the plan text, look for:</p>
+  <ul>
+    <li><strong><code>VirtualGraphSql&lt;virtual://…&gt;</code></strong>: one per SQL statement sent to a source. <code>Query=</code> is the exact SQL; <code>Vars=</code> shows columns becoming variables, e.g. <code>?c &lt;- TEMPLATE(urn:stardog:demos:c360:customer:{cid})</code>. Both leaves binding <code>?c</code> with the same template is the IRI trick in the machine's own words.</li>
+    <li><strong>A join above them</strong> (for example <code>HashJoin(?c)</code> or a <code>ServiceJoin</code>): the variable is the join key.</li>
+    <li><strong><code>[#N]</code></strong>: the optimizer's row estimate for each node.</li>
+  </ul>
+
+  <h2><span class="sn">9.9</span>Why the template is the join key, and the gotchas to watch for</h2>
+  <p>Everything above depends on two independent mapping files agreeing on a string pattern. That contract breaks quietly:</p>
+  <ul>
+    <li><strong>Different templates: no error, no rows.</strong> If Redshift minted <code>urn:c360:buyer:{cid}</code>, the federated query would run and return nothing. The most common federation bug.</li>
+    <li><strong>Different key formats.</strong> <code>225</code> vs <code>0225</code> vs <code>C-225</code> give different IRIs. Normalize in the mapping's SQL.</li>
+    <li><strong>Different meanings.</strong> A generic <code>urn:node:{id}</code> for both customers and products would merge unrelated things (the docs' optimization page has an example with actors and movies). That's why every c360 template names its type.</li>
+  </ul>
+  <aside class="box gotcha">
+    <p><strong>Quote reserved words.</strong> <code>purchase</code> has columns called <code>date</code> and <code>time</code>, both SQL reserved words. Redshift tolerates them bare, but Stardog parses the mapping's SQL itself (Calcite, Section 9.4), and the parse fails. Fix: <code>"date" AS pdate</code>, <code>"time" AS ptime</code>.</p>
+    <p><strong>Pin types with casts.</strong> The kit's original mappings were written for CSV, where everything is a string, hence <code>xsd:integer(?quantity)</code> and <code>xsd:date(…)</code>. Over SQL the columns are typed already, but explicit casts make each datatype match the ontology rather than whatever the driver reports; mismatched types break comparisons, <code>YEAR()</code> and value joins.</p>
+    <p><strong>Money is <code>xsd:decimal</code>, never <code>xsd:float</code>.</strong> The kit's original mapping casts purchase prices with <code>xsd:float</code>, which puts Carolyn's total at $502,529.44, <strong>2 cents</strong> off SQL (the float drift of Chapter 3). With <code>xsd:decimal</code>, matching Redshift's <code>decimal(12,2)</code>, it matches SQL to the cent: <strong>$502,529.42</strong>.</p>
+  </aside>
+  <p>On cost: batch your experiments. The first query after a pause waits 15 to 20 seconds for Aurora; each Redshift wake-up bills at least 60 seconds (at 4 RPUs, about 2.5 cents), and the 1 RPU-hour daily cap is roughly 15 minutes of compute. Fine for this book, not for a script in a loop, which is why Chapter 14's agent gets a <code>LIMIT</code> and a timeout.</p>
+
+  <aside class="box blog">
+    <p>The blog's federated sample, "Top ten customer spenders with their state", is the query in 9.5, and its key idea is this chapter's: an <strong>IRI template</strong> gives each customer one identity across Aurora and Redshift, so no ETL is needed. "Cooperation without coordination" follows: add Athena or another source later by minting the same IRIs, without touching existing mappings.</p>
+  </aside>
+
+  <h2><span class="sn">9.10</span>Try it: create <code>redshift_c360</code> and run the federated query (real build step 4)</h2>
+  <aside class="box try">
+    <p><strong>Step 1. Create the Redshift virtual graph.</strong> In Studio's <strong>Virtual Graphs</strong> section, add one as in Section 8.8: name <code>redshift_c360</code>, database <code>kit-c360</code>, data source <strong><code>redshift_c360</code></strong> (the existing one; the graph and the data source sharing a name is fine), syntax <code>SMS2</code>, no extra options. Paste this complete, verified mapping and save:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre># Virtual graph: redshift_c360 — analytics side. purchasedBy mints the SAME customer IRI as Aurora:
+# that template agreement is the cross-warehouse join.
+prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+prefix : &lt;tag:stardog:api:ecomm:&gt;
+
+MAPPING &lt;urn:c360:redshift:purchase&gt;
+FROM SQL {
+  SELECT id, pid, "date" AS pdate, "time" AS ptime, quantity, price, cid, card, reward_account,
+         CAST("date" AS varchar) || ' ' || "time" || ' - $' || CAST(price AS varchar) AS label
+  FROM c360.purchase
+}
+TO {
+  ?iri a :Order ; rdfs:label ?label ;
+    :purchasePrice ?p ; :quantity ?q ; :purchaseTime ?ptime ; :purchaseDate ?dt ;
+    :purchasedBy ?cust_iri ; :itemPurchased ?product ; :cardUsed ?cc ; :rewardsAccountUsed ?rewardsIri .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:purchase:us:pos{id}") AS ?iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust_iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:product:{pid}") AS ?product)
+  BIND(TEMPLATE("urn:stardog:demos:c360:cards:{card}") AS ?cc)
+  BIND(TEMPLATE("urn:stardog:demos:c360:rewards:{reward_account}") AS ?rewardsIri)
+  BIND(xsd:decimal(?price) AS ?p)
+  BIND(xsd:integer(?quantity) AS ?q)
+  BIND(xsd:date(?pdate) AS ?dt)
+}
+;
+MAPPING &lt;urn:c360:redshift:product&gt;
+FROM SQL { SELECT id, name, brand, price, dept, description, '$' || CAST(price AS varchar) AS price_label FROM c360.product }
+TO {
+  ?iri a :Product ; :inCategory ?cat_iri ; :description ?description ; :msrp ?up ;
+    :vendor ?vendor_iri ; :name ?name ; rdfs:label ?name .
+  ?up a :UnitPrice ; rdfs:label ?price_label ; :hasCurrency "USD" ; :hasPrice ?pf .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:product:{id}") AS ?iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:category:{dept}") AS ?cat_iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:vendor:{brand}") AS ?vendor_iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:unitprice:{id}") AS ?up)
+  BIND(xsd:float(?price) AS ?pf)
+}
+;
+MAPPING &lt;urn:c360:redshift:category&gt;
+FROM SQL { SELECT id, dept_name FROM c360.category }
+TO { ?iri a :Category ; :name ?dept_name ; rdfs:label ?dept_name . }
+WHERE { BIND(TEMPLATE("urn:stardog:demos:c360:category:{id}") AS ?iri) }
+;
+MAPPING &lt;urn:c360:redshift:vendor&gt;
+FROM SQL { SELECT id, vendor_name, industry, homepage FROM c360.vendor }
+TO {
+  ?iri a :Vendor ; :industry ?ind ; :homepage ?homepage ; :name ?vendor_name ; rdfs:label ?vendor_name .
+  ?ind a :Industry ; :name ?industry ; rdfs:label ?industry .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:vendor:{vendor_name}") AS ?iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:industry:{industry}") AS ?ind)
+}</pre></div>
+    <p>API equivalent (reference only): the <code>POST /admin/virtual_graphs</code> call from Chapter 8 with <code>name:"redshift_c360"</code>, <code>data_source:"redshift_c360"</code>, <code>db:"kit-c360"</code>, <code>options:{"mappings.syntax":"SMS2"}</code>.</p>
+    <p><strong>Step 2. Redshift alone.</strong></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT (COUNT(?o) AS ?orders)
+WHERE { GRAPH &lt;virtual://redshift_c360&gt; { ?o a :Order } }</pre></div>
+    <p>Expected: <code>2500</code>. Then run the "Redshift only" products query from 9.5; expect ten product names with unit totals.</p>
+    <p><strong>Step 3. The federated query.</strong> Run the "Both" query from 9.5 (copy it from there). Expected top three of ten rows:</p>
+    <div class="tbl"><table>
+      <thead><tr><th>name</th><th>state</th><th>spend</th></tr></thead>
+      <tbody>
+        <tr><td>Carolyn Inworth</td><td>Wisconsin</td><td>502529.42</td></tr>
+        <tr><td>Marlane Shadwick</td><td>Florida</td><td>491217.53</td></tr>
+        <tr><td>Isaac Popping</td><td>Pennsylvania</td><td>440274.78</td></tr>
+      </tbody>
+    </table></div>
+    <p>Slow the first time? That's Aurora waking. Run it again.</p>
+    <p><strong>Step 4. The pushdown-friendly version</strong> from 9.7. Same top three?</p>
+    <p><strong>Step 5. Read the plans.</strong> Show the plan for the Step 3 query and for the 9.7 query. Find the two <code>VirtualGraphSql</code> nodes, read the SQL in each <code>Query=</code>, find the join on <code>?c</code>, and check whether the 9.7 version's Redshift SQL contains <code>GROUP BY</code>. Also show the plan for the Aurora-only query from 9.5: a single <code>VirtualGraphSql</code>, no Redshift. If you can't find the plan view, tell Claude what your Workspace toolbar shows.</p>
+    <p><strong>Step 6. Cross-check the slow way.</strong> In DBeaver, run the two SQL queries from 9.1 with <code>LIMIT 10</code> on the Redshift one, paste the ten <code>cid</code>s into the Aurora query's <code>IN</code> list, and match the grids by eye. You should get the same ten names, states and amounts as Step 3 (the first Redshift row is <code>225</code>, <code>502529.42</code>): two queries and a human join, versus one query that never mentions <code>cid</code>.</p>
+    <p><strong>Cleanup:</strong> none. <code>redshift_c360</code> is part of the build. <code>kit-c360</code> now has three virtual graphs.</p>
+  </aside>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>Who knows that customer names are in Aurora and purchases are in Redshift?</summary><p>The virtual graph definitions stored in Stardog: a data source (which database) plus a mapping (which ontology terms come from which tables). Not the ontology, which only defines meaning, and not the databases.</p></details>
+    <details><summary>Where exactly is SPARQL turned into SQL?</summary><p>In the Stardog server's query planner: parse, route each triple pattern to the mapping blocks whose <code>TO</code> can produce it, bundle per source, and rewrite each bundle into that source's SQL dialect with Apache Calcite, pushing down as much as it can.</p></details>
+    <details><summary>A query has no <code>GRAPH</code> blocks and returns zero rows, though the virtual graphs exist. Why?</summary><p>By default, virtual graphs aren't in a query's dataset. Either name them with <code>GRAPH &lt;virtual://…&gt;</code> or enable the database option <code>virtual.transparency</code>, which adds all accessible virtual graphs.</p></details>
+    <details><summary>Which databases receive SQL for (a) customers by state, (b) top products by units, (c) top spenders with state?</summary><p>(a) Aurora only, fully pushed down. (b) Redshift only, fully pushed down. (c) Both: one statement each; the join, the <code>SUM</code>, the sort and the limit happen in Stardog.</p></details>
+    <details><summary>Where do the rows land, and why can't the <code>SUM</code> be pushed to Redshift in the 9.5 query?</summary><p>They stream into Stardog's memory as bindings for the life of the query; nothing is stored. The <code>SUM</code> is grouped by name and state, which only Aurora has, so it must follow the cross-source join. The 9.7 rewrite groups by <code>?c</code> inside a Redshift-only subquery, which can be pushed.</p></details>
+    <details><summary>What would you see if Redshift's mapping used <code>urn:c360:buyer:{cid}</code>?</summary><p>No error and zero federated rows: no IRI would appear in both graphs, so the join on <code>?c</code> matches nothing. Templates are the contract.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li>No SQL statement spans Aurora and Redshift; by hand, it takes two queries and a human join.</li>
+    <li>Three layers: the ontology (meaning), the virtual graph definitions in Stardog (where), the databases (rows).</li>
+    <li>SPARQL becomes SQL in Stardog's planner: parse, route patterns to mappings, bundle per source, rewrite with Calcite, push down. Use explicit <code>GRAPH</code> blocks or turn on <code>virtual.transparency</code>.</li>
+    <li>Single-source queries are pushed down whole. Cross-source queries send one SQL per source, join the rows in Stardog's memory on the shared customer IRI (hash or bind join), then aggregate, sort and limit.</li>
+    <li>The IRI template is the join key: identical templates, identical key formats, type-specific names.</li>
+    <li>Gotchas: quote <code>"date"</code>/<code>"time"</code>; cast with <code>xsd:integer</code>/<code>xsd:date</code>; money as <code>xsd:decimal</code> (float drifted 2 cents).</li>
+    <li>Result: Carolyn Inworth, Wisconsin, $502,529.42; Marlane Shadwick, Florida, $491,217.53; Isaac Popping, Pennsylvania, $440,274.78, matching SQL exactly.</li>
+  </ul></section>
+
+  <section class="done">
+    <p><button class="sendback" type="button" data-chapter="9" data-step="4">Copy "Build step 4 done" message</button> <span class="sbmsg"></span></p>
+    <p class="donehint">Paste it to Claude with what you saw (the counts or results), so we can confirm it matches before the next build step relies on it.</p>
+  </section>
+
+  <nav class="pn">
+    <a href="ch08.html"><small>← Previous</small>Chapter 8 · Mappings: teaching Stardog to read your tables</a>
+    <a href="ch10.html" style="text-align:right"><small>Next →</small>Chapter 10 · Reasoning: teaching the graph to conclude</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f-9-2', (tl, cap) => {
+  const F = '#f-9-2 ';
+  const R = sel => F + sel + ' .ar', L = sel => F + sel + ' .al';
+  tl.set(F + '.s1,' + F + '.s2,' + F + '.s3,' + F + '.s4,' + F + '.s5,' + F + '.s6,' + F + '.s7,' + F + '.s8,' + F + '.s9,' + F + '.s10,' + F + '.s11,' + F + '.s12', {opacity: 0});
+  cap(tl, '1. You press Run. Studio sends the SPARQL text to the Stardog server. Nothing has touched AWS yet.');
+  tl.to(F + '.s1', {opacity: 1, duration: .2}).from(R('.s1'), {scaleX: 0, transformOrigin: '0% 50%', duration: .6});
+  tl.to({}, {duration: .8});
+  cap(tl, '2. The planner routes each triple pattern to the mapping block that can produce it: :purchasedBy to Redshift, :name and :address to Aurora.');
+  tl.to(F + '.s2', {opacity: 1, duration: .4}).to({}, {duration: 1.2});
+  cap(tl, '3. Patterns are bundled by source: one bundle per virtual graph, because one SQL statement can answer each bundle.');
+  tl.to(F + '.s3', {opacity: 1, duration: .4}).to({}, {duration: 1.2});
+  cap(tl, '4. Each bundle is rewritten into that database\'s SQL (Stardog uses Apache Calcite), pushing down all the work that source can do alone.');
+  tl.to(F + '.s4', {opacity: 1, duration: .4}).to({}, {duration: 1.2});
+  cap(tl, '5. The plan: two SQL leaves under a join, with group, sort and limit on top.');
+  tl.to(F + '.s5', {opacity: 1, duration: .2}).from(R('.s5'), {scaleX: 0, transformOrigin: '0% 50%', duration: .6}).to({}, {duration: .8});
+  cap(tl, '6 and 7. Two SQL queries fly out: purchases to Redshift, customers joined to addresses to Aurora. The databases never talk to each other.');
+  tl.to(F + '.s6', {opacity: 1, duration: .2}).from(R('.s6'), {scaleX: 0, transformOrigin: '0% 50%', duration: .7}, '<')
+    .fromTo(F + '.pkR', {opacity: 1, x: 0}, {x: 264, duration: .9, ease: 'power1.inOut'}, '<')
+    .set(F + '.pkR', {opacity: 0});
+  tl.to(F + '.s7', {opacity: 1, duration: .2}, '-=0.6').from(R('.s7'), {scaleX: 0, transformOrigin: '0% 50%', duration: .6}, '<')
+    .fromTo(F + '.pkA', {opacity: 1, x: 0}, {x: 139, duration: .8, ease: 'power1.inOut'}, '<')
+    .set(F + '.pkA', {opacity: 0}).to({}, {duration: .6});
+  cap(tl, '8 and 9. Rows stream back over JDBC into Stardog\'s memory: 2,500 purchase rows from Redshift, 500 customer rows from Aurora.');
+  tl.to(F + '.s8', {opacity: 1, duration: .2}).from(L('.s8'), {scaleX: 0, transformOrigin: '100% 50%', duration: .7}, '<')
+    .fromTo(F + '.pkR2', {opacity: 1, x: 0}, {x: -264, duration: .9, ease: 'power1.inOut'}, '<').set(F + '.pkR2', {opacity: 0});
+  tl.to(F + '.s9', {opacity: 1, duration: .2}, '-=0.5').from(L('.s9'), {scaleX: 0, transformOrigin: '100% 50%', duration: .6}, '<')
+    .fromTo(F + '.pkA2', {opacity: 1, x: 0}, {x: -139, duration: .8, ease: 'power1.inOut'}, '<').set(F + '.pkA2', {opacity: 0}).to({}, {duration: .6});
+  cap(tl, '10. The magic: each cid becomes the IRI customer:{cid} on both sides, and Stardog hash-joins the two streams on that IRI, in memory. This is the federation.');
+  tl.to(F + '.s10', {opacity: 1, duration: .3}).from(F + '.s10 rect', {scale: 1.12, transformOrigin: '50% 50%', duration: .5, ease: 'back.out(2)'}, '<').to({}, {duration: 1.6});
+  cap(tl, '11. Only now can the rollup happen: SUM(price x qty) per customer, sort descending, keep ten. It needs both sides, so it could not be pushed to either database.');
+  tl.to(F + '.s11', {opacity: 1, duration: .4}).to({}, {duration: 1.4});
+  cap(tl, '12. Ten rows go back to Studio. Carolyn Inworth, Wisconsin, $502,529.42 is first. Stardog frees the memory; nothing was stored.');
+  tl.to(F + '.s12', {opacity: 1, duration: .2}).from(L('.s12'), {scaleX: 0, transformOrigin: '100% 50%', duration: .7}, '<');
+});
+</script>
+</body>
+</html>

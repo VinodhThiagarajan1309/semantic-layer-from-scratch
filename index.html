@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Semantic Layer, From Scratch</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <aside class="box java"><p>intro</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>…</pre></div><div class="col"><p class="lbl">Java</p><pre>…</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> …</p></aside>   side-by-side Java analogy
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.est{white-space:nowrap;font-variant-numeric:tabular-nums}.est span{font-size:12px;color:var(--muted)}
+.esttotal{font:15px/1.5 -apple-system,sans-serif;background:var(--soft);border-radius:8px;padding:10px 14px}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Contents</span></div>
+
+  <header class="opener" style="margin:72px 0 40px">
+    <div class="num">A hands-on book</div>
+    <h1 style="font-size:2.8rem">The Semantic Layer, From Scratch</h1>
+    <p class="sub">Building a federated knowledge graph over Aurora and Redshift with Stardog, and putting an AI agent on top</p>
+    <div class="rule"></div>
+    <p style="margin:26px 0 4px;font-size:1.15rem"><b>Vinodh Thiagarajan</b></p>
+  </header>
+
+  <p style="text-align:center;color:var(--muted);font:13.5px/1.5 -apple-system,sans-serif;max-width:560px;margin:0 auto 30px"><b>About this book.</b> Fifteen short chapters that take a database engineer from "what is a triple?" to a working AI agent answering questions live across Aurora PostgreSQL and Amazon Redshift through Stardog. Each chapter is a self-contained page with hands-on steps in Stardog Studio. Inspired by the AWS Machine Learning blog post on building a semantic layer with Stardog and Amazon Bedrock AgentCore.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 660 150" width="660" role="img" aria-label="Thumbnail architecture: a question goes to an agent, the agent queries Stardog, and Stardog reads live from Aurora and Redshift, then the answer comes back.">
+      <defs><marker id="ia" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0L9,4.5L0,9z" fill="var(--muted)"/></marker></defs>
+      <rect x="6" y="46" width="130" height="56" rx="10" fill="var(--soft)" stroke="var(--line)"/>
+      <text x="71" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">Question</text>
+      <text x="71" y="88" text-anchor="middle" font-size="10.5" fill="var(--muted)">plain English</text>
+      <rect x="176" y="46" width="130" height="56" rx="10" fill="var(--paper)" stroke="var(--accent2)" stroke-width="1.5"/>
+      <text x="241" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent2)">Agent</text>
+      <text x="241" y="88" text-anchor="middle" font-size="10.5" fill="var(--muted)">OpenAI / OpenRouter</text>
+      <rect x="346" y="36" width="140" height="76" rx="10" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.5"/>
+      <text x="416" y="64" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent)">Stardog</text>
+      <text x="416" y="82" text-anchor="middle" font-size="10.5" fill="var(--muted)">ontology, rules,</text>
+      <text x="416" y="97" text-anchor="middle" font-size="10.5" fill="var(--muted)">virtual graphs</text>
+      <rect x="526" y="14" width="128" height="50" rx="10" fill="var(--paper)" stroke="var(--try)" stroke-width="1.5"/>
+      <text x="590" y="36" text-anchor="middle" font-size="12" font-weight="700" fill="var(--try)">Aurora</text>
+      <text x="590" y="53" text-anchor="middle" font-size="10.5" fill="var(--muted)">customers</text>
+      <rect x="526" y="86" width="128" height="50" rx="10" fill="var(--paper)" stroke="var(--try)" stroke-width="1.5"/>
+      <text x="590" y="108" text-anchor="middle" font-size="12" font-weight="700" fill="var(--try)">Redshift</text>
+      <text x="590" y="125" text-anchor="middle" font-size="10.5" fill="var(--muted)">purchases</text>
+      <g stroke="var(--muted)" stroke-width="1.5" fill="none" marker-end="url(#ia)">
+        <path d="M136 74 L172 74"/><path d="M306 74 L342 74"/><path d="M486 62 L522 44"/><path d="M486 86 L522 106"/>
+      </g>
+      <text x="416" y="140" text-anchor="middle" font-size="10.5" fill="var(--muted)">live SQL, joined on shared names, no ETL</text>
+    </svg>
+    <figcaption>The system you will build, one chapter at a time. The preface shows the full diagram.</figcaption>
+  </figure>
+
+  <h2>Who this is for</h2>
+  <p>You are an engineer who knows databases very well: SQL, joins, schemas, Postgres, Redshift, ETL. You have never worked with RDF, triples, SPARQL, OWL, ontologies, reasoning rules, SHACL, Stardog, Voicebox or MCP, and you would like to understand them properly rather than copy a demo. This book takes you from "what is a triple?" to a working AI agent that answers business questions live across two AWS databases, explaining every new idea in terms of the SQL you already know and saying plainly where the comparison breaks.</p>
+
+  <h2>How to read it</h2>
+  <ul>
+    <li>Keep <b>Stardog Studio</b> open beside the book, connected to the database <code>kit-c360</code>. Keep <b>DBeaver</b> handy to check answers in SQL.</li>
+    <li>Do every green <b>"Try it in Studio"</b> box yourself. Practice steps use scratch graphs and clean up after themselves; chapters marked <b>build step</b> leave something permanent that later chapters rely on, so do them in order.</li>
+    <li>Ask Claude whenever something is unclear. After each <b>build step</b>, press its <b>"Build step N done"</b> button and paste it to Claude with your results, so we can confirm them before the next step builds on them.</li>
+    <li>Code blocks have a <b>Copy</b> button. Pages follow your system's light or dark setting.</li>
+  </ul>
+
+  <h2>Contents</h2>
+  <p class="esttotal"><b>Time to finish:</b> about 10 hours in total: roughly 4.3 hours of reading and 5.8 hours hands-on in Studio and DBeaver. One or two chapters per sitting works well. The build chapters take longer because you create something real.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>Chapter</th><th>Time</th><th></th></tr></thead>
+    <tbody>
+      <tr><td></td><td><a href="preface.html"><b>Preface: What we are building</b></a><br>The goal, the finished architecture, the build track, what's already done, and how to read the book.</td><td class="est"><b>~15 min</b><br><span>15 read</span></td><td></td></tr>
+      <tr><td>1</td><td><a href="ch01.html"><b>One question, five systems</b></a><br>Why data fragments, what a semantic layer is (and isn't), the blog's three layers, and our Aurora/Redshift split.</td><td class="est"><b>~20 min</b><br><span>15 read · 5 hands-on</span></td><td></td></tr>
+      <tr><td>2</td><td><a href="ch02.html"><b>The triple: the atom of knowledge</b></a><br>RDF's one shape, subject → predicate → object; a SQL row becomes triples; following arrows instead of joining.</td><td class="est"><b>~30 min</b><br><span>15 read · 15 hands-on</span></td><td></td></tr>
+      <tr><td>3</td><td><a href="ch03.html"><b>Names, values and files</b></a><br>IRIs, literals and datatypes, prefixes, Turtle files, and named graphs as folders.</td><td class="est"><b>~35 min</b><br><span>15 read · 20 hands-on</span></td><td></td></tr>
+      <tr><td>4</td><td><a href="ch04.html"><b>SPARQL for people who know SQL</b></a><br>Triple patterns, the shared variable as a join, FILTER, OPTIONAL, GROUP BY, and updates, side by side with SQL.</td><td class="est"><b>~40 min</b><br><span>15 read · 25 hands-on</span></td><td></td></tr>
+      <tr><td>5</td><td><a href="ch05.html"><b>The T-Box, part 1: classes (RDFS)</b></a><br>Schema vs data, classes and subclasses, and the open-world assumption. You create the c360 classes.</td><td class="est"><b>~35 min</b><br><span>15 read · 20 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 1</span></td></tr>
+      <tr><td>6</td><td><a href="ch06.html"><b>The T-Box, part 2: properties and the c360 ontology (OWL)</b></a><br>Object vs datatype properties, domain and range, inverses, and loading the full kit ontology.</td><td class="est"><b>~48 min</b><br><span>18 read · 30 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 2</span></td></tr>
+      <tr><td>7</td><td><a href="ch07.html"><b>Where the data lives: materialized vs virtual</b></a><br>Copying triples in vs virtual graphs over SQL, data sources, and the trade-offs.</td><td class="est"><b>~25 min</b><br><span>15 read · 10 hands-on</span></td><td></td></tr>
+      <tr><td>8</td><td><a href="ch08.html"><b>Mappings: teaching Stardog to read your tables</b></a><br>SMS2 mappings and IRI templates; you create the Aurora virtual graphs, safe and PII.</td><td class="est"><b>~45 min</b><br><span>15 read · 30 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 3</span></td></tr>
+      <tr><td>9</td><td><a href="ch09.html"><b>Federation: where the magic happens</b></a><br>The Redshift mapping, the IRI trick, what happens inside a federated query, and the top-spenders answer.</td><td class="est"><b>~48 min</b><br><span>18 read · 30 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 4</span></td></tr>
+      <tr><td>10</td><td><a href="ch10.html"><b>Reasoning: teaching the graph to conclude</b></a><br>Inference at query time, Stardog rules, and the kit's five rules, including "big spender".</td><td class="est"><b>~40 min</b><br><span>15 read · 25 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 5</span></td></tr>
+      <tr><td>11</td><td><a href="ch11.html"><b>SHACL: when you do want rules to reject data</b></a><br>Closed-world validation with shapes: the NOT NULL and CHECK constraints of the graph world.</td><td class="est"><b>~35 min</b><br><span>15 read · 20 hands-on</span></td><td></td></tr>
+      <tr><td>12</td><td><a href="ch12.html"><b>Governance: same question, different answers</b></a><br>Users, roles and named-graph security; HR sees SSNs, Marketing doesn't.</td><td class="est"><b>~37 min</b><br><span>12 read · 25 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 6</span></td></tr>
+      <tr><td>13</td><td><a href="ch13.html"><b>The Stardog toolbox</b></a><br>Cloud portal vs endpoint, Studio, Designer, Explorer, Voicebox, the MCP server, and knowledge kits.</td><td class="est"><b>~25 min</b><br><span>15 read · 10 hands-on</span></td><td></td></tr>
+      <tr><td>14</td><td><a href="ch14.html"><b>The agent: from question to answer</b></a><br>An OpenAI/OpenRouter model with a SPARQL tool, end to end, and how it maps to Bedrock AgentCore.</td><td class="est"><b>~60 min</b><br><span>20 read · 40 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 7</span></td></tr>
+      <tr><td>15</td><td><a href="ch15.html"><b>At scale: huge ontologies and answers you can trust</b></a><br>Schema retrieval for ontologies too big for a prompt, and a source registry plus completeness checks so the agent says "partial" instead of a confident wrong total.</td><td class="est"><b>~73 min</b><br><span>28 read · 45 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 8</span></td></tr>
+      <tr><td></td><td><a href="glossary.html"><b>Glossary</b></a><br>Every term in the book, A to Z, with the chapter that introduces it.</td><td class="est">reference</td><td></td></tr>
+    </tbody>
+  </table></div>
+
+  <aside class="box blog">
+    <p>The book is a long-form companion to the AWS Machine Learning blog post <a href="https://aws.amazon.com/blogs/machine-learning/build-a-semantic-layer-for-agentic-ai-on-aws-with-stardog-and-amazon-bedrock-agentcore/">"Build a semantic layer for agentic AI on AWS with Stardog and Amazon Bedrock AgentCore"</a> (July 2026). It follows the blog's customer-360 example, with one change: the agent uses an OpenAI or OpenRouter model instead of Amazon Bedrock.</p>
+  </aside>
+
+  <nav class="pn">
+    <span></span>
+    <a href="preface.html" style="text-align:right"><small>Start reading →</small>Preface · What we are building</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+</body>
+</html>

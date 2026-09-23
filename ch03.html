@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 3 · Names, values and files</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <aside class="box java"><p>intro</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>…</pre></div><div class="col"><p class="lbl">Java</p><pre>…</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> …</p></aside>   side-by-side Java analogy
+    <dfn>term</dfn>                       first definition of a glossary term
+   REQUIRED at the end of every chapter (before nav)
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 3</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 3</div>
+    <h1>Names, values and files</h1>
+    <p class="sub">How things get globally unique names, why every value carries a type, how triples are written to files, and where they're kept.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">Carolyn Inworth has spent exactly <b>$502,529.42</b> with us; Redshift says so, to the cent. Now write that number into a graph twice. Label it once as a <i>decimal</i> and once as a <i>float</i>, and read both back. The decimal returns <b>$502,529.42</b>. The float returns <b>$502,529.40625</b>. Same number, same database; the only difference is one word saying what <i>type</i> of value it is, and that one word puts one customer's total two cents off. This chapter is about the unglamorous things that decide whether a knowledge graph is right or almost right: how things are named, how values carry their types, how triples are written in files, and which folder they're kept in.</p>
+
+  <h2><span class="sn">3.1</span>Names that mean the same thing everywhere</h2>
+
+  <p>In Aurora, <code>225</code> means Carolyn only because it sits in the <code>cid</code> column of <code>c360.customer</code>. In Redshift, <code>product.id = 225</code> is a product. A key means something only together with its table.</p>
+
+  <p>A graph has no tables to supply that context, and triples from different sources mix freely (Figure 2.2). So every thing needs a name that means the same everywhere and can't collide. That's what IRIs are for:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td><b>IRI</b> (Internationalized Resource Identifier)</td><td>A globally unique name in URL/URN form. It needn't point anywhere; Stardog never fetches it.</td><td>So a name means the same in any system.</td><td><code>urn:stardog:demos:c360:customer:225</code></td></tr>
+      <tr><td><dfn>URN</dfn></td><td>An IRI scheme (<code>urn:</code>) for names that aren't web locations.</td><td>Naming things without pretending they're web pages.</td><td>Our data IRIs.</td></tr>
+      <tr><td><dfn>tag: IRI</dfn></td><td>An IRI scheme (RFC 4151) for minting unique names without registering anything.</td><td>A cheap, collision-free vocabulary namespace.</td><td><code>tag:stardog:api:ecomm:firstName</code></td></tr>
+      <tr><td><dfn>Namespace</dfn> / local name</td><td>The shared beginning of a family of IRIs / the part after it.</td><td>Lets a prefix abbreviate the common part (Section 3.4).</td><td><code>tag:stardog:api:ecomm:</code> + <code>firstName</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <p>One property of IRIs catches everyone: they're compared as <b>exact strings</b>. <code>…customer:225</code>, <code>…Customer:225</code> and <code>…customer:0225</code> are three different things. One stray character and you have a stranger.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 262" width="700" role="img" aria-label="Anatomy of two IRIs. The data IRI urn:stardog:demos:c360:customer:225 split into the scheme urn, the project namespace stardog:demos:c360, the kind customer, and the key 225 taken from the cid column. The vocabulary IRI tag:stardog:api:ecomm:firstName split into the namespace tag:stardog:api:ecomm: and the local name firstName, which a prefix shortens to :firstName.">
+      <text x="20" y="28" font-size="12" font-weight="700" fill="var(--muted)" letter-spacing="1">A DATA IRI: NAMES ONE THING</text>
+      <text x="20" y="66" font-size="16" font-weight="700" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace"><tspan fill="var(--muted)">urn:</tspan><tspan fill="var(--accent2)">stardog:demos:c360:</tspan><tspan fill="var(--pred)">customer:</tspan><tspan fill="var(--subj)">225</tspan></text>
+      <g stroke="var(--line)" stroke-width="2" fill="none">
+        <path d="M21 76 L21 84 L56 84 L56 76"/><path d="M61 76 L61 84 L239 84 L239 76"/><path d="M244 76 L244 84 L326 84 L326 76"/><path d="M331 76 L331 84 L357 84 L357 76"/>
+      </g>
+      <g font-size="11.5">
+        <text x="38" y="102" text-anchor="middle" fill="var(--muted)">scheme</text>
+        <text x="150" y="102" text-anchor="middle" fill="var(--accent2)">project namespace</text>
+        <text x="285" y="102" text-anchor="middle" fill="var(--pred)">kind of thing</text>
+        <text x="344" y="102" text-anchor="middle" fill="var(--subj)">key</text>
+        <text x="344" y="118" text-anchor="middle" fill="var(--muted)">from cid</text>
+      </g>
+      <text x="420" y="60" font-size="12" fill="var(--ink)">Built from the row's key by a template:</text>
+      <text x="420" y="80" font-size="12" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace" fill="var(--accent)">…c360:customer:{cid}</text>
+      <text x="420" y="100" font-size="12" fill="var(--muted)">Same key, same name, every time.</text>
+      <line x1="20" y1="136" x2="680" y2="136" stroke="var(--line)"/>
+      <text x="20" y="164" font-size="12" font-weight="700" fill="var(--muted)" letter-spacing="1">A VOCABULARY IRI: NAMES ONE PROPERTY</text>
+      <text x="20" y="202" font-size="16" font-weight="700" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace"><tspan fill="var(--accent2)">tag:stardog:api:ecomm:</tspan><tspan fill="var(--pred)">firstName</tspan></text>
+      <g stroke="var(--line)" stroke-width="2" fill="none">
+        <path d="M21 212 L21 220 L229 220 L229 212"/><path d="M234 212 L234 220 L318 220 L318 212"/>
+      </g>
+      <text x="125" y="238" text-anchor="middle" font-size="11.5" fill="var(--accent2)">namespace, nicknamed ":" or "ecomm:"</text>
+      <text x="276" y="238" text-anchor="middle" font-size="11.5" fill="var(--pred)">local name</text>
+      <text x="420" y="196" font-size="12" fill="var(--ink)">With a prefix declared, you write</text>
+      <text x="420" y="218" font-size="15" font-weight="700" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace" fill="var(--pred)">:firstName</text>
+      <text x="420" y="238" font-size="12" fill="var(--muted)">and Stardog expands it back.</text>
+    </svg>
+    <figcaption>Figure 3.1: Anatomy of our two kinds of IRI. Data IRIs are built from row keys; vocabulary IRIs share a namespace that a prefix abbreviates.</figcaption>
+  </figure>
+
+  <aside class="box sql">
+    <p>An IRI is like a fully qualified primary key, <code>c360.customer.225</code>, except the qualification is part of the value and unique across every database on earth. Where the analogy breaks: a SQL key means nothing without its table, while an IRI can turn up in a triple from a completely different source and still refer to the same thing.</p>
+  </aside>
+
+  <aside class="box java">
+    <p>An IRI is like a fully qualified name, and a prefix is like an <code>import</code>:</p>
+    <div class="sbs"><div class="col"><p class="lbl">RDF / SPARQL</p><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+
+# full:  &lt;tag:stardog:api:ecomm:Customer&gt;
+# short: :Customer
+
+&lt;urn:stardog:demos:c360:customer:225&gt;</pre></div><div class="col"><p class="lbl">Java</p><pre>import com.acme.ecomm.Customer;
+
+// full:  com.acme.ecomm.Customer
+// short: Customer
+
+// an instance has no global name;
+// new Customer(225) is just a reference</pre></div></div>
+    <p class="breaks"><b>Where the analogy breaks:</b> a Java FQN names classes; an IRI names <i>everything</i>, including individual objects like customer 225, whereas an object reference only means something inside one JVM. And a prefix is pure text substitution; nothing is loaded or checked.</p>
+  </aside>
+
+  <h2><span class="sn">3.2</span>Names built from keys: a preview of the IRI trick</h2>
+
+  <p>Nobody types <code>urn:stardog:demos:c360:customer:225</code> by hand. It's computed from the row's key by an <dfn>IRI template</dfn>: a fixed string with a slot for a column, like <code>urn:stardog:demos:c360:customer:{cid}</code>, so the <i>same</i> row gets the <i>same</i> name every time, from any system (Chapter 8 writes them). Every c360 thing follows one pattern, <code>urn:stardog:demos:c360:&lt;kind&gt;:&lt;key&gt;</code>:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Kind</th><th>Template (after <code>urn:stardog:demos:c360:</code>)</th><th>Key column(s)</th></tr></thead>
+    <tbody>
+      <tr><td>Customer</td><td><code>customer:{cid}</code></td><td>Aurora <code>customer.cid</code>, and Redshift <code>purchase.cid</code></td></tr>
+      <tr><td>Address</td><td><code>location:{id}</code></td><td>Aurora <code>address.id</code> (and <code>customer.location</code>)</td></tr>
+      <tr><td>Credit card · rewards account</td><td><code>cards:{id}</code> · <code>rewards:{id}</code></td><td>Aurora <code>credit_card.id</code> · <code>rewards_account.id</code></td></tr>
+      <tr><td>Order</td><td><code>purchase:us:pos{id}</code></td><td>Redshift <code>purchase.id</code></td></tr>
+      <tr><td>Product · category · unit price</td><td><code>product:{id}</code> · <code>category:{id}</code> · <code>unitprice:{id}</code></td><td>Redshift <code>product.id</code>, <code>category.id</code></td></tr>
+      <tr><td>Vendor · industry</td><td><code>vendor:{vendor_name}</code> · <code>industry:{industry}</code></td><td>Redshift <code>vendor</code> columns</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>The customer template appears in <b>both</b> databases. Here's the actual line from the Aurora mapping (Chapter 8) and the Redshift mapping (Chapter 9):</p>
+
+  <div class="codewrap"><pre># Aurora mapping, c360.customer
+BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?iri)
+
+# Redshift mapping, c360.purchase
+BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust_iri)</pre></div>
+
+  <figure class="fig anim" id="f-3-2">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 700 240" width="700" role="img" aria-label="An Aurora customer row with cid 225 and a Redshift purchase row with cid 225 each pass 225 through the same template, customer:{cid}. Both produce the identical IRI urn:stardog:demos:c360:customer:225, which is where the two databases meet.">
+      <defs><marker id="a32" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0L9,4.5L0,9z" fill="var(--muted)"/></marker></defs>
+      <g class="ra">
+        <rect x="20" y="36" width="250" height="56" rx="8" fill="var(--paper)" stroke="var(--try)" stroke-width="1.5"/>
+        <text x="145" y="56" text-anchor="middle" font-size="12" font-weight="700" fill="var(--try)">Aurora · c360.customer</text>
+        <text x="36" y="78" font-size="12" fill="var(--ink)" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">cid = <tspan font-weight="700" fill="var(--accent)">225</tspan> · Carolyn Inworth</text>
+      </g>
+      <g class="rr">
+        <rect x="20" y="152" width="250" height="56" rx="8" fill="var(--paper)" stroke="var(--try)" stroke-width="1.5"/>
+        <text x="145" y="172" text-anchor="middle" font-size="12" font-weight="700" fill="var(--try)">Redshift · c360.purchase</text>
+        <text x="36" y="194" font-size="12" fill="var(--ink)" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">cid = <tspan font-weight="700" fill="var(--accent)">225</tspan> · 22 × Flip Flops</text>
+      </g>
+      <g class="tp">
+        <rect x="300" y="98" width="150" height="48" rx="8" fill="var(--soft)" stroke="var(--model)" stroke-width="1.5"/>
+        <text x="375" y="117" text-anchor="middle" font-size="11" fill="var(--model)" font-weight="700">same template</text>
+        <text x="375" y="136" text-anchor="middle" font-size="11.5" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace" fill="var(--ink)">…customer:{cid}</text>
+      </g>
+      <path class="aa" d="M270 64 L310 98" stroke="var(--muted)" stroke-width="1.4" fill="none" marker-end="url(#a32)"/>
+      <path class="ar" d="M270 180 L310 146" stroke="var(--muted)" stroke-width="1.4" fill="none" marker-end="url(#a32)"/>
+      <path class="ao" d="M450 122 L488 122" stroke="var(--muted)" stroke-width="1.4" fill="none" marker-end="url(#a32)"/>
+      <g class="iri">
+        <rect x="492" y="94" width="198" height="56" rx="28" fill="var(--soft)" stroke="var(--subj)" stroke-width="2.5"/>
+        <text x="591" y="118" text-anchor="middle" font-size="11" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="700" fill="var(--subj)">urn:stardog:demos:</text>
+        <text x="591" y="136" text-anchor="middle" font-size="11" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="700" fill="var(--subj)">c360:customer:225</text>
+      </g>
+      <g class="note">
+        <text x="591" y="176" text-anchor="middle" font-size="11.5" fill="var(--accent)" font-weight="700">one name = one node</text>
+        <text x="591" y="194" text-anchor="middle" font-size="11" fill="var(--muted)">the two databases meet here</text>
+      </g>
+      <text class="m1" x="79.2" y="78" font-size="12" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="700" fill="var(--accent)" opacity="0">225</text>
+      <text class="m2" x="79.2" y="194" font-size="12" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace" font-weight="700" fill="var(--accent)" opacity="0">225</text>
+    </svg>
+    <p class="stepcap">Both produce the identical IRI. Same name, same node: this is where the two databases meet.</p>
+    <figcaption>Figure 3.2: The IRI trick. Two rows in two engines pass their <code>cid</code> through the same template, so they produce the same name, and the graph joins them for free.</figcaption>
+  </figure>
+
+  <p>Both sides produce exactly the same string for Carolyn, and triples that use the same name are about the same node (Section 2.4). The blog calls this the IRI template; this book calls it the <b>IRI trick</b>, and Chapter 9 shows the machinery. For now, notice that it's nothing more than an agreement about spelling.</p>
+
+  <aside class="box gotcha">
+    <p>The trick only works if the templates agree <b>exactly</b>. <code>customer:{cid}</code> in one mapping and <code>customers:{cid}</code> in another, or <code>225</code> in one database and <code>0225</code> in the other, gives two nodes and a federated query that silently returns nothing. Build IRIs from keys that never change (the vendor IRI uses <code>vendor_name</code>, so a rename would change it), and write each template once.</p>
+  </aside>
+
+  <h2><span class="sn">3.3</span>Values carry their types</h2>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td><dfn>Datatype</dfn></td><td>An IRI saying how to read a literal's characters. RDF borrows XML Schema's, prefixed <code>xsd:</code>.</td><td>So <code>22</code> can be compared and summed as a number, not text.</td><td><code>xsd:integer</code></td></tr>
+      <tr><td><dfn>Typed literal</dfn></td><td>A value written as characters, <code>^^</code>, and its datatype.</td><td>The type travels with every single value.</td><td><code>"2011-01-21"^^xsd:date</code></td></tr>
+      <tr><td><dfn>Language tag</dfn></td><td>A marker on a string saying which language it's in.</td><td>Multilingual labels. Not used in c360.</td><td><code>"Milwaukee"@en</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <p>The types in c360, with SQL cousins and shorthand:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Datatype</th><th>Full form</th><th>Shorthand</th><th>SQL cousin</th><th>c360 use</th></tr></thead>
+    <tbody>
+      <tr><td><code>xsd:string</code></td><td><code>"Carolyn"</code></td><td>quoted, no <code>^^</code></td><td><code>varchar</code></td><td>names, email, state</td></tr>
+      <tr><td><code>xsd:integer</code></td><td><code>"22"^^xsd:integer</code></td><td><code>22</code></td><td><code>integer</code></td><td>order quantity</td></tr>
+      <tr><td><code>xsd:decimal</code></td><td><code>"439.78"^^xsd:decimal</code></td><td><code>439.78</code></td><td><code>numeric</code></td><td>order price</td></tr>
+      <tr><td><code>xsd:float</code> / <code>xsd:double</code></td><td><code>"24.0"^^xsd:float</code></td><td><code>4.3978E2</code> (a double)</td><td><code>real</code> / <code>double precision</code></td><td>product list price, in the kit's model</td></tr>
+      <tr><td><code>xsd:date</code></td><td><code>"2011-01-21"^^xsd:date</code></td><td>none</td><td><code>date</code></td><td>purchase date</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>The type decides how values <b>sort, compare and add up</b>. As strings, <code>"9"</code> sorts after <code>"10"</code>, so "top orders by quantity" with a string quantity is wrong in a way that looks almost right. <code>FILTER(?price &gt; 250)</code>, the heart of the "large order" rule (Chapter 10), only works if <code>?price</code> is a number; <code>YEAR(?date)</code> only works on a real date. And then there's arithmetic.</p>
+
+  <aside class="box gotcha">
+    <p><b>Where the two cents went.</b> The order price was first mapped as <code>xsd:float</code>, a 32-bit binary floating-point number like SQL's <code>real</code>: about seven significant digits, and most decimal fractions can't be stored exactly. 439.78 as a float is really 439.7799987792969. Carolyn's true total, 502,529.42, has eight significant digits; the nearest float is 502,529.40625. Sum hundreds of slightly-off prices and the error surfaces in the cents.</p>
+    <p>The fix was one line in the Redshift mapping, casting to <code>xsd:decimal</code>, which is exact like SQL's <code>numeric</code>: <code>BIND(xsd:decimal(?price) AS ?p)</code>. Stardog then matched SQL to the cent, <b>$502,529.42</b>. Rule for life: <b>money is <code>xsd:decimal</code></b>, never float or double.</p>
+  </aside>
+
+  <aside class="box java">
+    <p>The two cents are the classic Java <code>float</code>-for-money bug:</p>
+    <div class="sbs"><div class="col"><p class="lbl">RDF literals</p><pre>"Carolyn"                  # xsd:string
+22                         # xsd:integer
+439.78                     # xsd:decimal
+"2011-01-21"^^xsd:date     # xsd:date
+"439.78"^^xsd:float        # never for money</pre></div><div class="col"><p class="lbl">Java</p><pre>String     first = "Carolyn";
+BigInteger qty   = BigInteger.valueOf(22);
+BigDecimal price = new BigDecimal("439.78");
+LocalDate  day   = LocalDate.parse("2011-01-21");
+float      bad   = 439.78f;  // 439.7799987…</pre></div></div>
+    <p class="breaks"><b>Where the analogy breaks:</b> in Java the <i>variable</i> declares the type and the compiler enforces it. In RDF each <i>value</i> carries its own type and nothing enforces consistency: one price can be a decimal and the next a string. (<code>xsd:integer</code> is unbounded, hence <code>BigInteger</code>.)</p>
+  </aside>
+
+  <p>When the data lives in Aurora and Redshift, a value's type comes from the <b>mapping</b>. The ontology can say what type a property is <i>meant</i> to have, but that documents rather than converts (Chapter 6). So the working mappings cast explicitly: <code>xsd:decimal</code> for money, <code>xsd:integer</code> for quantities, <code>xsd:date</code> for dates. Without casts, values arrive with whatever type the database driver reports.</p>
+
+  <h2><span class="sn">3.4</span>Prefixes: nicknames for namespaces</h2>
+
+  <p>Typing <code>&lt;tag:stardog:api:ecomm:firstName&gt;</code> every time, as you did in Chapter 2, gets old fast.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td><dfn>Prefix</dfn></td><td>A declared nickname for a namespace.</td><td>Readability; fewer typos in long IRIs.</td><td><code>PREFIX : &lt;tag:stardog:api:ecomm:&gt;</code></td></tr>
+      <tr><td><dfn>Prefixed name</dfn></td><td>Nickname + local name, expanded by plain text concatenation.</td><td>Short to write, identical in meaning to the full IRI.</td><td><code>:firstName</code> = <code>&lt;tag:stardog:api:ecomm:firstName&gt;</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Ours is <code>:</code> (also written <code>ecomm:</code>) = <code>tag:stardog:api:ecomm:</code>. The standard ones: <code>rdf:</code> (core terms, chiefly <code>rdf:type</code>), <code>rdfs:</code> (labels, classes; Chapter 5), <code>owl:</code> (richer ontology terms; Chapter 6), <code>xsd:</code> (datatypes) and, in the kit, <code>so:</code> for <code>https://schema.org/</code>. Full namespaces are in the Turtle file in Section 3.7.</p>
+
+  <p>Because expansion is pure text, one IRI can have several spellings. The kit's rules file declares <code>stardog:</code> as <code>tag:stardog:api:</code> and writes <code>stardog:ecomm:Customer</code>, which expands to exactly <code>:Customer</code>. Stardog only compares the expanded form.</p>
+
+  <aside class="box gotcha">
+    <p>Prefixes are declared <b>per query or per file</b>. Copy a query without its <code>PREFIX</code> line and it may fail with "undefined prefix". A Stardog database can also store default namespaces, so in Studio some prefixes may work when omitted. Don't rely on it: this book always declares its prefixes, so queries also run from the agent (Chapter 14).</p>
+  </aside>
+
+  <h2><span class="sn">3.5</span>Turtle: triples in a file</h2>
+
+  <p>Triples need a file format, the way tables have CSV and SQL dumps. The one people read and write is <dfn>Turtle</dfn> (<code>.ttl</code>), a compact text format, because one triple per line with full IRIs is correct but exhausting. The kit's ontology files are Turtle, and so is what Stardog Designer exports. Watch three facts shrink.</p>
+
+  <p><b>Full form</b>, one triple per line, each ending in a full stop. Valid Turtle already:</p>
+  <div class="codewrap"><pre>&lt;urn:stardog:demos:c360:customer:225&gt; &lt;tag:stardog:api:ecomm:firstName&gt; "Carolyn" .
+&lt;urn:stardog:demos:c360:customer:225&gt; &lt;tag:stardog:api:ecomm:lastName&gt;  "Inworth" .
+&lt;urn:stardog:demos:c360:customer:225&gt; &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt; &lt;tag:stardog:api:ecomm:Customer&gt; .</pre></div>
+
+  <p><b>With prefixes, a semicolon, and <code>a</code>.</b> In a file, prefixes are declared with <code>@prefix</code> and a full stop. A <b>semicolon</b> means "same subject, next predicate". And <code>a</code> is short for <code>rdf:type</code>, the predicate that says what kind of thing something is:</p>
+  <div class="codewrap"><pre>@prefix : &lt;tag:stardog:api:ecomm:&gt; .
+
+&lt;urn:stardog:demos:c360:customer:225&gt; a :Customer ;
+    :firstName "Carolyn" ;
+    :lastName  "Inworth" .</pre></div>
+
+  <p><b>A comma</b> means "same subject and predicate, another object". This line from the kit's <code>schema.ttl</code> is four triples:</p>
+  <div class="codewrap"><pre>:name so:domainIncludes :Category, :Customer, :Product, :Vendor .</pre></div>
+
+  <p>That's enough to read the kit's ontology, which you'll load in Chapter 6. Its opening lines say "Industry is an OWL class labeled 'Industry'", and so on:</p>
+  <div class="codewrap"><pre>:Industry a owl:Class ;
+    rdfs:label "Industry" .
+
+:Customer a owl:Class ;
+    rdfs:label "Customer" .</pre></div>
+
+  <p><code>#</code> starts a comment (like SQL's <code>--</code>), and whitespace doesn't matter. One trap: SPARQL declares prefixes as <code>PREFIX</code>, with no <code>@</code> and no full stop, a frequent typo.</p>
+
+  <h2><span class="sn">3.6</span>Named graphs: folders inside the database</h2>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td><b>Named graph</b></td><td>A set of triples labeled with its own IRI.</td><td>To organize, secure, query and delete groups of triples as a unit.</td><td><code>&lt;urn:book:ch03&gt;</code></td></tr>
+      <tr><td><dfn>Default graph</dfn></td><td>The one unnamed graph every database has.</td><td>Where data goes when no graph is named.</td><td>Empty in our design.</td></tr>
+      <tr><td><dfn>Quad</dfn></td><td>A triple plus the graph it lives in.</td><td>What a store with named graphs actually records.</td><td><span class="s">customer:225</span> <span class="p">firstName</span> <span class="o">"Carolyn"</span> in <code>&lt;urn:book:ch03&gt;</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 300" width="700" role="img" aria-label="The kit-c360 database as a cabinet. Inside: the default graph, empty; the named graph urn:stardog:training-c360:1.0:model for the ontology, chapters 5 and 6; urn:stardog:c360_extended_rules:1.0:model for rules, chapter 10; scratch graphs urn:book:ch02 and urn:book:ch03, dropped after use; and virtual graphs virtual://aurora_c360_safe, virtual://aurora_c360_pii and virtual://redshift_c360, drawn dashed because their triples are read live from SQL.">
+      <rect x="10" y="10" width="680" height="280" rx="14" fill="var(--soft)" stroke="var(--line)" stroke-width="1.5"/>
+      <text x="28" y="36" font-size="13" font-weight="700" fill="var(--ink)">database kit-c360</text>
+      <g font-size="11.5">
+        <rect x="28" y="52" width="200" height="66" rx="8" fill="var(--paper)" stroke="var(--muted)"/>
+        <text x="128" y="76" text-anchor="middle" font-weight="700" fill="var(--ink)">default graph</text>
+        <text x="128" y="94" text-anchor="middle" fill="var(--muted)">no name · where unlabeled</text>
+        <text x="128" y="109" text-anchor="middle" fill="var(--muted)">data lands · stays empty</text>
+        <rect x="248" y="52" width="210" height="66" rx="8" fill="var(--paper)" stroke="var(--model)" stroke-width="1.5"/>
+        <text x="353" y="74" text-anchor="middle" font-weight="700" fill="var(--model)">&lt;urn:stardog:training-</text>
+        <text x="353" y="90" text-anchor="middle" font-weight="700" fill="var(--model)">c360:1.0:model&gt;</text>
+        <text x="353" y="108" text-anchor="middle" fill="var(--muted)">the ontology · ch5–6</text>
+        <rect x="478" y="52" width="196" height="66" rx="8" fill="var(--paper)" stroke="var(--model)" stroke-width="1.5"/>
+        <text x="576" y="74" text-anchor="middle" font-weight="700" fill="var(--model)">&lt;urn:stardog:c360_extended</text>
+        <text x="576" y="90" text-anchor="middle" font-weight="700" fill="var(--model)">_rules:1.0:model&gt;</text>
+        <text x="576" y="108" text-anchor="middle" fill="var(--muted)">the rules · ch10</text>
+        <rect x="28" y="136" width="200" height="56" rx="8" fill="var(--paper)" stroke="var(--try)" stroke-dasharray="3 3"/>
+        <text x="128" y="160" text-anchor="middle" font-weight="700" fill="var(--try)">&lt;urn:book:ch02&gt;, &lt;…ch03&gt;</text>
+        <text x="128" y="178" text-anchor="middle" fill="var(--muted)">scratch · dropped after use</text>
+        <text x="353" y="160" text-anchor="middle" font-size="11" fill="var(--muted)">stored inside Stardog</text>
+        <text x="353" y="176" text-anchor="middle" font-size="11" fill="var(--muted)">(materialized)</text>
+        <line x1="28" y1="210" x2="674" y2="210" stroke="var(--line)" stroke-dasharray="5 4"/>
+        <text x="30" y="228" font-size="11" fill="var(--muted)">not stored: read live from SQL at query time (ch7–9)</text>
+        <rect x="28" y="236" width="200" height="42" rx="8" fill="var(--paper)" stroke="var(--pred)" stroke-dasharray="6 3"/>
+        <text x="128" y="262" text-anchor="middle" font-weight="700" fill="var(--pred)">&lt;virtual://aurora_c360_safe&gt;</text>
+        <rect x="248" y="236" width="210" height="42" rx="8" fill="var(--paper)" stroke="var(--pred)" stroke-dasharray="6 3"/>
+        <text x="353" y="262" text-anchor="middle" font-weight="700" fill="var(--pred)">&lt;virtual://aurora_c360_pii&gt;</text>
+        <rect x="478" y="236" width="196" height="42" rx="8" fill="var(--paper)" stroke="var(--pred)" stroke-dasharray="6 3"/>
+        <text x="576" y="262" text-anchor="middle" font-weight="700" fill="var(--pred)">&lt;virtual://redshift_c360&gt;</text>
+      </g>
+    </svg>
+    <figcaption>Figure 3.3: Named graphs as folders. Solid folders hold triples stored in Stardog; dashed ones are virtual graphs whose triples are produced from SQL on demand. The default graph stays empty in our design.</figcaption>
+  </figure>
+
+  <p>The build uses these folders four ways. <b>Organization:</b> the ontology and the rules each get a graph, so each can be reloaded alone (Chapter 6). <b>Cleanup:</b> <code>DROP GRAPH</code> removes a whole folder. <b>Provenance:</b> each virtual graph has a name like <code>&lt;virtual://redshift_c360&gt;</code>, so a query can say which source it means. <b>Security:</b> access can be granted per graph (Chapter 12).</p>
+
+  <p><b>What does a query see?</b> By default, a Stardog query that doesn't name a graph reads only the <b>default graph</b>. The database option <code>query.all.graphs</code> widens that to all local graphs, and special names such as <code>&lt;tag:stardog:api:context:all&gt;</code> mean "every local and virtual graph" (see <a href="https://docs.stardog.com/query-stardog/">Querying Stardog</a> in the docs). This book's habit is simpler: <b>always say which graph you mean</b>, with <code>GRAPH &lt;…&gt; { … }</code>.</p>
+
+  <aside class="box sql">
+    <p>A named graph is closest to a <b>schema</b> in a database: <code>c360.customer</code> vs <code>public.customer</code>, a namespace you can grant on and drop. The difference: folders don't wall data off. Two named graphs that use the same IRIs connect the moment you query them together, which is how Carolyn's Aurora facts and her Redshift orders, in two virtual graphs, become one picture.</p>
+  </aside>
+
+  <aside class="box java">
+    <p>A database with named graphs behaves like a map from graph name to a set of triples:</p>
+    <div class="sbs"><div class="col"><p class="lbl">SPARQL</p><pre>INSERT DATA { GRAPH &lt;urn:book:ch03&gt; { … } }
+
+SELECT * WHERE {
+  GRAPH &lt;urn:book:ch03&gt; { ?s ?p ?o }
+}
+
+DROP GRAPH &lt;urn:book:ch03&gt;</pre></div><div class="col"><p class="lbl">Java</p><pre>Map&lt;String, Set&lt;Triple&gt;&gt; db = new HashMap&lt;&gt;();
+db.computeIfAbsent("urn:book:ch03",
+    k -&gt; new HashSet&lt;&gt;()).add(t);
+
+db.get("urn:book:ch03");
+
+db.remove("urn:book:ch03");</pre></div></div>
+    <p class="breaks"><b>Where the analogy breaks:</b> triples about the same IRI in two graphs join up automatically, which two Java sets never do. And a virtual graph isn't a stored set at all: it's closer to a lazily computed view (think <code>Supplier&lt;Set&lt;Triple&gt;&gt;</code> backed by SQL).</p>
+  </aside>
+
+  <aside class="box gotcha">
+    <p>Load a file without choosing a named graph and it lands in the <b>default graph</b>. Then <code>GRAPH &lt;urn:book:ch03&gt;</code> finds nothing, and it's easy to believe the load failed. When a count is unexpectedly zero, first check which folder you loaded into and which you're querying.</p>
+  </aside>
+
+  <aside class="box blog">
+    <p>Three parts of the blog rest on this chapter. Its <b>mappings and IRI template</b> section is Section 3.2. Its <b>ontology</b> section (built in Stardog Designer) produces Turtle like Section 3.5, stored in a model named graph. And its <b>named-graph security</b> section (Chapter 12) is why the virtual graphs are separate folders.</p>
+  </aside>
+
+  <h2><span class="sn">3.7</span>Hands-on: a Turtle file in its own folder</h2>
+
+  <p>You'll write a Turtle file about Carolyn, her address and one of her orders, load it into <code>&lt;urn:book:ch03&gt;</code>, inspect the types, and delete it. Load it from a file with Studio's Load Data dialog (Path A) or by pasting an <code>INSERT DATA</code> (Path B). Do one, not both.</p>
+
+  <aside class="box try">
+    <p><b>Step 1. Create the file.</b> Copy this block, then in Terminal run <code>pbpaste &gt; ~/Downloads/c360-ch03.ttl</code>, or paste it into a plain-text editor and save as <code>c360-ch03.ttl</code> (in TextEdit, Format → Make Plain Text first).</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>@prefix :     &lt;tag:stardog:api:ecomm:&gt; .
+@prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix xsd:  &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+
+# Customer 225, from Aurora c360.customer
+&lt;urn:stardog:demos:c360:customer:225&gt;
+    a :Customer ;
+    :firstName  "Carolyn" ;
+    :lastName   "Inworth" ;
+    :email      "cinworth68@g.co" ;
+    :phone      "704-619-5453" ;
+    :address    &lt;urn:stardog:demos:c360:location:b80ea2ce-2361-408a-b443-721594cbbb35&gt; ;
+    rdfs:label  "Carolyn Inworth" .
+
+# Her address, from Aurora c360.address
+&lt;urn:stardog:demos:c360:location:b80ea2ce-2361-408a-b443-721594cbbb35&gt;
+    a :Address ;
+    :streetAddress "78945 Thompson Plaza" ;
+    :city          "Milwaukee" ;
+    :state         "Wisconsin" ;
+    :zipCode       "53285" .
+
+# One of her orders, from Redshift c360.purchase
+&lt;urn:stardog:demos:c360:purchase:us:pos0e7edc35-b578-44a0-a58c-e6388bc83337&gt;
+    a :Order ;
+    :purchasedBy   &lt;urn:stardog:demos:c360:customer:225&gt; ;
+    :itemPurchased &lt;urn:stardog:demos:c360:product:258&gt; ;
+    :quantity      22 ;
+    :purchasePrice 439.78 ;
+    :purchaseDate  "2011-01-21"^^xsd:date ;
+    :purchaseTime  "6:53 AM" .</pre></div>
+    <p>Count the triples first: each <code>;</code> and each final <code>.</code> ends one, so 7 + 5 + 7 = <b>19</b>. <code>22</code> and <code>439.78</code> have no quotes: shorthand for <code>xsd:integer</code> and <code>xsd:decimal</code>.</p>
+
+    <p><b>Step 2, Path A: load the file.</b> In Studio open <b>Databases</b>, select <b>kit-c360</b>, click <b>Load Data</b>, and <b>Browse</b> to <code>c360-ch03.ttl</code>. In the <b>Load RDF</b> dialog, the <b>Load Data To</b> dropdown shows <code>stardog:context:default</code>. <b>Don't leave it there.</b> Click the dropdown, type <code>urn:book:ch03</code> into its <b>"Search or create…"</b> box, and choose the option that creates it. The dropdown should now show <code>urn:book:ch03</code>. <b>File Format</b> should say Turtle. Click <b>Load Data</b>. <i>Loaded into the default graph by mistake?</i> Run <code>MOVE DEFAULT TO &lt;urn:book:ch03&gt;</code> in the Workspace to move everything across.</p>
+
+    <p><b>Step 2, Path B: paste instead.</b> Only if you skipped Path A. In the <b>Workspace</b> (database <b>kit-c360</b>), run the same triples inside <code>INSERT DATA</code>, with prefixes in SPARQL form:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX :     &lt;tag:stardog:api:ecomm:&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX xsd:  &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+INSERT DATA {
+  GRAPH &lt;urn:book:ch03&gt; {
+    &lt;urn:stardog:demos:c360:customer:225&gt;
+        a :Customer ;
+        :firstName  "Carolyn" ;
+        :lastName   "Inworth" ;
+        :email      "cinworth68@g.co" ;
+        :phone      "704-619-5453" ;
+        :address    &lt;urn:stardog:demos:c360:location:b80ea2ce-2361-408a-b443-721594cbbb35&gt; ;
+        rdfs:label  "Carolyn Inworth" .
+
+    &lt;urn:stardog:demos:c360:location:b80ea2ce-2361-408a-b443-721594cbbb35&gt;
+        a :Address ;
+        :streetAddress "78945 Thompson Plaza" ;
+        :city          "Milwaukee" ;
+        :state         "Wisconsin" ;
+        :zipCode       "53285" .
+
+    &lt;urn:stardog:demos:c360:purchase:us:pos0e7edc35-b578-44a0-a58c-e6388bc83337&gt;
+        a :Order ;
+        :purchasedBy   &lt;urn:stardog:demos:c360:customer:225&gt; ;
+        :itemPurchased &lt;urn:stardog:demos:c360:product:258&gt; ;
+        :quantity      22 ;
+        :purchasePrice 439.78 ;
+        :purchaseDate  "2011-01-21"^^xsd:date ;
+        :purchaseTime  "6:53 AM" .
+  }
+}</pre></div>
+
+    <p><b>Step 3. Count the triples in the folder.</b></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT (COUNT(*) AS ?n)
+WHERE { GRAPH &lt;urn:book:ch03&gt; { ?s ?p ?o } }</pre></div>
+    <p><b>Expect <code>n</code> = 19.</b> If you get 0, the data probably went to the default graph; Step 5 will show it.</p>
+
+    <p><b>Step 4. Look at the types.</b> <code>isLiteral</code> keeps only plain values; <code>DATATYPE</code> returns each one's type:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT ?p ?value (DATATYPE(?value) AS ?type)
+WHERE {
+  GRAPH &lt;urn:book:ch03&gt; {
+    &lt;urn:stardog:demos:c360:purchase:us:pos0e7edc35-b578-44a0-a58c-e6388bc83337&gt; ?p ?value .
+    FILTER(isLiteral(?value))
+  }
+}</pre></div>
+    <p><b>Expect 4 rows:</b> quantity 22 (<code>xsd:integer</code>), purchasePrice 439.78 (<code>xsd:decimal</code>), purchaseDate 2011-01-21 (<code>xsd:date</code>) and purchaseTime "6:53 AM" (<code>xsd:string</code>). Studio may show the types as full IRIs, such as <code>http://www.w3.org/2001/XMLSchema#integer</code>. The order's other three predicates point at things, so the filter dropped them.</p>
+
+    <p><b>Step 5. Which folders exist, and what does a query without GRAPH see?</b></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT ?g (COUNT(*) AS ?triples)
+WHERE { GRAPH ?g { ?s ?p ?o } }
+GROUP BY ?g</pre></div>
+    <p><b>Expect one row:</b> <code>urn:book:ch03</code>, 19. Now the default graph:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT (COUNT(*) AS ?n)
+WHERE { ?s ?p ?o }</pre></div>
+    <p><b>Expect 0</b>: your triples are in a named graph, and a query without <code>GRAPH</code> reads only the default graph. If you get 19, the database has <code>query.all.graphs</code> on; fine, just mention it to Claude.</p>
+
+    <p><b>Step 6. Watch the two cents disappear</b>, computing values right in a query:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+SELECT ("9" &lt; "10" AS ?asText)
+       (9 &lt; 10 AS ?asNumbers)
+       (xsd:float("502529.42") AS ?asFloat)
+       (xsd:decimal("502529.42") AS ?asDecimal)
+WHERE {}</pre></div>
+    <p><b>Expect:</b> <code>asText</code> = false, <code>asNumbers</code> = true, <code>asFloat</code> not quite 502529.42 (something like 502529.4, depending on how Studio displays floats), and <code>asDecimal</code> = 502529.42 exactly.</p>
+
+    <p><b>Step 7. Clean up.</b></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>DROP GRAPH &lt;urn:book:ch03&gt;</pre></div>
+    <p><b>Step 8. Verify it's empty.</b></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT (COUNT(*) AS ?n)
+WHERE { GRAPH &lt;urn:book:ch03&gt; { ?s ?p ?o } }</pre></div>
+    <p><b>Expect <code>n</code> = 0.</b> If Step 5 showed your triples in the default graph instead, run <code>CLEAR DEFAULT</code> to empty it (it's otherwise empty in <code>kit-c360</code>), then rerun the Step 5 default-graph count and expect 0.</p>
+  </aside>
+
+  <aside class="box model">
+    <p>You wrote <code>a :Customer</code> and <code>a :Order</code>, and Stardog accepted them even though nothing says what a Customer or an Order is. It would accept <code>a :Unicorn</code> just as happily. A class name is only an IRI until someone describes it in the T-Box: Chapter 4 teaches you to query properly, then Chapter 5 defines the classes.</p>
+  </aside>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>Why can't RDF just use 225 as Carolyn's identifier, the way the customer table does?</summary><p>A graph has no table to supply context, and 225 is also a product id in Redshift. Triples from many sources mix freely, so each name must be globally unique, as <code>urn:stardog:demos:c360:customer:225</code> is.</p></details>
+    <details><summary>What makes Carolyn's Aurora triples and her Redshift orders connect?</summary><p>Both mappings build her IRI from <code>cid</code> with the identical template <code>urn:stardog:demos:c360:customer:{cid}</code>: same name, same node. Differ by one character and the join silently returns nothing.</p></details>
+    <details><summary>What is the datatype of <code>439.78</code> unquoted in Turtle, and of <code>"439.78"</code> in quotes?</summary><p>Unquoted, it's shorthand for <code>xsd:decimal</code>. Quoted with no <code>^^</code>, it's an <code>xsd:string</code> and will sort and compare as text.</p></details>
+    <details><summary>Where did the two cents go, and what brought them back?</summary><p>The price was mapped as <code>xsd:float</code>, a 32-bit binary type that can't hold most decimal fractions exactly; summing many prices accumulated the error. Casting to <code>xsd:decimal</code> in the mapping made the total match SQL: $502,529.42.</p></details>
+    <details><summary>Write in compact Turtle: customer 225 is a Customer, first name "Carolyn", last name "Inworth".</summary><p><code>&lt;urn:stardog:demos:c360:customer:225&gt; a :Customer ; :firstName "Carolyn" ; :lastName "Inworth" .</code> with <code>@prefix : &lt;tag:stardog:api:ecomm:&gt; .</code> declared. <code>a</code> means <code>rdf:type</code>; <code>;</code> repeats the subject.</p></details>
+    <details><summary>You loaded a file and <code>GRAPH &lt;urn:book:ch03&gt;</code> finds nothing. Likely cause?</summary><p>It was loaded without a named graph, so its triples went into the default graph.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li>IRIs are globally unique names, compared as exact strings: <code>urn:stardog:demos:c360:…</code> for data, <code>tag:stardog:api:ecomm:…</code> for vocabulary.</li>
+    <li>Data IRIs are built from keys by templates; Aurora and Redshift both use <code>…customer:{cid}</code>: the IRI trick.</li>
+    <li>Every literal carries its datatype, which decides sorting, comparison and arithmetic. Money is <code>xsd:decimal</code>; float cost us two cents.</li>
+    <li>Prefixes are text abbreviations; <code>:</code> is <code>tag:stardog:api:ecomm:</code>.</li>
+    <li>Turtle is the readable file format: <code>@prefix</code>, <code>;</code> for same subject, <code>,</code> for same predicate, <code>a</code> for <code>rdf:type</code>.</li>
+    <li>A database has one default graph and many named graphs. Always name the graph you mean; unnamed loads land in the default graph.</li>
+  </ul></section>
+
+  <nav class="pn">
+    <a href="ch02.html"><small>← Previous</small>Chapter 2 · The triple: the atom of knowledge</a>
+    <a href="ch04.html" style="text-align:right"><small>Next →</small>Chapter 4 · SPARQL for people who know SQL</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f-3-2', (tl, cap) => {
+  const f = '#f-3-2 ';
+  cap(tl, '1. Aurora\'s customer row: cid 225 is Carolyn\'s primary key.');
+  tl.from(f + '.ra', {opacity: 0, x: -12, duration: .5});
+  cap(tl, '2. Redshift\'s purchase row carries cid 225 too, as a plain column. No foreign key; a different engine.', '+=.6');
+  tl.from(f + '.rr', {opacity: 0, x: -12, duration: .5});
+  cap(tl, '3. Aurora\'s mapping drops 225 into the template customer:{cid}…', '+=.6');
+  tl.from(f + '.tp', {opacity: 0, duration: .4});
+  tl.from(f + '.aa', {opacity: 0, duration: .3});
+  tl.fromTo(f + '.m1', {x: 0, y: 0, opacity: 1}, {x: 313, y: 58, duration: .9, ease: 'power1.inOut'});
+  tl.to(f + '.m1', {opacity: 0, duration: .3});
+  cap(tl, '4. …and Redshift\'s mapping, entirely separately, does the same.', '+=.3');
+  tl.from(f + '.ar', {opacity: 0, duration: .3});
+  tl.fromTo(f + '.m2', {x: 0, y: 0, opacity: 1}, {x: 313, y: -58, duration: .9, ease: 'power1.inOut'});
+  tl.to(f + '.m2', {opacity: 0, duration: .3});
+  cap(tl, 'Both produce the identical IRI. Same name, same node: this is where the two databases meet.', '+=.3');
+  tl.from(f + '.ao', {opacity: 0, duration: .3});
+  tl.from(f + '.iri', {opacity: 0, scale: .85, transformOrigin: '50% 50%', duration: .6});
+  tl.from(f + '.note', {opacity: 0, duration: .5});
+});
+</script>
+</body>
+</html>

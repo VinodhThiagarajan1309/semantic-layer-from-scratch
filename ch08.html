@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 8 · Mappings: teaching Stardog to read your tables</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 8</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 8</div>
+    <h1>Mappings: teaching Stardog to read your tables</h1>
+    <p class="sub">How a few lines of mapping turn Aurora's customer rows into triples, and why we build two graphs instead of one.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">Hand a new hire a printout of the <code>customer</code> table and ask what it means. They'll get most of it right by squinting at the headers: <code>cid</code> is probably an ID, <code>location</code> looks like a UUID pointing somewhere, <code>ssn</code> is scary. Stardog can't squint. After Chapter 7 it can <em>reach</em> Aurora, but it doesn't know which column is the key, which is a pointer, or which ontology property each feeds. A <dfn>mapping</dfn> is the note you'd staple to the printout: "run this SQL; for every row, produce these triples." You'll read one line by line, meet the IRI template that Chapter 9 depends on, and create your first two virtual graphs.</p>
+
+  <h2><span class="sn">8.1</span>What a mapping is</h2>
+  <p>A mapping has an input, a SQL query, and an output, triple patterns with variables in them. For every row, Stardog fills the variables and emits the triples. For a <em>virtual</em> graph nothing is emitted in advance: the mapping is a recipe on file, and Stardog reads it <em>backwards</em>: when a query asks for <code>?c :email ?e</code>, it looks up "<code>:email</code> comes from the <code>email</code> column of the customer SQL" and generates SQL to fetch just that.</p>
+  <p>So <em>who knows that customers live in Aurora?</em> Not the ontology (it only defines what <code>:Customer</code> means) and not Aurora (it's never heard of the ontology). The mapping does: it names ontology terms in its <code>TO</code> block and tables in its <code>FROM SQL</code>, and the virtual graph ties it to a data source. Chapter 9 draws this as three layers.</p>
+  <aside class="box sql">
+    <p>A mapping is like a <code>CREATE VIEW</code> whose output is triples with globally unique names. Postgres inlines a view's definition into your query; Stardog likewise inlines the mapping into the SPARQL query, then generates SQL. Where it stops: one mapping emits several kinds of fact per row (a type, properties, links), queried with SPARQL patterns, not column lists.</p>
+  </aside>
+
+  <h2><span class="sn">8.2</span>Two languages: R2RML and SMS2</h2>
+  <p><dfn>R2RML</dfn> ("RDB to RDF Mapping Language") is the W3C standard for this job, portable between vendors but verbose: it is itself written as Turtle (<code>rr:subjectMap</code>, <code>rr:predicateObjectMap</code>, <code>rr:column</code>…), and a simple table takes twenty lines. Stardog reads it.</p>
+  <p><dfn>SMS2</dfn> (Stardog Mapping Syntax 2) is Stardog's own format: it looks like SPARQL's <code>CONSTRUCT</code> (Chapter 4) and also handles CSV and JSON. The docs recommend it, every mapping in this book uses it, and you select it with the virtual-graph option <code>mappings.syntax=SMS2</code>.</p>
+
+  <h2><span class="sn">8.3</span>The shape of an SMS2 mapping</h2>
+  <p>An SMS2 file has a <strong>prologue</strong> (prefix declarations, exactly like Turtle and SPARQL) followed by one or more mapping blocks separated by semicolons. Each block has four parts:</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 310" role="img" aria-label="Anatomy of an SMS2 mapping block: MAPPING names the block, FROM SQL gives the query whose columns become variables, TO lists the triple patterns to emit, WHERE builds IRIs and typed values with BIND.">
+      <rect x="20" y="14" width="400" height="282" rx="10" style="fill:var(--code);stroke:var(--line)"/>
+      <text x="36" y="42" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--accent)">MAPPING &lt;urn:c360:aurora:customer&gt;</text>
+      <text x="36" y="76" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--accent2)">FROM SQL {</text>
+      <text x="52" y="94" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">SELECT cid, email, location … </text>
+      <text x="52" y="112" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">FROM c360.customer</text>
+      <text x="36" y="130" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--accent2)">}</text>
+      <text x="36" y="162" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--pred)">TO {</text>
+      <text x="52" y="180" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">?iri a :Customer ;</text>
+      <text x="68" y="198" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">:email ?email ; :address ?loc_iri .</text>
+      <text x="36" y="216" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--pred)">}</text>
+      <text x="36" y="246" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--obj)">WHERE {</text>
+      <text x="52" y="264" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">BIND(TEMPLATE("…customer:{cid}") AS ?iri)</text>
+      <text x="36" y="284" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--obj)">}</text>
+      <line x1="424" y1="38" x2="448" y2="38" style="stroke:var(--accent)" stroke-width="2"/>
+      <text x="454" y="34" font-size="12" font-weight="700" style="fill:var(--accent)">MAPPING</text>
+      <text x="454" y="50" font-size="11" style="fill:var(--muted)">a name for this block (any IRI)</text>
+      <line x1="424" y1="100" x2="448" y2="100" style="stroke:var(--accent2)" stroke-width="2"/>
+      <text x="454" y="90" font-size="12" font-weight="700" style="fill:var(--accent2)">FROM SQL</text>
+      <text x="454" y="106" font-size="11" style="fill:var(--muted)">plain SQL in the source's dialect;</text>
+      <text x="454" y="120" font-size="11" style="fill:var(--muted)">each output column becomes ?column</text>
+      <line x1="424" y1="185" x2="448" y2="185" style="stroke:var(--pred)" stroke-width="2"/>
+      <text x="454" y="176" font-size="12" font-weight="700" style="fill:var(--pred)">TO</text>
+      <text x="454" y="192" font-size="11" style="fill:var(--muted)">the triples to produce per row</text>
+      <text x="454" y="206" font-size="11" style="fill:var(--muted)">(like SPARQL CONSTRUCT)</text>
+      <line x1="424" y1="262" x2="448" y2="262" style="stroke:var(--obj)" stroke-width="2"/>
+      <text x="454" y="252" font-size="12" font-weight="700" style="fill:var(--obj)">WHERE</text>
+      <text x="454" y="268" font-size="11" style="fill:var(--muted)">BIND new variables: IRIs via</text>
+      <text x="454" y="282" font-size="11" style="fill:var(--muted)">TEMPLATE, typed values via casts</text>
+    </svg>
+    <figcaption>Figure 8.1: The four parts of an SMS2 mapping block. Several blocks go in one file, separated by semicolons.</figcaption>
+  </figure>
+
+  <ul>
+    <li><strong><code>MAPPING &lt;iri&gt;</code></strong> names the block, for humans and error messages; it doesn't appear in the data.</li>
+    <li><strong><code>FROM SQL { … }</code></strong> is ordinary SQL in the source's dialect. Each output column becomes a variable: <code>email</code> becomes <code>?email</code>.</li>
+    <li><strong><code>TO { … }</code></strong> lists triple patterns using those variables, in the ontology terms you loaded in Chapters 5 and 6.</li>
+    <li><strong><code>WHERE { … }</code></strong> creates new variables with <code>BIND</code>. For SQL sources, only two kinds of function are allowed: <code>TEMPLATE(…)</code> to build IRIs, and datatype casts such as <code>xsd:integer(…)</code>, <code>xsd:decimal(…)</code>, <code>xsd:date(…)</code> (plus <code>strdt</code>). Anything else, such as string concatenation, has to happen in the SQL.</li>
+  </ul>
+
+  <h2><span class="sn">8.4</span>The customer mapping, line by line</h2>
+  <p>Here is the first block of <code>aurora_c360_safe.sms</code>, exactly as it's used in the working build:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+prefix : &lt;tag:stardog:api:ecomm:&gt;
+
+MAPPING &lt;urn:c360:aurora:customer&gt;
+FROM SQL { SELECT cid, first_name, last_name, email, phone, location, full_name FROM c360.customer }
+TO {
+  ?iri a :Customer ;
+    :email ?email ; :firstName ?first_name ; :lastName ?last_name ;
+    :phone ?phone ; :address ?loc_iri ; :name ?full_name ; rdfs:label ?full_name .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:location:{location}") AS ?loc_iri)
+}</pre></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Line</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>prefix rdfs: …</code><br><code>prefix xsd: …</code></td><td>Short names for two standard vocabularies: <code>rdfs:label</code> (the human-readable name every tool displays) and the XML Schema datatypes used in casts (Chapter 3).</td></tr>
+      <tr><td><code>prefix : &lt;tag:stardog:api:ecomm:&gt;</code></td><td>The c360 ontology's namespace: <code>:Customer</code> expands to <code>&lt;tag:stardog:api:ecomm:Customer&gt;</code>, the class you loaded in Chapter 5. Misspell it and the mapping still runs, but emits terms your ontology has never heard of.</td></tr>
+      <tr><td><code>MAPPING &lt;urn:c360:aurora:customer&gt;</code></td><td>Names the block. Any unique IRI will do.</td></tr>
+      <tr><td><code>FROM SQL { SELECT cid, first_name, … FROM c360.customer }</code></td><td>The "table" for this block. It lists columns explicitly and <strong>leaves out <code>ssn</code> and <code>picture</code></strong>: this is the <em>safe</em> graph, so the SSN column is never even read. <code>c360.customer</code> resolves because the data source has <code>sql.schemas=c360</code>.</td></tr>
+      <tr><td><code>TO {</code> … <code>}</code></td><td>The triples to emit per row.</td></tr>
+      <tr><td><code>?iri a :Customer ;</code></td><td>Every row is a customer (<code>a</code> is <code>rdf:type</code>). The subject <code>?iri</code> is built in the <code>WHERE</code> part below.</td></tr>
+      <tr><td><code>:email ?email ; :firstName ?first_name ; :lastName ?last_name ;</code></td><td>Plain columns become datatype properties (Chapter 6) with literal values. Semicolons repeat the subject, as in Turtle.</td></tr>
+      <tr><td><code>:phone ?phone ; :address ?loc_iri ;</code></td><td><code>:phone</code> is another literal. <code>:address</code> is an <strong>object property</strong>: its value is an IRI built from the <code>location</code> column (<code>?loc_iri</code>). This is how a foreign key becomes an arrow to another node.</td></tr>
+      <tr><td><code>:name ?full_name ; rdfs:label ?full_name .</code></td><td>The full name goes into the ontology's <code>:name</code> and the generic <code>rdfs:label</code> that Studio, Explorer and Voicebox display. The original kit built the label with <code>CONCAT</code> in a <code>BIND</code>, which a SQL source doesn't allow, so we use the <code>full_name</code> column.</td></tr>
+      <tr><td><code>WHERE {</code> … <code>}</code></td><td>The derived variables. In the full file a <code>;</code> follows, then the next <code>MAPPING</code>.</td></tr>
+      <tr><td><code>BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?iri)</code></td><td>The <strong>IRI template</strong>. For <code>cid = 225</code> it produces <code>&lt;urn:stardog:demos:c360:customer:225&gt;</code>, Carolyn's global name (Section 8.5).</td></tr>
+      <tr><td><code>BIND(TEMPLATE("urn:stardog:demos:c360:location:{location}") AS ?loc_iri)</code></td><td>Same trick for the foreign key: Carolyn's <code>?loc_iri</code> is <code>&lt;urn:stardog:demos:c360:location:b80ea2ce-2361-408a-b443-721594cbbb35&gt;</code>. The address mapping mints its subjects with the <em>same</em> template from <code>address.id</code>, so the arrow lands on the right node.</td></tr>
+    </tbody>
+  </table></div>
+  <aside class="box java">
+    <p>An SMS2 mapping block does the job of a JPA entity mapping: <code>FROM SQL</code> is <code>@Table</code>, each variable is a <code>@Column</code>, the subject template is the <code>@Id</code>, and an object-property arrow built from a key column is a <code>@ManyToOne</code> with a <code>@JoinColumn</code>.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">SMS2 (trimmed)</p><pre>MAPPING &lt;urn:c360:aurora:customer&gt;
+FROM SQL { SELECT cid, first_name, email, location
+           FROM c360.customer }
+TO {
+  ?iri a :Customer ;
+    :firstName ?first_name ;
+    :email     ?email ;
+    :address   ?loc_iri .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:location:{location}")
+       AS ?loc_iri)
+}</pre></div>
+      <div class="col"><p class="lbl">Java 21 + JPA</p><pre>@Entity
+@Table(name = "customer", schema = "c360")
+public class Customer {
+    @Id
+    @Column(name = "cid")
+    private Integer cid;
+
+    @Column(name = "first_name")
+    private String firstName;
+
+    private String email;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "location")
+    private Address address;
+}</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> JPA turns rows into objects in your JVM; a virtual-graph mapping never instantiates anything, it is read backwards to turn SPARQL into SQL, much as Hibernate turns HQL into SQL (Chapter 9). <code>FROM SQL</code> can be any <code>SELECT</code> (closer to <code>@Subselect</code>), and one block may describe several subjects (the rewards block below), which no entity class can do.</p>
+  </aside>
+
+  <figure class="fig anim" id="f-8-2">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 -30 680 430" role="img" aria-label="One customer row passes through the mapping and becomes triples: cid 225 becomes the subject node customer:225, the email, name and phone columns become literal values on arrows, and the location column becomes an address arrow to the node location:b80ea2ce, which the address mapping describes with city Milwaukee and state Wisconsin.">
+      <g class="row">
+        <text x="20" y="18" font-size="11" style="fill:var(--muted)">c360.customer, one row</text>
+        <rect x="20" y="26" width="80" height="36" style="fill:var(--code);stroke:var(--line)"/>
+        <text x="60" y="49" text-anchor="middle" font-size="11.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">225</text>
+        <rect x="100" y="26" width="150" height="36" style="fill:var(--code);stroke:var(--line)"/>
+        <text x="175" y="49" text-anchor="middle" font-size="11.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">Carolyn Inworth</text>
+        <rect x="250" y="26" width="150" height="36" style="fill:var(--code);stroke:var(--line)"/>
+        <text x="325" y="49" text-anchor="middle" font-size="11.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">cinworth68@g.co</text>
+        <rect x="400" y="26" width="110" height="36" style="fill:var(--code);stroke:var(--line)"/>
+        <text x="455" y="49" text-anchor="middle" font-size="11.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">704-619-5453</text>
+        <rect x="510" y="26" width="150" height="36" style="fill:var(--code);stroke:var(--line)"/>
+        <text x="585" y="49" text-anchor="middle" font-size="11.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">b80ea2ce-2361-…</text>
+        <text x="60" y="76" text-anchor="middle" font-size="10" style="fill:var(--muted)">cid</text>
+        <text x="175" y="76" text-anchor="middle" font-size="10" style="fill:var(--muted)">full_name</text>
+        <text x="325" y="76" text-anchor="middle" font-size="10" style="fill:var(--muted)">email</text>
+        <text x="455" y="76" text-anchor="middle" font-size="10" style="fill:var(--muted)">phone</text>
+        <text x="585" y="76" text-anchor="middle" font-size="10" style="fill:var(--muted)">location</text>
+      </g>
+      <g class="mapbox">
+        <rect x="130" y="90" width="420" height="44" rx="8" style="fill:var(--soft);stroke:var(--accent)" stroke-width="2"/>
+        <text x="340" y="108" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--accent)">mapping &lt;urn:c360:aurora:customer&gt;</text>
+        <text x="340" y="125" text-anchor="middle" font-size="10.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">TEMPLATE(…customer:{cid})  TEMPLATE(…location:{location})</text>
+      </g>
+      <g class="t-subj">
+        <ellipse cx="170" cy="250" rx="120" ry="30" style="fill:var(--soft);stroke:var(--subj)" stroke-width="2"/>
+        <text x="170" y="246" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--subj)">urn:…:customer:225</text>
+        <text x="170" y="262" text-anchor="middle" font-size="10.5" style="fill:var(--muted)">a :Customer</text>
+      </g>
+      <g class="t-email">
+        <rect x="20" y="168" width="130" height="26" rx="4" style="fill:var(--paper);stroke:var(--obj)"/>
+        <text x="85" y="185" text-anchor="middle" font-size="11" style="fill:var(--obj)">"cinworth68@g.co"</text>
+        <line x1="110" y1="223" x2="90" y2="196" style="stroke:var(--pred)" stroke-width="1.5"/>
+        <text x="22" y="212" font-size="10.5" style="fill:var(--pred)">:email</text>
+      </g>
+      <g class="t-name">
+        <rect x="170" y="168" width="130" height="26" rx="4" style="fill:var(--paper);stroke:var(--obj)"/>
+        <text x="235" y="185" text-anchor="middle" font-size="11" style="fill:var(--obj)">"Carolyn Inworth"</text>
+        <line x1="200" y1="221" x2="228" y2="196" style="stroke:var(--pred)" stroke-width="1.5"/>
+        <text x="222" y="212" font-size="10.5" style="fill:var(--pred)">:name</text>
+      </g>
+      <g class="t-phone">
+        <rect x="20" y="314" width="130" height="26" rx="4" style="fill:var(--paper);stroke:var(--obj)"/>
+        <text x="85" y="331" text-anchor="middle" font-size="11" style="fill:var(--obj)">"704-619-5453"</text>
+        <line x1="120" y1="278" x2="90" y2="312" style="stroke:var(--pred)" stroke-width="1.5"/>
+        <text x="22" y="300" font-size="10.5" style="fill:var(--pred)">:phone</text>
+      </g>
+      <g class="t-loc">
+        <ellipse cx="500" cy="250" rx="160" ry="30" style="fill:var(--soft);stroke:var(--subj)" stroke-width="2"/>
+        <text x="500" y="246" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--subj)">urn:…:location:b80ea2ce-…</text>
+        <text x="500" y="262" text-anchor="middle" font-size="10.5" style="fill:var(--muted)">a :Address (from the address mapping)</text>
+        <line x1="290" y1="250" x2="336" y2="250" style="stroke:var(--pred)" stroke-width="2"/>
+        <polygon points="334,244 334,256 344,250" style="fill:var(--pred)"/>
+        <text x="296" y="240" font-size="10.5" style="fill:var(--pred)">:address</text>
+      </g>
+      <g class="t-addr">
+        <rect x="390" y="314" width="100" height="26" rx="4" style="fill:var(--paper);stroke:var(--obj)"/>
+        <text x="440" y="331" text-anchor="middle" font-size="11" style="fill:var(--obj)">"Milwaukee"</text>
+        <line x1="470" y1="279" x2="445" y2="312" style="stroke:var(--pred)" stroke-width="1.5"/>
+        <text x="410" y="302" font-size="10.5" style="fill:var(--pred)">:city</text>
+        <rect x="520" y="314" width="110" height="26" rx="4" style="fill:var(--paper);stroke:var(--obj)"/>
+        <text x="575" y="331" text-anchor="middle" font-size="11" style="fill:var(--obj)">"Wisconsin"</text>
+        <line x1="530" y1="279" x2="570" y2="312" style="stroke:var(--pred)" stroke-width="1.5"/>
+        <text x="560" y="300" font-size="10.5" style="fill:var(--pred)">:state</text>
+      </g>
+      <text x="340" y="378" text-anchor="middle" font-size="11" style="fill:var(--muted)">Both nodes meet because the customer and address mappings use the same location template: the FK became an arrow.</text>
+      <g class="tk tk-cid" opacity="0"><rect x="38" y="34" width="44" height="20" rx="10" style="fill:var(--subj)"/><text x="60" y="48" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--paper)">225</text></g>
+      <g class="tk tk-name" opacity="0"><rect x="135" y="34" width="80" height="20" rx="10" style="fill:var(--obj)"/><text x="175" y="48" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--paper)">full_name</text></g>
+      <g class="tk tk-email" opacity="0"><rect x="295" y="34" width="60" height="20" rx="10" style="fill:var(--obj)"/><text x="325" y="48" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--paper)">email</text></g>
+      <g class="tk tk-phone" opacity="0"><rect x="425" y="34" width="60" height="20" rx="10" style="fill:var(--obj)"/><text x="455" y="48" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--paper)">phone</text></g>
+      <g class="tk tk-loc" opacity="0"><rect x="550" y="34" width="70" height="20" rx="10" style="fill:var(--subj)"/><text x="585" y="48" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--paper)">location</text></g>
+    </svg>
+    <p class="stepcap">Press ▶ Play to watch one row pass through the mapping and come out as triples.</p>
+    <figcaption>Figure 8.2: Carolyn's row through the customer (and address) mappings, some properties omitted. Subjects in <span class="s">red</span>, properties in <span class="p">green</span>, literal values in <span class="o">purple</span>.</figcaption>
+  </figure>
+
+  <h2><span class="sn">8.5</span>IRI templates: the most important line in the file</h2>
+  <p>An IRI is RDF's globally unique name for a thing (Chapter 3). An <dfn>IRI template</dfn> is a string with <code>{column}</code> placeholders that turns a row's local key into such a name: <code>cid = 225</code> means nothing outside the customer table, but <code>urn:stardog:demos:c360:customer:225</code> means one customer anywhere. Three things matter in practice:</p>
+  <ol>
+    <li><strong>A template is a primary key and a foreign key at once.</strong> Used as a subject (<code>?iri</code> in the customer mapping) it identifies the row. Used as an object (<code>?loc_iri</code>) it points at another row. <code>location:{location}</code> in the customer mapping and <code>location:{id}</code> in the address mapping produce the same string for the same UUID: the matching names <em>are</em> the join.</li>
+    <li><strong>Stardog can read a template backwards.</strong> Asked about <code>&lt;urn:stardog:demos:c360:customer:225&gt;</code>, it strips the fixed prefix and pushes <code>WHERE cid = 225</code> into the SQL, rather than building 500 IRIs and comparing strings.</li>
+    <li><strong>Values are percent-encoded.</strong> By default (<code>percent.encode=true</code>) illegal IRI characters such as spaces are escaped: "Acme Sports" becomes <code>…vendor:Acme%20Sports</code> (Chapter 9's vendor mapping).</li>
+  </ol>
+  <p>These are the exact IRIs the original c360 kit used, so anything written against the kit keeps working. And the Redshift mapping will mint the <em>same</em> customer IRI from <code>purchase.cid</code>; Chapter 9 is built on that fact.</p>
+  <aside class="box java">
+    <p>The IRI template is a computed natural key: a value object that turns the key into a name and parses the name back into the key, which is what lets Stardog push <code>WHERE cid = 225</code> into the SQL.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">SMS2</p><pre># subject: a global name built from the key
+BIND(TEMPLATE(
+  "urn:stardog:demos:c360:customer:{cid}")
+  AS ?iri)
+
+# object: the same kind of template
+# in another row is a foreign key
+BIND(TEMPLATE(
+  "urn:stardog:demos:c360:location:{location}")
+  AS ?loc_iri)</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>record CustomerId(int cid) {
+    static final String PREFIX =
+        "urn:stardog:demos:c360:customer:";
+
+    String iri() { return PREFIX + cid; }       // key -&gt; name
+
+    static CustomerId parse(String iri) {       // name -&gt; key
+        return new CustomerId(
+            Integer.parseInt(iri.substring(PREFIX.length())));
+    }
+}
+
+boolean same = new CustomerId(225)
+    .equals(new CustomerId(225));     // true</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> a JPA <code>@Id</code> is unique only inside one table of one database; matching customers across two databases is code you write. An IRI is a global name: when the Aurora and Redshift mappings mint the same string, the two sides are the same node.</p>
+  </aside>
+  <aside class="box model">
+    <p>A template is a <strong>naming convention enforced by code</strong>. Two teams who never talk can make their data join if they agree on one string pattern for "a customer": the blog's "cooperation without coordination".</p>
+  </aside>
+
+  <h2><span class="sn">8.6</span>The other Aurora mappings: address, card, rewards</h2>
+  <p>The rest of <code>aurora_c360_safe.sms</code> uses the same four parts; each block adds one idea.</p>
+  <h3>Address: computed values belong in the SQL</h3>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>MAPPING &lt;urn:c360:aurora:address&gt;
+FROM SQL {
+  SELECT id, city, state, zip,
+         street_number || ' ' || street_name || ' ' || street_suffix AS street_addr,
+         street_number || ' ' || street_name || ', ' || state       AS label
+  FROM c360.address
+}
+TO {
+  ?iri a :Address ; :city ?city ; :streetAddress ?street_addr ; :zipCode ?zip ; :state ?state ; rdfs:label ?label .
+}
+WHERE { BIND(TEMPLATE("urn:stardog:demos:c360:location:{id}") AS ?iri) }</pre></div>
+  <p>The ontology has one <code>:streetAddress</code>; the table has three street columns. Since <code>BIND</code> can't concatenate for SQL sources, the <code>SELECT</code> does it and the alias becomes a variable. The subject template, <code>location:{id}</code>, is where the customer's <code>:address</code> arrow lands.</p>
+  <h3>Card: expose the fact, not the number</h3>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>MAPPING &lt;urn:c360:aurora:card&gt;
+FROM SQL { SELECT id, cid, card_type, card_type || ' ' || right(card_num, 4) AS label FROM c360.credit_card }
+TO { ?cc a :CreditCard ; rdfs:label ?label ; :cardType ?card_type ; :cardHolder ?cust_iri . }
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:cards:{id}") AS ?cc)
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust_iri)
+}</pre></div>
+  <p>The safe graph knows a card's type and holder, and labels it with the type and last four digits (the usual "safe to display" convention). The full <code>card_num</code> is never exposed as a column, so no triple can carry it.</p>
+  <h3>Rewards: an arrow in the other direction, and a cast</h3>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>MAPPING &lt;urn:c360:aurora:rewards&gt;
+FROM SQL { SELECT id, cid, account_id, create_date FROM c360.rewards_account }
+TO {
+  ?r a :RewardsAccount ; :openDate ?open_dt ; :accountId ?account_id ; rdfs:label ?account_id .
+  ?cust :hasRewards ?r .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust)
+  BIND(TEMPLATE("urn:stardog:demos:c360:rewards:{id}") AS ?r)
+  BIND(xsd:date(?create_date) AS ?open_dt)
+}</pre></div>
+  <p>Two new ideas. The <code>TO</code> block has <strong>two subjects</strong>: the row describes the account <em>and</em> emits <code>?cust :hasRewards ?r</code> with the customer as subject. The foreign key lives on the rewards table, but the ontology's arrow points from customer to account (Chapter 6), and a mapping may emit arrows in whichever direction the ontology wants. And <code>xsd:date(?create_date)</code> is a <dfn>cast</dfn>: it types the literal as <code>xsd:date</code>, so date comparisons and <code>YEAR()</code> work (Chapter 3).</p>
+
+  <aside class="box gotcha">
+    <p><strong>Only templates and casts in <code>BIND</code>.</strong> Port a CSV mapping (like the original kit's <code>customers.sms</code>, with <code>BIND(CONCAT(?first_name, " ", ?last_name) AS ?label)</code>) to a SQL source and those functions fail: CSV sources support all SPARQL functions, SQL sources only templates and casts. Move the expression into the <code>SELECT</code> as an aliased column.</p>
+  </aside>
+
+  <h2><span class="sn">8.7</span>Safe and PII: why two graphs</h2>
+  <p>Aurora holds two things marketing should never see: SSNs and full card numbers. Rather than hide them later, the build splits Aurora into two virtual graphs over the same data source:</p>
+  <ul>
+    <li><code>aurora_c360_safe</code>: customers, addresses, cards (type and last four only), rewards accounts. Everything you've seen so far.</li>
+    <li><code>aurora_c360_pii</code>: <em>only</em> the two sensitive properties, <code>:ssn</code> and <code>:cardNumber</code>.</li>
+  </ul>
+  <p>Here is the whole PII mapping. It's short on purpose:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre># Virtual graph: aurora_c360_pii — ONLY the sensitive properties. Grant to hr_user, not marketing_user.
+prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+prefix : &lt;tag:stardog:api:ecomm:&gt;
+
+MAPPING &lt;urn:c360:aurora:pii:ssn&gt;
+FROM SQL { SELECT cid, ssn FROM c360.customer }
+TO { ?iri :ssn ?ssn . }
+WHERE { BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?iri) }
+;
+MAPPING &lt;urn:c360:aurora:pii:card&gt;
+FROM SQL { SELECT id, card_num FROM c360.credit_card }
+TO { ?cc :cardNumber ?card_num . }
+WHERE { BIND(TEMPLATE("urn:stardog:demos:c360:cards:{id}") AS ?cc) }</pre></div>
+  <p>The PII graph declares no types, names or addresses; it only adds facts to IRIs the safe graph describes, using the <em>same templates</em>. Read both graphs and you see one customer with an SSN; read only the safe graph and the SSN doesn't exist.</p>
+  <aside class="box java">
+    <p>The safe/PII split is two projections of one table, like two DTOs over <code>c360.customer</code>, where only some callers get the second.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">SMS2 + SPARQL</p><pre># aurora_c360_safe
+TO { ?iri a :Customer ; :name ?full_name . }
+
+# aurora_c360_pii: same template, same IRI
+TO { ?iri :ssn ?ssn . }
+
+# a user allowed to read both
+# sees one customer, no merge step:
+?c :name ?n ; :ssn ?s .</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>// two projections of the same table
+record CustomerSafe(int cid, String fullName) {}
+record CustomerPii(int cid, String ssn) {}
+
+List&lt;CustomerSafe&gt; safe = jdbc.query(
+    "SELECT cid, full_name FROM c360.customer",
+    (rs, i) -&gt; new CustomerSafe(rs.getInt(1), rs.getString(2)));
+
+// HR has to merge them by hand, on cid:
+Map&lt;Integer, String&gt; ssnByCid = pii.stream()
+    .collect(Collectors.toMap(CustomerPii::cid,
+                              CustomerPii::ssn));</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> a DTO protects by convention (any code with the repository can still select <code>ssn</code>), and merging is code you write. Stardog enforces the split with per-graph permissions (Chapter 12), and for someone allowed both, the graphs combine automatically on shared IRIs.</p>
+  </aside>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Safe and PII graphs over one data source: both virtual graphs use the aurora_c360 data source. The safe graph gives customer 1 a name and address; the PII graph gives the same IRI an SSN. Marketing can read only the safe graph; HR can read both.">
+      <rect x="250" y="190" width="180" height="46" rx="8" style="fill:var(--soft);stroke:var(--accent2)" stroke-width="1.5"/>
+      <text x="340" y="210" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--ink)">data source aurora_c360</text>
+      <text x="340" y="226" text-anchor="middle" font-size="10.5" style="fill:var(--muted)">one connection, one password</text>
+      <rect x="20" y="20" width="290" height="140" rx="10" style="fill:var(--paper);stroke:var(--pred)" stroke-width="2"/>
+      <text x="165" y="42" text-anchor="middle" font-size="12.5" font-weight="700" style="fill:var(--pred)">virtual://aurora_c360_safe</text>
+      <text x="40" y="70" font-size="11" style="fill:var(--subj)">customer:1</text>
+      <text x="115" y="70" font-size="11" style="fill:var(--pred)">:name</text>
+      <text x="160" y="70" font-size="11" style="fill:var(--obj)">"Jolynn Bithany"</text>
+      <text x="40" y="92" font-size="11" style="fill:var(--subj)">customer:1</text>
+      <text x="115" y="92" font-size="11" style="fill:var(--pred)">:address</text>
+      <text x="175" y="92" font-size="11" style="fill:var(--subj)">location:…</text>
+      <text x="40" y="114" font-size="11" style="fill:var(--subj)">cards:…</text>
+      <text x="115" y="114" font-size="11" style="fill:var(--pred)">rdfs:label</text>
+      <text x="185" y="114" font-size="11" style="fill:var(--obj)">"type + last 4"</text>
+      <text x="40" y="142" font-size="10.5" style="fill:var(--muted)">no :ssn, no :cardNumber anywhere</text>
+      <rect x="370" y="20" width="290" height="140" rx="10" style="fill:var(--paper);stroke:var(--gotcha)" stroke-width="2"/>
+      <text x="515" y="42" text-anchor="middle" font-size="12.5" font-weight="700" style="fill:var(--gotcha)">virtual://aurora_c360_pii</text>
+      <text x="390" y="70" font-size="11" style="fill:var(--subj)">customer:1</text>
+      <text x="465" y="70" font-size="11" style="fill:var(--pred)">:ssn</text>
+      <text x="500" y="70" font-size="11" style="fill:var(--obj)">"609-38-5573"</text>
+      <text x="390" y="92" font-size="11" style="fill:var(--subj)">cards:…</text>
+      <text x="465" y="92" font-size="11" style="fill:var(--pred)">:cardNumber</text>
+      <text x="545" y="92" font-size="11" style="fill:var(--obj)">"…"</text>
+      <text x="390" y="142" font-size="10.5" style="fill:var(--muted)">same IRIs, only the sensitive facts</text>
+      <path d="M165 162 L300 190 M515 162 L380 190" style="stroke:var(--muted)" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+      <text x="20" y="200" font-size="11" style="fill:var(--muted)">marketing_user: safe only</text>
+      <text x="660" y="200" text-anchor="end" font-size="11" style="fill:var(--muted)">hr_user: safe + PII</text>
+    </svg>
+    <figcaption>Figure 8.3: One data source, two virtual graphs. The shared templates let the PII graph add facts to the same customer nodes. (Customer 1 and the SSN are fake data.)</figcaption>
+  </figure>
+
+  <p>The payoff comes in Chapter 12: named-graph security grants read access per graph, so <code>marketing_user</code> gets <code>virtual://aurora_c360_safe</code> only and <code>hr_user</code> gets both. (Chapter 12 also compares a property-level alternative, sensitive properties with masking.)</p>
+  <aside class="box sql">
+    <p>It's the same move as putting PII in a separate schema with its own grants rather than column-level grants on a wide table, except the source database doesn't change at all: the split exists only in the mappings.</p>
+  </aside>
+
+  <aside class="box blog">
+    <p>The blog's mapping section makes this chapter's two points: mappings connect ontology terms to tables without moving data, and an <strong>IRI template</strong> such as <code>urn:stardog:demos:c360:customer:{cid}</code> gives each customer one identity across sources. Our safe/PII split sets up its <code>hr_user</code> vs <code>marketing_user</code> security demo.</p>
+  </aside>
+
+  <h2><span class="sn">8.8</span>Try it: create the two Aurora virtual graphs (real build step 3)</h2>
+  <p>The graphs you create here stay. Aurora is probably paused, so wake it with any DBeaver query first (or expect the first Stardog query to take 15 to 20 seconds).</p>
+
+  <aside class="box try">
+    <p><strong>Step 1. Open the virtual graph form.</strong> In Studio's left rail, open <strong>Virtual Graphs</strong> and use the add button (a <strong>+</strong> or "Add Virtual Graph"; the label varies between Studio versions). The form asks for roughly these fields. Fill them in as follows:</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Name</td><td><code>aurora_c360_safe</code></td></tr>
+        <tr><td>Database</td><td><code>kit-c360</code> (not "all databases" / <code>*</code>)</td></tr>
+        <tr><td>Data source</td><td>the existing <code>aurora_c360</code> (do not create a new one)</td></tr>
+        <tr><td>Mapping syntax / format</td><td><code>SMS2</code></td></tr>
+        <tr><td>Mappings</td><td>paste the full text below</td></tr>
+        <tr><td>Other properties / options</td><td>leave empty</td></tr>
+      </tbody>
+    </table></div>
+    <p>If the form looks different (for example, it wants you to upload a file, or has no syntax selector), stop and tell Claude what you see.</p>
+    <p><strong>Step 2. Paste this mapping (the complete, verified file) and save.</strong></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre># Virtual graph: aurora_c360_safe — Aurora operational data WITHOUT PII (no ssn, no card numbers).
+# IRIs are identical to the materialized kit, so federation joins on customer:{cid}.
+prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+prefix : &lt;tag:stardog:api:ecomm:&gt;
+
+MAPPING &lt;urn:c360:aurora:customer&gt;
+FROM SQL { SELECT cid, first_name, last_name, email, phone, location, full_name FROM c360.customer }
+TO {
+  ?iri a :Customer ;
+    :email ?email ; :firstName ?first_name ; :lastName ?last_name ;
+    :phone ?phone ; :address ?loc_iri ; :name ?full_name ; rdfs:label ?full_name .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:location:{location}") AS ?loc_iri)
+}
+;
+MAPPING &lt;urn:c360:aurora:address&gt;
+FROM SQL {
+  SELECT id, city, state, zip,
+         street_number || ' ' || street_name || ' ' || street_suffix AS street_addr,
+         street_number || ' ' || street_name || ', ' || state       AS label
+  FROM c360.address
+}
+TO {
+  ?iri a :Address ; :city ?city ; :streetAddress ?street_addr ; :zipCode ?zip ; :state ?state ; rdfs:label ?label .
+}
+WHERE { BIND(TEMPLATE("urn:stardog:demos:c360:location:{id}") AS ?iri) }
+;
+MAPPING &lt;urn:c360:aurora:card&gt;
+FROM SQL { SELECT id, cid, card_type, card_type || ' ' || right(card_num, 4) AS label FROM c360.credit_card }
+TO { ?cc a :CreditCard ; rdfs:label ?label ; :cardType ?card_type ; :cardHolder ?cust_iri . }
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:cards:{id}") AS ?cc)
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust_iri)
+}
+;
+MAPPING &lt;urn:c360:aurora:rewards&gt;
+FROM SQL { SELECT id, cid, account_id, create_date FROM c360.rewards_account }
+TO {
+  ?r a :RewardsAccount ; :openDate ?open_dt ; :accountId ?account_id ; rdfs:label ?account_id .
+  ?cust :hasRewards ?r .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust)
+  BIND(TEMPLATE("urn:stardog:demos:c360:rewards:{id}") AS ?r)
+  BIND(xsd:date(?create_date) AS ?open_dt)
+}</pre></div>
+    <p>Stardog validates the mapping against the data source's metadata on save, so bad table or column names show up now. Saving can take a while if Aurora is waking up. The graph should then appear in the Virtual Graphs list.</p>
+    <p><strong>Step 3. Query it.</strong> Open the Workspace, select database <code>kit-c360</code>, and run:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?state (COUNT(?c) AS ?customers)
+WHERE {
+  GRAPH &lt;virtual://aurora_c360_safe&gt; {
+    ?c a :Customer ;
+       :address ?a .
+    ?a :state ?state .
+  }
+}
+GROUP BY ?state
+ORDER BY DESC(?customers)
+LIMIT 5</pre></div>
+    <p>Expected:</p>
+    <div class="tbl"><table>
+      <thead><tr><th>state</th><th>customers</th></tr></thead>
+      <tbody>
+        <tr><td>Texas</td><td>53</td></tr><tr><td>California</td><td>51</td></tr><tr><td>Florida</td><td>48</td></tr><tr><td>District of Columbia</td><td>28</td></tr><tr><td>New York</td><td>25</td></tr>
+      </tbody>
+    </table></div>
+    <p>Notice you wrote no join condition: <code>?c :address ?a . ?a :state ?state</code> follows the arrow the two templates created, and Stardog ran it as a SQL join inside Aurora.</p>
+    <p><strong>Step 4. Look at Carolyn.</strong></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT ?p ?o
+WHERE {
+  GRAPH &lt;virtual://aurora_c360_safe&gt; {
+    &lt;urn:stardog:demos:c360:customer:225&gt; ?p ?o
+  }
+}</pre></div>
+    <p>Expected: one row per property, including <code>rdf:type</code> <code>:Customer</code>, <code>:email</code> "cinworth68@g.co", <code>:firstName</code>, <code>:lastName</code>, <code>:phone</code> "704-619-5453", <code>:name</code> and <code>rdfs:label</code> "Carolyn Inworth", <code>:address</code> pointing to the <code>location:b80ea2ce-…</code> IRI, and a <code>:hasRewards</code> arrow (emitted by the rewards mapping). No <code>:ssn</code>.</p>
+    <p><strong>Step 5. Create the PII graph.</strong> Repeat step 1 with name <code>aurora_c360_pii</code>, database <code>kit-c360</code>, the same data source <code>aurora_c360</code>, syntax <code>SMS2</code>, and this mapping:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre># Virtual graph: aurora_c360_pii — ONLY the sensitive properties. Grant to hr_user, not marketing_user.
+prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+prefix : &lt;tag:stardog:api:ecomm:&gt;
+
+MAPPING &lt;urn:c360:aurora:pii:ssn&gt;
+FROM SQL { SELECT cid, ssn FROM c360.customer }
+TO { ?iri :ssn ?ssn . }
+WHERE { BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?iri) }
+;
+MAPPING &lt;urn:c360:aurora:pii:card&gt;
+FROM SQL { SELECT id, card_num FROM c360.credit_card }
+TO { ?cc :cardNumber ?card_num . }
+WHERE { BIND(TEMPLATE("urn:stardog:demos:c360:cards:{id}") AS ?cc) }</pre></div>
+    <p><strong>Step 6. Read across both graphs.</strong></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?name ?ssn
+WHERE {
+  GRAPH &lt;virtual://aurora_c360_safe&gt; { &lt;urn:stardog:demos:c360:customer:1&gt; :name ?name }
+  GRAPH &lt;virtual://aurora_c360_pii&gt;  { &lt;urn:stardog:demos:c360:customer:1&gt; :ssn  ?ssn }
+}</pre></div>
+    <p>Expected: one row, <code>Jolynn Bithany</code>, <code>609-38-5573</code> (fake data). Two graphs, one customer, glued by the shared IRI.</p>
+    <p><strong>Step 7. Cross-check in DBeaver (Aurora).</strong></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT a.state, COUNT(*) AS customers
+FROM c360.customer c
+JOIN c360.address  a ON a.id = c.location
+GROUP BY a.state
+ORDER BY customers DESC
+LIMIT 5;</pre></div>
+    <p>Expected: the same five rows as step 3. Same data, same answer, two languages.</p>
+    <p><strong>Cleanup:</strong> none. Both virtual graphs are part of the build and stay.</p>
+  </aside>
+
+  <p>For reference, the build used the API equivalent, one <code>POST /admin/virtual_graphs</code> per graph. Use Studio for the book.</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre># Reference only. Run from the folder holding the .sms files; needs jq.
+jq -n --rawfile m aurora_c360_safe.sms \
+  '{name:"aurora_c360_safe", data_source:"aurora_c360", db:"kit-c360",
+    mappings:$m, options:{"mappings.syntax":"SMS2"}}' \
+| curl -s -u "stardog_admin:$STARDOG_PASSWORD" -H 'Content-Type: application/json' \
+       -d @- https://&lt;your-endpoint&gt;.stardog.cloud:5820/admin/virtual_graphs</pre></div>
+
+  <aside class="box gotcha">
+    <p><strong>"Object 'customer' not found within 'c360'."</strong> If you see this on save, the data source's <code>sql.schemas</code> option is missing (Section 7.5). Yours already have it; it's here because it's the first wall everyone hits with a non-<code>public</code> schema.</p>
+    <p><strong>Slow first query or a timeout.</strong> Aurora was paused. Run the query again after 20 seconds.</p>
+  </aside>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>What are the four parts of an SMS2 mapping block, and what does each do?</summary><p><code>MAPPING</code> names the block; <code>FROM SQL</code> is the source query whose columns become variables; <code>TO</code> lists the triple patterns emitted per row; <code>WHERE</code> binds new variables with <code>TEMPLATE</code> (IRIs) and casts (typed literals). Blocks are separated by semicolons after a prefix prologue.</p></details>
+    <details><summary>How does the <code>location</code> column in <code>customer</code> become an arrow to an address node?</summary><p>The customer mapping builds <code>?loc_iri</code> with <code>TEMPLATE("urn:stardog:demos:c360:location:{location}")</code> and emits <code>?iri :address ?loc_iri</code>. The address mapping mints its subjects with the same template from <code>address.id</code>. Same value, same template, same IRI: no join condition needed.</p></details>
+    <details><summary>Why does the address mapping concatenate the street in SQL instead of using <code>CONCAT</code> in a <code>BIND</code>?</summary><p>For SQL sources, <code>BIND</code> in SMS2 supports only <code>TEMPLATE</code>, datatype casts and <code>strdt</code>. Any other computation has to be done in the <code>SELECT</code> and exposed as an aliased column.</p></details>
+    <details><summary>The rewards table has the <code>cid</code> column, yet the mapping emits <code>?cust :hasRewards ?r</code> with the customer as subject. Why is that allowed?</summary><p>A mapping can emit triples with any subject it can build. Direction follows the ontology (<code>:hasRewards</code> goes from customer to account), not which table holds the foreign key.</p></details>
+    <details><summary>Why split Aurora into a safe graph and a PII graph instead of one graph?</summary><p>Stardog's named-graph security grants read access per graph, so a sensitivity split at mapping time makes "marketing can't see SSNs" a single grant (Chapter 12). Because both graphs use the same IRI templates, anyone allowed to read both sees one customer node with all properties.</p></details>
+    <details><summary>What would happen if the PII mapping used <code>urn:c360:person:{cid}</code> instead of <code>urn:stardog:demos:c360:customer:{cid}</code>?</summary><p>It would produce SSN triples on different subjects, so step 6's query would return nothing: no IRI would have both a <code>:name</code> and an <code>:ssn</code>. Matching templates are the whole mechanism.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li>A mapping says "run this SQL, emit these triples per row". For a virtual graph it's used backwards at query time to generate SQL.</li>
+    <li>SMS2 (Stardog's syntax, CONSTRUCT-like) is what we use; R2RML is the verbose W3C standard. Virtual graph option: <code>mappings.syntax=SMS2</code>.</li>
+    <li>Block anatomy: <code>MAPPING</code> name, <code>FROM SQL</code>, <code>TO</code> triples, <code>WHERE</code> binds. For SQL sources, <code>BIND</code> allows only templates and casts; compute everything else in the SQL.</li>
+    <li><strong>IRI templates</strong> turn local keys into global names, act as primary and foreign keys at once, and let Stardog push key lookups into SQL.</li>
+    <li>We split Aurora into <code>aurora_c360_safe</code> and <code>aurora_c360_pii</code> over one data source; shared templates rejoin them for anyone allowed to read both.</li>
+    <li>You created both graphs and verified customers by state: Texas 53, California 51, Florida 48.</li>
+  </ul></section>
+
+  <section class="done">
+    <p><button class="sendback" type="button" data-chapter="8" data-step="3">Copy "Build step 3 done" message</button> <span class="sbmsg"></span></p>
+    <p class="donehint">Paste it to Claude with what you saw (the counts or results), so we can confirm it matches before the next build step relies on it.</p>
+  </section>
+
+  <nav class="pn">
+    <a href="ch07.html"><small>← Previous</small>Chapter 7 · Where the data lives: materialized vs virtual</a>
+    <a href="ch09.html" style="text-align:right"><small>Next →</small>Chapter 9 · Federation: where the magic happens</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f-8-2', (tl, cap) => {
+  const F = '#f-8-2 ';
+  const fly = (tk, d1, d2) => {
+    tl.set(F + tk, {opacity: 1, x: 0, y: 0})
+      .to(F + tk, {x: d1[0], y: d1[1], duration: .6, ease: 'power1.inOut'})
+      .to(F + tk, {x: d2[0], y: d2[1], duration: .6, ease: 'power1.inOut'})
+      .set(F + tk, {opacity: 0});
+  };
+  tl.set([F + '.mapbox', F + '.t-subj', F + '.t-email', F + '.t-name', F + '.t-phone', F + '.t-loc', F + '.t-addr'], {opacity: 0});
+  cap(tl, 'A row comes back from Aurora: five column values, no meaning attached yet.');
+  tl.from(F + '.row', {opacity: 0, y: -10, duration: .5}).to({}, {duration: .8});
+  cap(tl, 'The customer mapping is the only thing that knows what these columns mean.');
+  tl.to(F + '.mapbox', {opacity: 1, duration: .4}).to({}, {duration: .8});
+  cap(tl, 'cid 225 goes through TEMPLATE("…customer:{cid}") and becomes the subject: the IRI urn:stardog:demos:c360:customer:225, a :Customer.');
+  fly('.tk-cid', [280, 66], [110, 206]);
+  tl.to(F + '.t-subj', {opacity: 1, duration: .4}).to({}, {duration: .8});
+  cap(tl, 'Plain columns become literal values on datatype properties: :name, :email, :phone.');
+  fly('.tk-name', [165, 66], [60, 137]);
+  tl.to(F + '.t-name', {opacity: 1, duration: .3});
+  fly('.tk-email', [15, 66], [-240, 137]);
+  tl.to(F + '.t-email', {opacity: 1, duration: .3});
+  fly('.tk-phone', [-115, 66], [-370, 283]);
+  tl.to(F + '.t-phone', {opacity: 1, duration: .3}).to({}, {duration: .6});
+  cap(tl, 'The location UUID goes through TEMPLATE("…location:{location}"): not a string but an arrow, :address, to another node.');
+  fly('.tk-loc', [-245, 66], [-85, 206]);
+  tl.to(F + '.t-loc', {opacity: 1, duration: .4}).to({}, {duration: .8});
+  cap(tl, 'The address mapping mints the same location IRI from address.id, so its city and state hang off the node the arrow points at. The foreign key became an arrow.');
+  tl.to(F + '.t-addr', {opacity: 1, duration: .5});
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 5 · The T-Box, part 1: classes (RDFS)</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 5</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 5</div>
+    <h1>The T-Box, part 1: classes (RDFS)</h1>
+    <p class="sub">Where a graph keeps its schema, what a "class" really is, and why that schema describes your data instead of policing it. Then you write the first real piece of the c360 model.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">Imagine inserting one triple saying that Carolyn Inworth's shoe size is 38. There is no shoe-size property anywhere, no class that mentions shoes, no schema at all. Stardog says "OK" and stores it. Try that in Aurora (<code>UPDATE customer SET shoe_size = 38 WHERE cid = 225</code>) and Postgres stops you cold: column does not exist. Your instinct says the graph is being sloppy. By the end of this chapter you will see that it is deliberate, that this choice is what makes a semantic layer over many databases possible, and where to go when you do want the database-style "no". Along the way you will write the first ten classes of the real c360 model: build step 1.</p>
+
+  <h2><span class="sn">5.1</span>Schema and data: the T-Box and the A-Box</h2>
+  <p>So far every triple you have written was about one particular thing: Carolyn's email, the price of one order. Knowledge-graph people split triples into two families:</p>
+  <ul>
+    <li>The <dfn>T-Box</dfn> ("terminology box") holds triples about <em>kinds</em> of things: "there is a class called Customer", "an Order is purchased by a Customer". It is the schema.</li>
+    <li>The <dfn>A-Box</dfn> ("assertion box") holds triples about <em>particular</em> things: "customer 225 is a Customer", "customer 225's first name is Carolyn". It is the data.</li>
+  </ul>
+  <p>Why new names for "schema" and "rows"? Because in a graph they are made of the same stuff: both are triples, both sit in named graphs, both are queried with the same SPARQL. The names say which role a triple plays. The whole T-Box for a domain is an <dfn>ontology</dfn> (Stardog's tools also call it a <dfn>model</dfn>): one shared, machine-readable vocabulary for an organization. The single triple <code>:Customer a owl:Class</code> is already a very small ontology. Chapters 2 to 4 were A-Box work; this chapter and the next are T-Box work.</p>
+  <aside class="box java">
+    <p>The T-Box and A-Box split is the split between a class and its objects: the declaration you compile versus the instances on the heap.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">RDF / OWL (Turtle)</p><pre># T-Box: the schema
+:Customer a owl:Class ;
+    rdfs:label "Customer" .
+
+# A-Box: the data
+customer:225 a :Customer ;
+    :firstName "Carolyn" .</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>// "T-Box": the type, fixed at compile time
+public class Customer {
+    String firstName;
+}
+
+// "A-Box": an instance, on the heap at runtime
+var c225 = new Customer();
+c225.firstName = "Carolyn";</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> in Java you need reflection to look at a class as data. In RDF both are plain triples in the same store: <code>SELECT ?c WHERE { ?c a owl:Class }</code> is an ordinary query, and the schema is loaded, versioned and permissioned like any other graph.</p>
+  </aside>
+
+  <figure class="fig anim" id="f51">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 680 300" role="img" aria-label="Two layers: the T-Box with classes Order, Customer and Address, and the A-Box with one order, Carolyn and her address, joined by rdf:type arrows">
+      <defs>
+        <marker id="a51" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--pred)"/></marker>
+        <marker id="a51t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent2)"/></marker>
+      </defs>
+      <g class="tbox">
+        <rect x="8" y="10" width="664" height="110" rx="10" style="fill:var(--soft);stroke:var(--line)"/>
+        <text x="22" y="32" style="fill:var(--model);font-size:12px;font-weight:700;letter-spacing:.08em">T-BOX: THE MODEL (KINDS OF THINGS)</text>
+        <text x="660" y="32" text-anchor="end" style="fill:var(--muted);font-size:11px">&lt;urn:stardog:training-c360:1.0:model&gt;</text>
+        <rect x="40" y="56" width="130" height="40" rx="6" style="fill:var(--paper);stroke:var(--model);stroke-width:2"/>
+        <text x="105" y="81" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:600">:Order</text>
+        <rect x="275" y="56" width="130" height="40" rx="6" style="fill:var(--paper);stroke:var(--model);stroke-width:2"/>
+        <text x="340" y="81" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:600">:Customer</text>
+        <rect x="510" y="56" width="130" height="40" rx="6" style="fill:var(--paper);stroke:var(--model);stroke-width:2"/>
+        <text x="575" y="81" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:600">:Address</text>
+      </g>
+      <g class="abox">
+        <rect x="8" y="170" width="664" height="120" rx="10" style="fill:none;stroke:var(--line)"/>
+        <text x="22" y="192" style="fill:var(--try);font-size:12px;font-weight:700;letter-spacing:.08em">A-BOX: THE DATA (PARTICULAR THINGS)</text>
+        <rect x="30" y="220" width="150" height="40" rx="20" style="fill:var(--paper);stroke:var(--subj);stroke-width:2"/>
+        <text x="105" y="245" text-anchor="middle" style="fill:var(--ink);font-size:12.5px">order pos363f9784…</text>
+        <rect x="265" y="220" width="150" height="40" rx="20" style="fill:var(--paper);stroke:var(--subj);stroke-width:2"/>
+        <text x="340" y="245" text-anchor="middle" style="fill:var(--ink);font-size:12.5px">customer:225</text>
+        <rect x="500" y="220" width="150" height="40" rx="20" style="fill:var(--paper);stroke:var(--subj);stroke-width:2"/>
+        <text x="575" y="245" text-anchor="middle" style="fill:var(--ink);font-size:12.5px">location:b80ea2ce…</text>
+        <line x1="180" y1="240" x2="263" y2="240" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a51)"/>
+        <text x="222" y="232" text-anchor="middle" style="fill:var(--pred);font-size:11px">:purchasedBy</text>
+        <line x1="415" y1="240" x2="498" y2="240" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a51)"/>
+        <text x="457" y="232" text-anchor="middle" style="fill:var(--pred);font-size:11px">:address</text>
+      </g>
+      <g class="ty">
+        <line x1="105" y1="218" x2="105" y2="98" style="stroke:var(--accent2);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#a51t)"/>
+        <text x="112" y="150" style="fill:var(--accent2);font-size:12px;font-weight:700">a</text>
+      </g>
+      <g class="ty">
+        <line x1="340" y1="218" x2="340" y2="98" style="stroke:var(--accent2);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#a51t)"/>
+        <text x="347" y="150" style="fill:var(--accent2);font-size:12px;font-weight:700">a (rdf:type)</text>
+      </g>
+      <g class="ty">
+        <line x1="575" y1="218" x2="575" y2="98" style="stroke:var(--accent2);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#a51t)"/>
+        <text x="582" y="150" style="fill:var(--accent2);font-size:12px;font-weight:700">a</text>
+      </g>
+    </svg>
+    <p class="stepcap">Press Play to build the two layers and connect them.</p>
+    <figcaption>Figure 5.1: The T-Box names kinds of things; the A-Box describes particular things; <code>rdf:type</code> triples (dashed) connect each thing to its kind. All three are just triples.</figcaption>
+  </figure>
+
+  <aside class="box sql">
+    <p>The T-Box is your DDL plus the data dictionary (<code>CREATE TABLE</code>, <code>COMMENT ON TABLE</code>); the A-Box is the rows. Two differences matter. DDL lives in a special catalog (<code>information_schema</code>); the T-Box is ordinary triples, queried with <a href="ch04.html">Chapter 4</a>'s SPARQL. And DDL is a <em>gatekeeper</em> that rejects rows that do not fit. The T-Box is not: that is Section 5.5, the heart of this chapter.</p>
+  </aside>
+
+  <h2><span class="sn">5.2</span>RDFS and OWL: why there are two schema languages</h2>
+    <p><dfn>RDFS</dfn> (RDF Schema, prefix <code>rdfs:</code> = <code>http://www.w3.org/2000/01/rdf-schema#</code>) came first (W3C, 1999 to 2004), because plain RDF can state facts but cannot say what kinds of things exist. It adds the bare minimum: classes, subclasses, labels, comments, and a way to say which classes a property connects. Tiny example: <code>:Customer a rdfs:Class ; rdfs:label "Customer" .</code></p>
+  <p><dfn>OWL</dfn> (the Web Ontology Language, prefix <code>owl:</code> = <code>http://www.w3.org/2002/07/owl#</code>; the letters are deliberately shuffled) followed in 2004, with OWL 2 in 2009. OWL is built <em>on top of</em> RDFS: everything RDFS says still holds, and OWL adds more precise statements. Three of them, each with our data (the property <code>:placedOrder</code> and the CRM name are <i>hypothetical</i>; the rest is real):</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>OWL can say…</th><th>Written as</th><th>What you gain</th></tr></thead>
+    <tbody>
+      <tr><td><b>1. This link is the reverse of that one.</b><br>"Order → purchased by → Customer" and "Customer → placed order → Order" are the same fact read from opposite ends.</td>
+          <td><code>:placedOrder owl:inverseOf :purchasedBy .</code></td>
+          <td>You store only <code>order:363f9784… :purchasedBy customer:225</code>. Ask for <code>customer:225 :placedOrder ?o</code> and Stardog answers <code>order:363f9784…</code> (Carolyn's Wax Paper order), although that triple was never stored.</td></tr>
+      <tr><td><b>2. These two kinds can never overlap.</b><br>Nothing can be both a Customer and a Product.</td>
+          <td><code>:Customer owl:disjointWith :Product .</code></td>
+          <td>If a bad mapping ever produces <code>customer:225 a :Product</code>, a reasoner reports it as a contradiction (Carolyn can't be a product) instead of silently mixing customers into product lists.</td></tr>
+      <tr><td><b>3. These two names are the same thing.</b><br>A CRM calls Carolyn <code>crm:person:C-0225</code>; we call her <code>customer:225</code>.</td>
+          <td><code>customer:225 owl:sameAs crm:person:C-0225 .</code></td>
+          <td>Facts about either name now count for both: the CRM's loyalty tier and our purchases come back together when you ask about Carolyn.</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>RDFS alone can say none of these three things. It knows that a Customer is a kind of thing and that one kind sits under another, but not reverses, exclusions or aliases. The tiny example <code>:Customer a owl:Class .</code> declares a class exactly as <code>rdfs:Class</code> does; for this book the two are interchangeable. The difference is in the extra statements OWL makes possible, like the three above.</p>
+  <p>RDFS is the foundation, OWL the extension, and real ontologies mix both. The c360 kit declares classes with <code>owl:Class</code> (every OWL class is also an RDFS class) and labels them with <code>rdfs:label</code>. <a href="ch06.html">Chapter 6</a> ends with a one-page comparison once you have seen properties too.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td>Ontology / model</td><td>The full T-Box for a domain</td><td>One shared vocabulary for people, tools and AI</td><td>the c360 <code>schema.ttl</code></td></tr>
+      <tr><td>T-Box</td><td>Triples about kinds of things</td><td>To describe what the data means</td><td><code>:Order a owl:Class</code></td></tr>
+      <tr><td>A-Box</td><td>Triples about particular things</td><td>The facts themselves</td><td><code>customer:225 :firstName "Carolyn"</code></td></tr>
+      <tr><td>Class</td><td>A named set of things</td><td>To group things of the same kind</td><td><code>:Customer</code></td></tr>
+      <tr><td><code>rdf:type</code> (<code>a</code>)</td><td>"x is a member of class C"</td><td>To connect data to the model</td><td><code>customer:225 a :Customer</code></td></tr>
+      <tr><td><code>rdfs:subClassOf</code></td><td>"Every C1 is also a C2"</td><td>Hierarchies and inherited membership</td><td><code>:Big_Spender rdfs:subClassOf :Customer</code></td></tr>
+      <tr><td><code>rdfs:label</code>, <code>rdfs:comment</code></td><td>Human-readable name and description</td><td>IRIs are for machines; people and AI need words</td><td><code>:CreditCard rdfs:label "Credit Card"</code></td></tr>
+      <tr><td>Open-world assumption</td><td>Absent means "unknown", not "false"</td><td>Data from many sources is never complete</td><td>no phone triple ≠ no phone</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="sn">5.3</span>Classes and rdf:type</h2>
+  <p>A <dfn>class</dfn> is a named set of things: all customers, all orders. You declare one by giving its IRI a type of its own, and connect a thing to it with <dfn>rdf:type</dfn>, the predicate you have been typing as <code>a</code> since <a href="ch03.html">Chapter 3</a>:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>:Customer a owl:Class .                            # T-Box: Customer is a class
+&lt;urn:stardog:demos:c360:customer:225&gt; a :Customer .   # A-Box: 225 is a Customer</pre></div>
+
+  <p>The class declaration has no column list. A class does not own properties the way a table owns columns; properties are declared separately and point at classes (<a href="ch06.html">Chapter 6</a>). And because <code>rdf:type</code> is just a triple, you get freedoms a table never gives you:</p>
+  <ul>
+    <li><strong>A thing can have several types.</strong> In <a href="ch10.html">Chapter 10</a> Carolyn will be both <code>:Customer</code> and <code>:Big_Spender</code>, and nobody will have stored the second one.</li>
+    <li><strong>A thing can have no type at all.</strong> Chapter 4's Queries 3 and 5 would have worked even without the <code>a :Customer</code> triples, because they only followed properties.</li>
+    <li><strong>Types can be added later</strong>, by anyone, in any graph, with no <code>ALTER TABLE</code>.</li>
+  </ul>
+  <p>By convention class names are capitalized (<code>:CreditCard</code>) and properties are not (<code>:firstName</code>). Nothing enforces it; everyone relies on it.</p>
+  <aside class="box java">
+    <p><code>rdf:type</code> reads like <code>instanceof</code>, and <code>ASK { customer:225 a :Customer }</code> behaves like it. Everything around that check differs.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">RDF / SPARQL</p><pre>customer:225 a :Customer .
+# later, from another graph or a rule:
+customer:225 a :Big_Spender .
+
+# no type at all is also fine:
+product:7 :name "Tent" .
+
+ASK { customer:225 a :Customer }   # true</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>Object c = new Customer();
+boolean yes = c instanceof Customer;   // true
+
+// One object, one class, chosen at `new`
+// and fixed for its whole life.
+// There is no:
+//   c.addType(BigSpender.class);
+// and no object without a class.</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> a node can have many types, gain them later, or have none. Nothing is "created as" a Customer; the type is one more fact about it, and an <code>owl:Class</code> has no fields. The nearest Java idea is a <code>Set&lt;String&gt; tags</code> that anyone may add to, not a class.</p>
+  </aside>
+  <p>Now the labels. <dfn>rdfs:label</dfn> gives a human-readable name (<code>"Credit Card"</code>) and <dfn>rdfs:comment</dfn> a description (the kit's <code>"A concept representing a Customer's rewards account."</code>). They look like decoration but are load-bearing: when Voicebox (<a href="ch13.html">Chapter 13</a>) or your agent (<a href="ch14.html">Chapter 14</a>) turns "Who are our top spenders in Wisconsin?" into SPARQL, labels and comments are much of what the language model reads to decide which class "spenders" means.</p>
+
+  <h2><span class="sn">5.4</span>Subclasses: inheritance you get for free</h2>
+  <p><dfn>rdfs:subClassOf</dfn> says every member of one class is also a member of another. This triple is real; it is in the kit's extended model, which you load in <a href="ch10.html">Chapter 10</a>:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>:Big_Spender rdfs:subClassOf :Customer .</pre></div>
+
+  <p>The pay-off is <dfn>inference</dfn>: a new fact concluded from existing ones. Given <code>customer:225 a :Big_Spender</code>, a reasoner concludes <code>customer:225 a :Customer</code>, although nobody stored it.</p>
+  <aside class="box java">
+    <p><code>rdfs:subClassOf</code> is closer to <code>implements</code> than <code>extends</code>: a class may have several parents, and only membership is inherited.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">RDFS</p><pre>:Big_Spender rdfs:subClassOf :Customer .
+# a second parent is legal
+# (hypothetical, not in the kit):
+:Big_Spender rdfs:subClassOf :VipContact .
+
+customer:225 a :Big_Spender .
+# with reasoning ON, 225 now matches:
+SELECT ?c WHERE { ?c a :Customer }</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>interface Customer {}
+interface VipContact {}
+interface BigSpender extends Customer, VipContact {}
+
+record Carolyn() implements BigSpender {}
+
+Object c = new Carolyn();
+boolean yes = c instanceof Customer;  // true</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> Java checks the hierarchy at compile time and always; RDF applies it only when a reasoner is on (with the toggle off, the query above does not return 225). And anyone can add a <code>subClassOf</code> triple later to classes they did not write, like retroactively making <code>String</code> implement your interface.</p>
+  </aside>
+
+  <figure class="fig anim" id="f52">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 680 250" role="img" aria-label="Big_Spender and Large_Order are subclasses of Customer and Order; a stored type Big_Spender for customer 225 lets the reasoner infer type Customer">
+      <defs>
+        <marker id="a52" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--model)"/></marker>
+        <marker id="a52b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent2)"/></marker>
+        <marker id="a52c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/></marker>
+      </defs>
+      <g class="hier">
+        <rect x="60" y="20" width="150" height="40" rx="6" style="fill:var(--paper);stroke:var(--model);stroke-width:2"/>
+        <text x="135" y="45" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:600">:Customer</text>
+        <rect x="60" y="120" width="150" height="40" rx="6" style="fill:var(--paper);stroke:var(--model);stroke-width:2"/>
+        <text x="135" y="145" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:600">:Big_Spender</text>
+        <line x1="135" y1="118" x2="135" y2="62" style="stroke:var(--model);stroke-width:2" marker-end="url(#a52)"/>
+        <text x="143" y="94" style="fill:var(--model);font-size:11.5px">rdfs:subClassOf</text>
+        <rect x="440" y="20" width="150" height="40" rx="6" style="fill:var(--paper);stroke:var(--model);stroke-width:2"/>
+        <text x="515" y="45" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:600">:Order</text>
+        <rect x="440" y="120" width="150" height="40" rx="6" style="fill:var(--paper);stroke:var(--model);stroke-width:2"/>
+        <text x="515" y="145" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:600">:Large_Order</text>
+        <line x1="515" y1="118" x2="515" y2="62" style="stroke:var(--model);stroke-width:2" marker-end="url(#a52)"/>
+        <text x="523" y="94" style="fill:var(--model);font-size:11.5px">rdfs:subClassOf</text>
+      </g>
+      <g class="stored">
+        <rect x="250" y="200" width="150" height="40" rx="20" style="fill:var(--paper);stroke:var(--subj);stroke-width:2"/>
+        <text x="325" y="225" text-anchor="middle" style="fill:var(--ink);font-size:13px">customer:225</text>
+        <line x1="280" y1="200" x2="200" y2="162" style="stroke:var(--accent2);stroke-width:2" marker-end="url(#a52b)"/>
+        <text x="252" y="176" text-anchor="end" style="fill:var(--accent2);font-size:11.5px">a (stored or rule-derived)</text>
+      </g>
+      <g class="inf">
+        <path d="M 260 205 C 20 200, 10 60, 58 42" style="fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:6 4" marker-end="url(#a52c)"/>
+        <text x="16" y="120" style="fill:var(--accent);font-size:11.5px;font-weight:700">a</text>
+        <text x="16" y="135" style="fill:var(--accent);font-size:11.5px">(inferred)</text>
+      </g>
+      <g class="note">
+        <text x="610" y="200" text-anchor="end" style="fill:var(--muted);font-size:11.5px">The inferred triple is never stored.</text>
+        <text x="610" y="216" text-anchor="end" style="fill:var(--muted);font-size:11.5px">It exists only in the answers of a</text>
+        <text x="610" y="232" text-anchor="end" style="fill:var(--muted);font-size:11.5px">query run with reasoning on.</text>
+      </g>
+    </svg>
+    <p class="stepcap">Press Play to watch membership flow up the hierarchy.</p>
+    <figcaption>Figure 5.2: Two real subclass axioms from the kit's extended model (Chapter 10). Given type <code>:Big_Spender</code>, the reasoner adds type <code>:Customer</code> at query time.</figcaption>
+  </figure>
+
+  <aside class="box sql">
+    <p>The closest SQL picture is a view: <code>CREATE VIEW all_customers AS SELECT cid FROM customer UNION SELECT cid FROM big_spender</code>. A reasoner gives you that union for every class, in every query, from one <code>subClassOf</code> triple. Unlike PostgreSQL's <code>INHERITS</code>, it is only about membership, not storage or columns.</p>
+  </aside>
+
+  <p>Two practical notes. Inference happens only with Studio's reasoning toggle on, and it stays <strong>off</strong> until Chapter 10. And inferences are computed at query time, never written to disk, so they cannot go stale; that is why reasoning works over virtual graphs, whose data is not in Stardog at all. The base c360 schema has no <code>subClassOf</code> triples: ten flat classes cover the core questions, and the hierarchy arrives with the business rules in Chapter 10.</p>
+
+  <h2><span class="sn">5.5</span>The open-world assumption</h2>
+  <p>Back to Carolyn's shoe size: this is the mindset shift of the book. Every database you have used runs on the <dfn>closed-world assumption</dfn>: the database is the complete record of its slice of the world. No order row for customer 225 in March means she ordered nothing in March; a bad foreign key is rejected at the door. Absence means "false", and the schema is a contract data must pass to get in.</p>
+  <p>RDFS and OWL run on the <dfn>open-world assumption</dfn>: a graph is what is known, never a claim to know everything. A missing triple means "not stated here", not "false". No phone triple for Marlane does not mean she has no phone (she has one; you left it out in Chapter 4).</p>
+  <aside class="box java">
+    <p>There is no good Java analogy, and it is worth seeing why. Java is thoroughly closed-world: the compiler rejects an unknown field, and <code>Optional.empty()</code> is a deliberate "no value" set by whoever built the object.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">RDF / SPARQL</p><pre># accepted: no class mentions :shoeSize
+customer:225 :shoeSize 9 .
+
+# Marlane has no :phone triple.
+# That means "not stated here",
+# not "Marlane has no phone".
+ASK { customer:88 :phone ?p }   # false</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>record Customer(String name, Optional&lt;String&gt; phone) {}
+
+var c = new Customer("Marlane", Optional.empty());
+// c.shoeSize = 9;   // compile error: no such field
+
+// empty() was put there on purpose by the object's
+// author, and it means "none":
+boolean noPhone = c.phone().isEmpty();   // true</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> Java has no value for "unknown"; even a nullable <code>Boolean</code> lives inside an object one owner built completely. A graph has no owner and no complete object: facts about customer 88 arrive from Aurora, Redshift and rules. And RDFS/OWL are not a compiler; the nearest gatekeeper is SHACL (Chapter 11), run as an explicit step, like calling Bean Validation yourself.</p>
+  </aside>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 270" role="img" aria-label="Closed world versus open world: a missing phone number answered as no versus unknown, and a nonconforming insert rejected versus accepted">
+      <rect x="10" y="10" width="320" height="250" rx="10" style="fill:var(--soft);stroke:var(--line)"/>
+      <rect x="350" y="10" width="320" height="250" rx="10" style="fill:none;stroke:var(--line)"/>
+      <text x="170" y="36" text-anchor="middle" style="fill:var(--sql);font-size:13px;font-weight:700;letter-spacing:.06em">CLOSED WORLD (SQL database)</text>
+      <text x="510" y="36" text-anchor="middle" style="fill:var(--model);font-size:13px;font-weight:700;letter-spacing:.06em">OPEN WORLD (RDFS / OWL)</text>
+      <text x="26" y="68" style="fill:var(--muted);font-size:12px">Q: Does Marlane have a phone?</text>
+      <text x="26" y="88" style="fill:var(--ink);font-size:12px">phone column is NULL / no row</text>
+      <text x="26" y="110" style="fill:var(--sql);font-size:13px;font-weight:700">A: No.</text>
+      <text x="366" y="68" style="fill:var(--muted);font-size:12px">Q: Does Marlane have a phone?</text>
+      <text x="366" y="88" style="fill:var(--ink);font-size:12px">no :phone triple in this graph</text>
+      <text x="366" y="110" style="fill:var(--model);font-size:13px;font-weight:700">A: Unknown. Not stated here.</text>
+      <line x1="26" y1="128" x2="314" y2="128" style="stroke:var(--line)"/>
+      <line x1="366" y1="128" x2="654" y2="128" style="stroke:var(--line)"/>
+      <text x="26" y="152" style="fill:var(--muted);font-size:12px">Set Carolyn's shoe_size = 38</text>
+      <text x="26" y="168" style="fill:var(--muted);font-size:12px">(no such column)</text>
+      <text x="26" y="192" style="fill:var(--gotcha);font-size:13px;font-weight:700">Rejected: column does not exist.</text>
+      <text x="366" y="152" style="fill:var(--muted);font-size:12px">Insert customer:225 :shoeSize 38</text>
+      <text x="366" y="168" style="fill:var(--muted);font-size:12px">(no such property declared)</text>
+      <text x="366" y="192" style="fill:var(--try);font-size:13px;font-weight:700">Accepted and stored.</text>
+      <text x="26" y="232" style="fill:var(--muted);font-size:12px">The schema is a contract</text>
+      <text x="26" y="248" style="fill:var(--muted);font-size:12px">that data must pass.</text>
+      <text x="366" y="232" style="fill:var(--muted);font-size:12px">The schema is a description</text>
+      <text x="366" y="248" style="fill:var(--muted);font-size:12px">to reason with.</text>
+    </svg>
+    <figcaption>Figure 5.3: The same two situations in each world. Neither is "right"; they serve different needs.</figcaption>
+  </figure>
+
+  <p>Four consequences, from most to least surprising:</p>
+  <ol>
+    <li><strong>The schema does not reject data.</strong> Nothing stops an undeclared property, a customer with three emails, or an order with no customer. RDFS and OWL have no <code>NOT NULL</code>, no <code>CHECK</code>, no foreign keys.</li>
+    <li><strong>Where SQL raises an error, a reasoner draws a conclusion.</strong> The reasoner fills gaps instead of refusing. <a href="ch06.html">Chapter 6</a> shows the famous case: tell it that only orders are "purchased by" someone, feed it a buggy triple, and it concludes that a box of Wax Paper is an order.</li>
+    <li><strong>Different names are not assumed to be different things.</strong> Two IRIs might name the same customer. Ours are built from the same keys on both sides (the "IRI trick", <a href="ch09.html">Chapter 9</a>), so this rarely bites.</li>
+    <li><strong>Queries still answer from what is there.</strong> SPARQL evaluates patterns over the triples it has: <code>FILTER NOT EXISTS { ?c :phone ?p }</code> returns customers with no phone triple, a perfectly closed-world answer. The open world does not change how SPARQL runs; it changes how you <em>read</em> the result ("no phone triple in the graphs we queried") and what the reasoner may conclude. Recall Chapter 4's Query 5, where Marlane "outspent" Carolyn only because we loaded two orders each.</li>
+  </ol>
+
+  <aside class="box model">
+    <p>A database is a <em>ledger</em>: it claims to be complete and checks every entry at the door. A knowledge graph is a <em>case file</em>: it gathers what is known from many sources, expects gaps, and lets you reason with what you have. For the ledger's door check you add a separate tool: SHACL, in <a href="ch11.html">Chapter 11</a>.</p>
+  </aside>
+
+  <p>Why build it this way? Because the open world is the honest assumption when data comes from many places. Aurora does not "know" that a customer has no orders; orders are not its job. A closed-world schema over Aurora and Redshift would either reject good data or lie about completeness. A semantic layer describes data it does not own. The price: validation becomes a separate, explicit step.</p>
+
+  <aside class="box gotcha">
+    <p>Two habits to unlearn. "I declared the class, so bad data can't get in": declarations describe, they do not guard. "The query returned nothing, so the answer is no": maybe, or the fact lives in a graph you did not query. That distinction goes into your agent's instructions in <a href="ch14.html">Chapter 14</a>.</p>
+  </aside>
+
+  <h2><span class="sn">5.6</span>Where the c360 model lives</h2>
+  <p>The model gets its own named graph, <code>&lt;urn:stardog:training-c360:1.0:model&gt;</code>, in the <code>kit-c360</code> database (the name comes from the c360 knowledge kit; <code>1.0</code> is a version). A separate graph pays off three times: in <a href="ch06.html">Chapter 6</a> you register it as the <em>reasoning schema</em>; from Chapter 8 on the data stays in Aurora and Redshift, so this graph (plus Chapter 10's rules) is all that is physically stored in Stardog; and in <a href="ch12.html">Chapter 12</a> named graphs are the unit of permission, so everyone can read the model even when they cannot read the PII.</p>
+
+  <aside class="box blog">
+    <p>The AWS blog's ontology section calls the c360 model the "meaning" layer between the language model and the warehouses, and builds it visually in Stardog Designer, which produces exactly the triples you are about to type. The blog's "where to start" advice (pick one workflow, write three to five competency questions, then bootstrap the ontology) is the order this book follows: "Who are our top spenders in Wisconsin?" needs Customer, Address and Order, and the kit adds seven more classes around them.</p>
+  </aside>
+
+  <h2><span class="sn">5.7</span>Real build step 1: the ten classes</h2>
+  <p>This is not scratch work: these triples start the model the reasoner, Voicebox and your agent will use. They are word for word the class declarations in the kit's <code>schema.ttl</code>, so loading the full file in Chapter 6 creates nothing different.</p>
+
+  <aside class="box try">
+    <p><strong>Step 1: insert the classes.</strong> In Studio's <strong>Workspace</strong>, open a query tab on <code>kit-c360</code>, <strong>reasoning off</strong>, paste and run:</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX :     &lt;tag:stardog:api:ecomm:&gt;
+PREFIX owl:  &lt;http://www.w3.org/2002/07/owl#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+
+INSERT DATA {
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; {
+    :Industry       a owl:Class ; rdfs:label "Industry" .
+    :Vendor         a owl:Class ; rdfs:label "Vendor" .
+    :Customer       a owl:Class ; rdfs:label "Customer" .
+    :Address        a owl:Class ; rdfs:label "Address" .
+    :Order          a owl:Class ; rdfs:label "Order" .
+    :Product        a owl:Class ; rdfs:label "Product" .
+    :Category       a owl:Class ; rdfs:label "Category" .
+    :CreditCard     a owl:Class ; rdfs:label "Credit Card" .
+    :UnitPrice      a owl:Class ; rdfs:label "Unit Price" .
+    :RewardsAccount a owl:Class ;
+        rdfs:comment "A concept representing a Customer's rewards account." ;
+        rdfs:label   "Rewards Account" .
+  }
+}</pre></div>
+    <p>That is 21 triples: ten <code>a owl:Class</code>, ten <code>rdfs:label</code>, one <code>rdfs:comment</code>. Running it twice is harmless; a graph is a set.</p>
+    <p><strong>Step 2: count them.</strong> Expect <strong>21</strong>.</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT (COUNT(*) AS ?triples)
+WHERE {
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; { ?s ?p ?o }
+}</pre></div>
+    <p><strong>Step 3: list them.</strong> Expect <strong>10 rows</strong>, sorted by label: Address, Category, Credit Card, Customer, Industry, Order, Product, Rewards Account, Unit Price, Vendor.</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX owl:  &lt;http://www.w3.org/2002/07/owl#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+
+SELECT ?class ?label
+WHERE {
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; {
+    ?class a owl:Class ;
+           rdfs:label ?label .
+  }
+}
+ORDER BY ?label</pre></div>
+    <p><strong>Step 4: meet the open world.</strong> Ask whether the model graph says Carolyn is a customer:</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+
+ASK {
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; {
+    &lt;urn:stardog:demos:c360:customer:225&gt; a :Customer
+  }
+}</pre></div>
+    <p>Expect <strong>false</strong>, read as "this graph does not state it", not "Carolyn is not a customer". She arrives through the Aurora virtual graph in Chapter 8.</p>
+    <p><strong>Do not drop this graph.</strong> It stays for the rest of the book.</p>
+  </aside>
+
+  <aside class="box gotcha">
+    <p>A typo such as <code>:Cusotmer</code> is accepted without complaint. Fix it with a <code>DELETE DATA</code> of exactly the wrong triple in the same graph, then rerun Step 1. If the count is not 21 and you cannot see why, it is safe now (and only now, before Chapter 6) to run <code>DROP GRAPH &lt;urn:stardog:training-c360:1.0:model&gt;</code> and repeat Step 1. Mention it to Claude.</p>
+  </aside>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>Which are T-Box and which A-Box: (a) <code>:Order a owl:Class</code>, (b) <code>customer:225 :firstName "Carolyn"</code>, (c) <code>customer:225 a :Customer</code>, (d) <code>:Big_Spender rdfs:subClassOf :Customer</code>?</summary><p>(a) and (d) are T-Box (kinds of things); (b) and (c) are A-Box (one customer). (c) is the bridge: an A-Box triple whose object is a T-Box class.</p></details>
+    <details><summary>Why do both RDFS and OWL exist, and which does the c360 kit use?</summary><p>RDFS is deliberately minimal (classes, subclasses, labels, domain/range). OWL builds on it to express inverse relationships, disjoint classes and identity. The kit uses both: <code>owl:Class</code> and OWL property types, with <code>rdfs:label</code> and <code>rdfs:comment</code>.</p></details>
+    <details><summary>Someone inserts <code>customer:999 :favoriteColor "teal"</code>, and no such property is declared. What happens?</summary><p>Stardog stores it. Under the open world the model describes; it does not reject. To have such data reported, use SHACL (Chapter 11).</p></details>
+    <details><summary>A query for customers without an email returns Marlane. What exactly may you conclude?</summary><p>Only that no <code>:email</code> triple for her exists in the graphs you queried, not that she has no email. (In Aurora she has one.)</p></details>
+    <details><summary>With reasoning on, why does <code>?c a :Customer</code> return a thing whose only stored type is <code>:Big_Spender</code>?</summary><p>Because <code>:Big_Spender rdfs:subClassOf :Customer</code> lets the reasoner infer the type at query time. The inferred triple is never written to disk.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li>The T-Box (the ontology or model) describes kinds of things; the A-Box describes particular things. Both are ordinary triples.</li>
+    <li>RDFS is the minimal schema vocabulary; OWL builds on it with more precise tools. Real ontologies mix both.</li>
+    <li>A class is a named set; <code>rdf:type</code> (<code>a</code>) puts a thing in it. Things can have many types or none; classes have no columns.</li>
+    <li>Labels and comments are for people and AI, and here they are load-bearing.</li>
+    <li><code>rdfs:subClassOf</code> lets a reasoner infer membership at query time, like an automatic UNION view that is never stored.</li>
+    <li>Open world: absent means "not stated here", and the schema describes rather than rejects. Validation is a separate tool (SHACL).</li>
+    <li>Build step 1 is done: 21 triples, 10 classes, in <code>&lt;urn:stardog:training-c360:1.0:model&gt;</code>. It stays.</li>
+  </ul></section>
+
+  <section class="done">
+    <p><button class="sendback" type="button" data-chapter="5" data-step="1">Copy "Build step 1 done" message</button> <span class="sbmsg"></span></p>
+    <p class="donehint">Paste it to Claude with what you saw (the counts or results), so we can confirm it matches before the next build step relies on it.</p>
+  </section>
+
+  <nav class="pn">
+    <a href="ch04.html"><small>← Previous</small>Chapter 4 · SPARQL for people who know SQL</a>
+    <a href="ch06.html" style="text-align:right"><small>Next →</small>Chapter 6 · The T-Box, part 2: properties and the c360 ontology (OWL)</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f51', (tl, cap) => {
+  cap(tl, 'Step 1: The T-Box. Three classes, three kinds of things. No customers yet, just the idea of one.');
+  tl.from('#f51 .tbox', {opacity: 0, y: -14, duration: 0.7});
+  cap(tl, 'Step 2: The A-Box. One real order, Carolyn, and her address, linked by ordinary properties.', '+=1.4');
+  tl.from('#f51 .abox', {opacity: 0, y: 14, duration: 0.7});
+  cap(tl, 'Step 3: rdf:type triples connect each thing to its kind. They are just triples too.', '+=1.4');
+  tl.from('#f51 .ty', {opacity: 0, y: 30, duration: 0.6, stagger: 0.35});
+});
+bookAnim('f52', (tl, cap) => {
+  tl.set(['#f52 .inf', '#f52 .note'], {opacity: 0});
+  cap(tl, 'Step 1: The T-Box says every Big_Spender is a Customer, and every Large_Order is an Order.');
+  tl.from('#f52 .hier', {opacity: 0, duration: 0.7});
+  cap(tl, 'Step 2: The data says customer 225 is a Big_Spender (in Chapter 10, a rule will derive this).', '+=1.4');
+  tl.from('#f52 .stored', {opacity: 0, x: 30, duration: 0.6});
+  cap(tl, 'Step 3: With reasoning on, membership flows up the subClassOf arrow: 225 is also a Customer.', '+=1.4');
+  tl.fromTo('#f52 .inf', {opacity: 0, x: 40}, {opacity: 1, x: 0, duration: 0.8});
+  tl.to('#f52 .note', {opacity: 1, duration: 0.5}, '+=0.4');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preface · What we are building</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <aside class="box java"><p>intro</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>…</pre></div><div class="col"><p class="lbl">Java</p><pre>…</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> …</p></aside>   side-by-side Java analogy
+    <dfn>term</dfn>                       first definition of a glossary term
+   REQUIRED at the end of every chapter (before nav)
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Preface</span></div>
+
+  <header class="opener">
+    <div class="num">Preface</div>
+    <h1>What we are building</h1>
+    <p class="sub">The finished system, the route to it, and how to read this book.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">At the end of this book you will type a sentence into a small program on your laptop: <b>"Who are our top spenders in Wisconsin?"</b> A few seconds later it answers: <b>Carolyn Inworth, of Milwaukee, who has spent $502,529.42.</b> That answer won't come from a report, an export, or an ETL job. It is computed live from two databases that have never heard of each other: her name and address from Aurora PostgreSQL, her purchases from Amazon Redshift. This book is about the layer in the middle that makes that possible, and you are going to build it yourself, one piece at a time.</p>
+
+  <p>You already know databases well: foreign keys, why a JOIN across a network hurts, what an ETL pipeline costs to keep alive, how many definitions of "active customer" one company can accumulate. What you probably haven't met is the other tradition of data modeling: RDF, ontologies, SPARQL, reasoning. Its academic reputation is undeserved. Underneath the vocabulary are a handful of practical ideas, each mapping onto something you already do in SQL, sometimes neatly and sometimes with an important twist. We'll learn them in the order you need them to build a working system.</p>
+
+  <h2><span class="sn">P.1</span>The end state, in one picture</h2>
+
+  <p>Here is the finished system. Press <b>Play</b> to follow one question through it. Every box is something you'll build or inspect, labeled with its chapter.</p>
+
+  <figure class="fig anim" id="f-p-1">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 720 600" width="720" role="img" aria-label="Architecture: a plain-English question goes to an agent running an OpenAI or OpenRouter model with a run_sparql tool. The agent sends SPARQL to Stardog Cloud, database kit-c360, which holds the ontology and rules, a query engine, and security roles. Three virtual graphs, aurora_c360_safe, aurora_c360_pii and redshift_c360, reach through two data sources to Aurora PostgreSQL (customer, address, credit card, rewards account) and Redshift Serverless (purchase, product, category, vendor). The answer flows back to the user.">
+      <defs>
+        <marker id="pa" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0L9,4.5L0,9z" fill="var(--muted)"/></marker>
+        <marker id="pb" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0L9,4.5L0,9z" fill="var(--accent)"/></marker>
+      </defs>
+      <g class="q">
+        <rect x="30" y="30" width="300" height="58" rx="10" fill="var(--soft)" stroke="var(--line)"/>
+        <text x="180" y="53" text-anchor="middle" font-size="11" fill="var(--muted)" letter-spacing="1">YOU ASK</text>
+        <text x="180" y="74" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">"Who are our top spenders in Wisconsin?"</text>
+        <path d="M180 88 L180 118" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#pa)"/>
+      </g>
+      <g class="ans">
+        <rect x="390" y="30" width="300" height="58" rx="10" fill="var(--soft)" stroke="var(--accent)"/>
+        <text x="540" y="53" text-anchor="middle" font-size="11" fill="var(--muted)" letter-spacing="1">YOU GET, LIVE</text>
+        <text x="540" y="74" text-anchor="middle" font-size="14" font-weight="700" fill="var(--accent)">Carolyn Inworth, Milwaukee · $502,529.42</text>
+        <path d="M540 120 L540 92" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#pb)"/>
+      </g>
+      <g class="ag">
+        <rect x="100" y="122" width="520" height="70" rx="10" fill="var(--paper)" stroke="var(--accent2)" stroke-width="1.5"/>
+        <text x="360" y="144" text-anchor="middle" font-size="14" font-weight="700" fill="var(--accent2)">The agent: your Python program  (ch14)</text>
+        <text x="360" y="163" text-anchor="middle" font-size="12.5" fill="var(--ink)">LLM: an OpenAI model, or any model through OpenRouter</text>
+        <text x="360" y="181" text-anchor="middle" font-size="12.5" fill="var(--ink)">one tool: run_sparql(query) · a prompt that summarizes the ontology</text>
+      </g>
+      <g class="ar2">
+        <path d="M300 192 L300 228" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#pa)"/>
+        <text x="292" y="215" text-anchor="end" font-size="11.5" fill="var(--muted)">SPARQL over HTTPS</text>
+      </g>
+      <g class="ar4">
+        <path d="M420 228 L420 196" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#pb)"/>
+        <text x="428" y="215" font-size="11.5" fill="var(--muted)">joined result rows</text>
+      </g>
+      <g class="sd">
+        <rect x="20" y="232" width="680" height="224" rx="12" fill="var(--soft)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="36" y="254" font-size="13" font-weight="700" fill="var(--ink)">Stardog Cloud  ·  database kit-c360  (the semantic layer)</text>
+        <rect x="36" y="266" width="206" height="90" rx="8" fill="var(--paper)" stroke="var(--model)"/>
+        <text x="139" y="286" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--model)">Meaning: the T-Box</text>
+        <text x="139" y="305" text-anchor="middle" font-size="11.5" fill="var(--ink)">ontology: 10 classes (ch5–6)</text>
+        <text x="139" y="322" text-anchor="middle" font-size="11.5" fill="var(--ink)">rules: Big_Spender… (ch10)</text>
+        <text x="139" y="339" text-anchor="middle" font-size="11.5" fill="var(--ink)">shapes, if wanted (ch11)</text>
+        <rect x="257" y="266" width="206" height="90" rx="8" fill="var(--paper)" stroke="var(--accent2)"/>
+        <text x="360" y="286" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--accent2)">Query engine</text>
+        <text x="360" y="305" text-anchor="middle" font-size="11.5" fill="var(--ink)">splits SPARQL by source</text>
+        <text x="360" y="322" text-anchor="middle" font-size="11.5" fill="var(--ink)">rewrites each part as SQL</text>
+        <text x="360" y="339" text-anchor="middle" font-size="11.5" fill="var(--ink)">joins on shared names (ch9)</text>
+        <rect x="478" y="266" width="206" height="90" rx="8" fill="var(--paper)" stroke="var(--gotcha)"/>
+        <text x="581" y="286" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--gotcha)">Governance</text>
+        <text x="581" y="305" text-anchor="middle" font-size="11.5" fill="var(--ink)">roles and users (ch12)</text>
+        <text x="581" y="322" text-anchor="middle" font-size="11.5" fill="var(--ink)">hr_user sees SSNs,</text>
+        <text x="581" y="339" text-anchor="middle" font-size="11.5" fill="var(--ink)">marketing_user does not</text>
+      </g>
+      <g class="vg" font-size="11.5">
+        <rect x="36" y="372" width="206" height="70" rx="8" fill="var(--paper)" stroke="var(--pred)" stroke-dasharray="5 3"/>
+        <text x="139" y="393" text-anchor="middle" font-weight="700" fill="var(--pred)">aurora_c360_safe</text>
+        <text x="139" y="411" text-anchor="middle" fill="var(--ink)">virtual graph (ch8)</text>
+        <text x="139" y="428" text-anchor="middle" fill="var(--muted)">customers, no PII</text>
+        <rect x="257" y="372" width="206" height="70" rx="8" fill="var(--paper)" stroke="var(--pred)" stroke-dasharray="5 3"/>
+        <text x="360" y="393" text-anchor="middle" font-weight="700" fill="var(--pred)">aurora_c360_pii</text>
+        <text x="360" y="411" text-anchor="middle" fill="var(--ink)">virtual graph (ch8)</text>
+        <text x="360" y="428" text-anchor="middle" fill="var(--muted)">SSN, card numbers only</text>
+        <rect x="478" y="372" width="206" height="70" rx="8" fill="var(--paper)" stroke="var(--pred)" stroke-dasharray="5 3"/>
+        <text x="581" y="393" text-anchor="middle" font-weight="700" fill="var(--pred)">redshift_c360</text>
+        <text x="581" y="411" text-anchor="middle" fill="var(--ink)">virtual graph (ch9)</text>
+        <text x="581" y="428" text-anchor="middle" fill="var(--muted)">orders, products</text>
+      </g>
+      <g class="ar3">
+        <g stroke="var(--muted)" stroke-width="1.5" fill="none" marker-end="url(#pa)">
+          <path d="M139 442 L160 508"/><path d="M360 442 L290 508"/><path d="M581 442 L560 508"/>
+        </g>
+        <text x="160" y="476" font-size="11" fill="var(--try)" font-weight="700">SQL via data source aurora_c360</text>
+        <text x="575" y="476" font-size="11" fill="var(--try)" font-weight="700">SQL via redshift_c360</text>
+      </g>
+      <g class="db">
+        <rect x="30" y="512" width="310" height="76" rx="10" fill="var(--paper)" stroke="var(--try)" stroke-width="1.5"/>
+        <text x="185" y="535" text-anchor="middle" font-size="13" font-weight="700" fill="var(--try)">Aurora PostgreSQL · c360.c360</text>
+        <text x="185" y="555" text-anchor="middle" font-size="11.5" fill="var(--ink)">customer · address · credit_card · rewards_account</text>
+        <text x="185" y="574" text-anchor="middle" font-size="11" fill="var(--muted)">500 customers · pauses when idle</text>
+        <rect x="380" y="512" width="310" height="76" rx="10" fill="var(--paper)" stroke="var(--try)" stroke-width="1.5"/>
+        <text x="535" y="535" text-anchor="middle" font-size="13" font-weight="700" fill="var(--try)">Redshift Serverless · dev.c360</text>
+        <text x="535" y="555" text-anchor="middle" font-size="11.5" fill="var(--ink)">purchase · product · category · vendor</text>
+        <text x="535" y="574" text-anchor="middle" font-size="11" fill="var(--muted)">2,500 orders · $0 when idle</text>
+      </g>
+    </svg>
+    <p class="stepcap">5. Rows come back from both engines, Stardog joins them on the customer's name, and the agent phrases the answer.</p>
+    <figcaption>Figure P.1: The finished system. The green boxes (the databases and the connections to them) already exist; everything above them is what you will build.</figcaption>
+  </figure>
+
+  <p>Read it from the top. <b>The agent</b>, a short Python program, hands your English question to a large language model (an OpenAI model, or any model reachable through OpenRouter, such as Claude). The model doesn't know your data, but it's given a compact description of your business vocabulary (what a Customer is, what an Order is, how they connect) and one tool, <code>run_sparql(query)</code>. It writes a SPARQL query and calls the tool.</p>
+
+  <p>The query arrives at <b>Stardog</b>, the semantic layer. Stardog holds no copies of your customers or orders. It holds <i>meaning</i>: business definitions, a few rules (what counts as a "big spender"), security policies, and <b>mappings</b> that say how each concept corresponds to real tables. Stardog works out which parts of the query concern Aurora and which Redshift, rewrites each as SQL, runs both, joins the results itself, and sends back rows. The model turns rows into a sentence.</p>
+
+  <aside class="box model">
+    <p>Think of Stardog as a <b>smart, shared view layer</b> over several databases at once. Like a SQL view, it stores definitions, not data. Unlike a SQL view, its definitions use business vocabulary (Customer, Order, Big Spender) rather than column names, they span engines, and they can derive new facts by rule. That is the whole book in miniature: <b>an ETL-free business view over many databases, where the ontology supplies the meaning and the mappings supply the connections.</b> "ETL-free" means no copying, not no work: the effort moves into agreeing on the vocabulary and on how each system's keys line up.</p>
+  </aside>
+
+  <h2><span class="sn">P.2</span>The questions this book answers</h2>
+
+  <p>If you're a database person looking at Figure P.1, some questions are probably already nagging at you. They're the right ones, and each has a chapter.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Your question</th><th>The short answer</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td>How does the agent know the ontology well enough to write SPARQL?</td><td>We tell it: the agent's prompt carries a compact summary of the ontology. Stardog's Voicebox does the same from the ontology stored in the database.</td><td><a href="ch14.html">ch14</a>, <a href="ch13.html">ch13</a></td></tr>
+      <tr><td>Who knows which data lives in Aurora and which in Redshift?</td><td>Not the ontology: the <b>mappings</b>. Each virtual graph is bound to one data source, and its mapping says which tables produce which facts.</td><td><a href="ch08.html">ch08</a>, <a href="ch09.html">ch09</a></td></tr>
+      <tr><td>Where is SPARQL converted to SQL, and how does Stardog decide which database to hit?</td><td>Inside Stardog's query engine, at query time, by matching each part of the query against the mappings.</td><td><a href="ch09.html">ch09</a></td></tr>
+      <tr><td>With no SQL JOIN across engines, where are the results joined and rolled up?</td><td>Each database returns partial results; Stardog joins, groups and sums them in its own engine. Nothing is written anywhere.</td><td><a href="ch09.html">ch09</a></td></tr>
+      <tr><td>What are RDF, RDFS, OWL, SPARQL, SHACL and rules, and why does each exist?</td><td>One line each in the next section; each gets its own chapter.</td><td><a href="ch02.html">ch02</a>–<a href="ch06.html">ch06</a>, <a href="ch10.html">ch10</a>, <a href="ch11.html">ch11</a></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="sn">P.3</span>The stack at a glance</h2>
+
+  <p>Every technology in the book, in one table. Don't memorize it; come back when a name stops making sense.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Name</th><th>What it is</th><th>Why it exists</th><th>Ch.</th></tr></thead>
+    <tbody>
+      <tr><td><b>RDF</b></td><td>A data model where every fact is a three-part sentence: subject, predicate, object (a "triple").</td><td>Every database invents its own shape: tables and columns here, JSON there. Combining two of them normally means first reconciling their shapes, which is what ETL does. If every fact is written as one simple sentence (<i>customer 225 lives in Milwaukee</i>), facts from Aurora and Redshift already have the same shape and can simply sit side by side.</td><td>2–3</td></tr>
+      <tr><td><b>SPARQL</b></td><td>The query language for RDF: patterns of triples with placeholders (like <code>?city</code>) that Stardog fills in from the data.</td><td>SQL asks "which rows in these tables match?" Triples have no tables, only sentences linked by shared names. So you need a language that asks "find things connected like this: customer → address → city". SPARQL is that language, and it's a W3C standard, like SQL is an ANSI one.</td><td>4</td></tr>
+      <tr><td><b>RDFS</b></td><td>A small vocabulary for describing classes and labels.</td><td>SQL splits the world in two: DDL (<code>CREATE TABLE</code>) defines the shape, DML (<code>INSERT</code>, <code>SELECT</code>) handles records, and you read the shape through <code>DESCRIBE</code>. In RDF there is no split. The shape is written as triples too ("Customer is a class"), so the same <code>INSERT DATA</code> creates the schema or a record, and the same <code>SELECT</code> reads either one, or both in one query. The catch: declaring a shape doesn't enforce anything (that's SHACL's job, Chapter 11).</td><td>5</td></tr>
+      <tr><td><b>OWL</b></td><td>A richer vocabulary on top of RDFS: property types, inverses, and more.</td><td>RDFS can say that a Customer exists, but not much about how things relate. OWL adds the detail: "<i>purchasedBy</i> links an Order to a Customer", "<i>placedOrder</i> is the same link read backwards (Customer → Order)". Stardog can then answer questions that the data doesn't state directly.</td><td>6</td></tr>
+      <tr><td><b>SMS2 / R2RML</b></td><td>Mapping languages that say "each row of this SQL table becomes these triples" (SMS2 is Stardog's; R2RML, short for <i>RDB to RDF Mapping Language</i>, is the W3C standard).</td><td>Your data sits in SQL tables, but the ontology speaks in sentences. A mapping is the translator: "each row of <code>c360.customer</code> is a Customer, and its <code>first_name</code> column is the Customer's <i>firstName</i>." Without one, Stardog doesn't know your tables exist.</td><td>8</td></tr>
+      <tr><td><b>Virtual graph</b></td><td>A named graph whose triples are produced on demand from SQL through a mapping.</td><td>Copying data into a new store (ETL) means duplicates, pipelines to maintain and answers that go stale. A virtual graph leaves the rows in Aurora and Redshift and turns your question into SQL at the moment you ask.</td><td>7–9</td></tr>
+      <tr><td><b>Stardog rules</b></td><td>IF-THEN statements that derive new facts at query time.</td><td>Otherwise every report, dashboard and AI prompt re-implements "big spender" slightly differently, and the numbers disagree. Write the definition once, in the model, and every query uses the same one.</td><td>10</td></tr>
+      <tr><td><b>SHACL</b></td><td>A W3C language for validation rules ("every Customer has exactly one email").</td><td>RDFS and OWL describe data but never reject it: a customer with no email is simply accepted. SHACL is the checker. Like NOT NULL and CHECK constraints, it reports every record that breaks your rules.</td><td>11</td></tr>
+      <tr><td><b>Voicebox</b></td><td>Stardog's built-in assistant that turns questions into SPARQL using your ontology.</td><td>So people who don't know SPARQL, such as business users or an AI agent, can ask "who are our top spenders?" in plain English and still get an answer grounded in the ontology.</td><td>13</td></tr>
+      <tr><td><b>MCP</b></td><td>Model Context Protocol, an open standard connecting AI applications to tools and data.</td><td>Every AI app used to need custom glue code for every tool it called. MCP is a standard plug, so any agent can call Stardog (or any other service) the same way, like JDBC for AI tools.</td><td>13–14</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="sn">P.4</span>Why bother with a semantic layer?</h2>
+
+  <p>You could answer the Wisconsin question without any of this: export customers from Aurora, load them into Redshift, write the JOIN. For one question, that's the right call. The semantic layer earns its keep when there are many questions, systems and consumers, especially when one consumer is an AI model that has to write the query itself:</p>
+
+  <ul>
+    <li><b>Meaning.</b> The vocabulary is written down once, precisely, in a form people and programs can read. An LLM told "an Order is <i>purchased by</i> a Customer" writes far better queries than one given forty cryptic table names. (ch5–6)</li>
+    <li><b>Federation.</b> Data stays where it lives: no pipeline to build or pay for, no stale copy. (ch7–9)</li>
+    <li><b>One definition.</b> "Big spender" is defined once, as a rule, and every query, dashboard and agent gets the same answer. (ch10)</li>
+    <li><b>Governance.</b> "This role can't see SSNs" is stated once, for all sources, instead of as grants in every copy of the data. (ch12)</li>
+  </ul>
+
+  <p>There are costs: federated queries are slower than local ones, an ontology is one more artifact to maintain, and heavy aggregation over billions of rows still belongs in the warehouse. Chapter 7 lays out the trade-offs.</p>
+
+  <aside class="box blog">
+    <p>This book follows the AWS Machine Learning blog post <a href="https://aws.amazon.com/blogs/machine-learning/build-a-semantic-layer-for-agentic-ai-on-aws-with-stardog-and-amazon-bedrock-agentcore/">"Build a semantic layer for agentic AI on AWS with Stardog and Amazon Bedrock AgentCore"</a> (July 2026). This book is the long version, for someone who has never touched RDF. One deliberate difference: the blog's agent runs on Amazon Bedrock AgentCore; yours uses an <b>OpenAI or OpenRouter</b> model. Chapter 14 shows how the two map onto each other.</p>
+  </aside>
+
+  <h2><span class="sn">P.5</span>How we'll build it: the build track</h2>
+
+  <p>"Building an ontology solution" is five layers of work, each on the one before: learn the data model (triples, names, SPARQL); write the vocabulary (the ontology); connect it to the real tables (mappings and virtual graphs); add meaning and control (rules, validation, security); and put the agent on top. Eight chapters leave something permanent in Stardog; we call them <b>build steps</b>. Everything else is explanation, or practice in a scratch area deleted at the end of the chapter.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 800 210" width="800" role="img" aria-label="Timeline of chapters 1 to 15. Before chapter 1: already done, AWS and data sources. Build steps: chapter 5 classes, chapter 6 properties and schema, chapter 8 Aurora virtual graphs, chapter 9 Redshift and federation, chapter 10 rules, chapter 12 roles and users, chapter 14 the agent, chapter 15 trust checks. Phases: foundations 1 to 4, model 5 to 6, data 7 to 9, meaning and control 10 to 12, agent 13 to 15.">
+      <line x1="40" y1="120" x2="754" y2="120" stroke="var(--line)" stroke-width="3"/>
+      <circle cx="40" cy="120" r="12" fill="var(--try)"/>
+      <path d="M34 120 L39 125 L47 115" stroke="var(--paper)" stroke-width="2.5" fill="none"/>
+      <text x="40" y="96" text-anchor="middle" font-size="11" font-weight="700" fill="var(--try)">done</text>
+      <text x="40" y="150" text-anchor="middle" font-size="10" fill="var(--muted)">AWS +</text>
+      <text x="40" y="162" text-anchor="middle" font-size="10" fill="var(--muted)">sources</text>
+      <g fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5">
+        <circle cx="110" cy="120" r="10"/><circle cx="156" cy="120" r="10"/><circle cx="202" cy="120" r="10"/><circle cx="248" cy="120" r="10"/>
+        <circle cx="386" cy="120" r="10"/><circle cx="570" cy="120" r="10"/><circle cx="662" cy="120" r="10"/>
+      </g>
+      <g font-size="10.5" fill="var(--muted)" text-anchor="middle">
+        <text x="110" y="124">1</text><text x="156" y="124">2</text><text x="202" y="124">3</text><text x="248" y="124">4</text>
+        <text x="386" y="124">7</text><text x="570" y="124">11</text><text x="662" y="124">13</text>
+      </g>
+      <g fill="var(--accent)">
+        <circle cx="294" cy="120" r="13"/><circle cx="340" cy="120" r="13"/><circle cx="432" cy="120" r="13"/><circle cx="478" cy="120" r="13"/>
+        <circle cx="524" cy="120" r="13"/><circle cx="616" cy="120" r="13"/><circle cx="708" cy="120" r="13"/><circle cx="754" cy="120" r="13"/>
+      </g>
+      <g font-size="11" font-weight="700" fill="var(--paper)" text-anchor="middle">
+        <text x="294" y="124">5</text><text x="340" y="124">6</text><text x="432" y="124">8</text><text x="478" y="124">9</text>
+        <text x="524" y="124">10</text><text x="616" y="124">12</text><text x="708" y="124">14</text><text x="754" y="124">15</text>
+      </g>
+      <g stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 2">
+        <line x1="294" y1="84" x2="294" y2="106"/><line x1="340" y1="82" x2="340" y2="106"/><line x1="432" y1="84" x2="432" y2="106"/>
+        <line x1="478" y1="82" x2="478" y2="106"/><line x1="524" y1="84" x2="524" y2="106"/><line x1="616" y1="84" x2="616" y2="106"/><line x1="708" y1="82" x2="708" y2="106"/><line x1="754" y1="54" x2="754" y2="106"/>
+      </g>
+      <g font-size="11" fill="var(--accent)" font-weight="700" text-anchor="middle">
+        <text x="294" y="48">1 · classes</text>
+        <text x="330" y="76">2 · properties + schema</text>
+        <text x="432" y="48">3 · Aurora graphs</text>
+        <text x="484" y="76">4 · Redshift + federation</text>
+        <text x="530" y="48">5 · rules</text>
+        <text x="616" y="48">6 · roles + users</text>
+        <text x="708" y="76" text-anchor="end">7 · the agent</text>
+        <text x="770" y="48" text-anchor="end">8 · trust checks</text>
+      </g>
+      <g stroke="var(--muted)" stroke-width="1" fill="none">
+        <path d="M104 148 L104 154 L254 154 L254 148"/><path d="M286 148 L286 154 L348 154 L348 148"/>
+        <path d="M380 148 L380 154 L486 154 L486 148"/><path d="M518 148 L518 154 L622 154 L622 148"/><path d="M656 148 L656 154 L762 154 L762 148"/>
+      </g>
+      <g font-size="11" fill="var(--muted)" text-anchor="middle">
+        <text x="179" y="172">Foundations</text><text x="317" y="172">Model</text><text x="433" y="172">Data</text>
+        <text x="570" y="172">Meaning + control</text><text x="709" y="172">Agent</text>
+      </g>
+      <g font-size="10" fill="var(--muted)" text-anchor="middle">
+        <text x="179" y="188">practice graphs, dropped</text><text x="317" y="188">T-Box</text><text x="433" y="188">virtual graphs</text>
+        <text x="570" y="188">rules, security</text><text x="709" y="188">Python</text>
+      </g>
+    </svg>
+    <figcaption>Figure P.2: The build track. Filled circles are chapters that leave something permanent in Stardog (build steps 1–8); hollow circles are explanation or scratch practice.</figcaption>
+  </figure>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Step</th><th>Chapter</th><th>What you build, and where it lives</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>ch5</td><td>The ten classes (Customer, Address, Order…) in the model graph <code>&lt;urn:stardog:training-c360:1.0:model&gt;</code></td></tr>
+      <tr><td>2</td><td>ch6</td><td>The properties, then the full kit ontology <code>schema.ttl</code> (161 triples) in the same graph; the <code>reasoning.schemas</code> setting</td></tr>
+      <tr><td>3</td><td>ch8</td><td>Virtual graphs <code>aurora_c360_safe</code> and <code>aurora_c360_pii</code> over Aurora</td></tr>
+      <tr><td>4</td><td>ch9</td><td>Virtual graph <code>redshift_c360</code>, and your first federated query: the top spenders</td></tr>
+      <tr><td>5</td><td>ch10</td><td>Five business rules, including "big spender", in <code>&lt;urn:stardog:c360_extended_rules:1.0:model&gt;</code></td></tr>
+      <tr><td>6</td><td>ch12</td><td>Roles and users <code>hr_user</code> and <code>marketing_user</code>, with different views of personal data</td></tr>
+      <tr><td>7</td><td>ch14</td><td>The agent: an OpenAI or OpenRouter model with a SPARQL tool, answering real questions</td></tr>
+      <tr><td>8</td><td>ch15</td><td>Answers you can trust: an online-orders source, a source registry in <code>&lt;urn:c360:registry&gt;</code>, and <code>agent_v2.py</code>, which reports partial answers instead of guessing</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="sn">P.6</span>What's already done</h2>
+
+  <p>The plumbing is in place and tested, so the book can spend its time on ideas instead of network settings:</p>
+
+  <ul>
+    <li><b>AWS.</b> Aurora PostgreSQL 16 Serverless v2 (database <code>c360</code>, schema <code>c360</code>) with 500 customers, their addresses, credit cards and rewards accounts; Redshift Serverless (database <code>dev</code>, schema <code>c360</code>) with 2,500 purchases, 580 products, 31 categories and 418 vendors. Both cost next to nothing when idle (Aurora pauses after five idle minutes).</li>
+    <li><b>Network.</b> The security group admits only Stardog Cloud's outbound address and your laptop.</li>
+    <li><b>DBeaver.</b> Connections to both databases, to check any answer the old way.</li>
+    <li><b>Stardog.</b> A Stardog Cloud Free-tier endpoint with a database <code>kit-c360</code> and two <b>data sources</b> (saved JDBC connections), <code>aurora_c360</code> and <code>redshift_c360</code>.</li>
+  </ul>
+
+  <p>And, deliberately, nothing else. <code>kit-c360</code> is <b>empty</b>: zero triples, no virtual graphs, no ontology. An earlier session built the whole thing end to end (the $502,529.42 above comes from that run, and matches SQL to the cent), then took it back down to bare connectivity so you can build every piece yourself.</p>
+
+  <aside class="box gotcha">
+    <p><b>The first query of the day is slow.</b> Aurora takes roughly 15–20 seconds to wake from its pause: the price of paying $0 while idle, not a bug. Redshift also spins up on demand, with a 60-second billing minimum.</p>
+  </aside>
+
+  <h2><span class="sn">P.7</span>What you need open</h2>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Tool</th><th>Where</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td><b>Stardog Studio</b></td><td>cloud.stardog.com → Studio, connected to <code>https://&lt;your-endpoint&gt;.stardog.cloud:5820</code>, database <code>kit-c360</code></td><td>Every "Try it" step</td></tr>
+      <tr><td><b>DBeaver</b></td><td>Your laptop, with the Aurora and Redshift connections</td><td>Checking Stardog's answers in SQL</td></tr>
+      <tr><td><b>Credentials</b></td><td>The native Stardog user <code>stardog_admin</code> and its password (not your portal email login)</td><td>Studio's connection to the endpoint, and later the agent</td></tr>
+    </tbody>
+  </table></div>
+
+  <aside class="box gotcha">
+    <p>The Stardog Cloud portal login (your email) and the endpoint's own users are separate systems, which is why the native user <code>stardog_admin</code> (role <code>cloud</code>) exists. If Studio says 401 or "unauthorized", check which one you're using (Chapter 13).</p>
+  </aside>
+
+  <h2><span class="sn">P.8</span>How to read this book</h2>
+
+  <p><b>Slowly, with your hands on the keyboard.</b> Keep Studio open beside the page. When you reach a green "Try it in Studio" box, stop and do it: paste the query, run it, compare with what the box says to expect. The steps aren't done for you, on purpose. By Chapter 14 you'll have built every part of the system yourself, and you'll be able to rebuild or change it without this book.</p>
+
+  <p>The boxes each have one job. <b>If you know SQL</b> gives the nearest SQL idea and where the analogy breaks; <b>If you know Java</b> does the same for readers who think in objects. <b>Mental model</b> gives you a picture to keep. <b>Try it in Studio</b> is hands-on: practice steps use scratch graphs such as <code>&lt;urn:book:ch02&gt;</code> and clean up; build steps leave something permanent. <b>Gotcha</b> is a real pitfall in this exact setup, one you would hit if nobody warned you. <b>In the AWS blog</b> ties the chapter to the blog.</p>
+
+  <p>Every chapter ends with check-yourself questions and a recap. Ask Claude whenever something is unclear; there's no ceremony. The one exception is the <b>build-step chapters</b>: they end with a <b>"Build step N done"</b> button. Paste that to Claude with what you saw (the counts or results), so we can confirm your build matches before the next step relies on it. Studio's screens change between versions, so mention anything that looked different.</p>
+
+  <aside class="box sql">
+    <p>You'll see "like a JOIN" and "like a view" a lot. They're footholds, not claims of sameness. The biggest adjustment for a database engineer (Chapter 5) is how a missing fact is read. Say the data has no phone number for Carolyn. A database reads that as <i>Carolyn has no phone</i>. This world reads it as <i>we don't know Carolyn's phone</i>: it just isn't written down here, and another source might have it.</p>
+  </aside>
+
+  <p>This book owes its shape to that post by the AWS and Stardog teams, which fit the whole system into one afternoon's reading; this is my attempt to fit it into one engineer's head. Let's build it.</p>
+
+  <p style="text-align:right;font-style:italic;margin-top:22px">Vinodh Thiagarajan<br><span style="font:13px -apple-system,sans-serif;color:var(--muted);font-style:normal">September 2026</span></p>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>Where does Carolyn's total of $502,529.42 actually get computed?</summary><p>At query time, in Stardog's engine: it rewrites the question as SQL for Redshift (purchases) and Aurora (name and state), runs both, and joins and sums the results. Nothing is copied ahead of time.</p></details>
+    <details><summary>What does Stardog store about your customers?</summary><p>No customer rows at all. It stores meaning: the ontology, rules, security settings, and mappings to the tables in Aurora and Redshift.</p></details>
+    <details><summary>Which part of the system knows that orders live in Redshift?</summary><p>The mappings. The ontology says what an Order is; the <code>redshift_c360</code> mapping says rows of <code>c360.purchase</code> become Orders.</p></details>
+    <details><summary>Which chapters leave something permanent in Stardog?</summary><p>The build steps: ch5, ch6, ch8, ch9, ch10 and ch12, plus ch14, whose agent lives on your laptop, and ch15, which adds a third source, a registry and a checked agent. The rest is explanation or scratch practice.</p></details>
+    <details><summary>Why is there a separate stardog_admin user?</summary><p>The portal login (your email) doesn't work against the endpoint; Studio, the API and the agent need a native user with the <code>cloud</code> role.</p></details>
+  </section>
+
+  <section class="recap"><h2>Preface recap</h2><ul>
+    <li>The goal: a plain-English question goes to an OpenAI/OpenRouter agent, which asks Stardog in SPARQL, which answers live from Aurora and Redshift with no ETL.</li>
+    <li>Stardog holds meaning (ontology, rules, security, mappings), not copies of the data.</li>
+    <li>The mappings know where data lives; Stardog rewrites SPARQL into SQL per source and joins the results itself.</li>
+    <li>Eight chapters are build steps; AWS, DBeaver and the two data sources already work, and <code>kit-c360</code> is deliberately empty.</li>
+    <li>Read beside Studio, do every "Try it" yourself, ask questions any time, and report your results after each build step.</li>
+  </ul></section>
+
+  <nav class="pn">
+    <a href="index.html"><small>← Previous</small>Cover and contents</a>
+    <a href="ch01.html" style="text-align:right"><small>Next →</small>Chapter 1 · One question, five systems</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f-p-1', (tl, cap) => {
+  const f = '#f-p-1 ';
+  cap(tl, '1. You ask a question in plain English.');
+  tl.from(f + '.q', {opacity: 0, y: -12, duration: .6});
+  cap(tl, '2. The agent\'s model reads it, writes a SPARQL query using the ontology summary in its prompt, and calls run_sparql.');
+  tl.from(f + '.ag', {opacity: 0, scale: .96, transformOrigin: '50% 50%', duration: .6}, '+=.5');
+  tl.from(f + '.ar2', {opacity: 0, y: -10, duration: .5});
+  cap(tl, '3. Stardog matches the query against the mappings: customer facts come from Aurora\'s virtual graphs, orders from Redshift\'s.');
+  tl.from(f + '.sd', {opacity: 0, duration: .6}, '+=.6');
+  tl.from(f + '.vg rect', {opacity: 0, y: -8, stagger: .2, duration: .5});
+  tl.from(f + '.vg text', {opacity: 0, stagger: .05, duration: .3}, '<');
+  cap(tl, '4. Each part is rewritten as SQL and runs where the data lives. Nothing is copied ahead of time.');
+  tl.from(f + '.ar3', {opacity: 0, y: -10, duration: .6}, '+=.6');
+  tl.from(f + '.db', {opacity: 0, y: 10, duration: .6});
+  cap(tl, '5. Rows come back from both engines, Stardog joins them on the customer\'s name, and the agent phrases the answer.');
+  tl.from(f + '.ar4', {opacity: 0, y: 10, duration: .5}, '+=.8');
+  tl.from(f + '.ans', {opacity: 0, y: 10, duration: .6});
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 15 · At scale: huge ontologies and answers you can trust</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <aside class="box java"><p>intro</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>…</pre></div><div class="col"><p class="lbl">Java</p><pre>…</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> …</p></aside>   side-by-side Java analogy
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 15</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 15</div>
+    <h1>At scale: huge ontologies and answers you can trust</h1>
+    <p class="sub">How an agent writes SPARQL against an ontology too big for its prompt, and how code, not the LLM, decides whether an answer is complete.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">It's quarter close. Finance asks the agent from Chapter 14 a simple question: "What is Carolyn Inworth's total spend?" Two seconds later: "$502,529.42 across 15 orders." Confident, well formatted, a live query you can read. Finance's spreadsheet says $504,779.42. The difference is the online store, which launched in January, keeps its orders in a new Aurora table, and was wired into Stardog last week by a colleague who typed <code>cust:</code> where the template needed <code>customer:</code>. Nothing failed. No query errored. The graph did exactly what it was told, and the agent reported what came back. Scale that up to a metric fed by thirty sources and you get the author's version of this story: an agent that says $400K when the truth is $500K, with a straight face.</p>
+
+  <p>This chapter answers two questions that every team hits right after the demo works. <strong>A:</strong> at Uber, Amazon, Google or Databricks scale the ontology has thousands of classes and millions of triples, so how does the agent write SPARQL without seeing all of it? <strong>B:</strong> when an answer needs three sources and one quietly contributes nothing, how do you get "this is supposed to include A, B and C; I couldn't get C; the partial answer is X" instead of a confident wrong number? You'll build the second one yourself: a third source with a deliberately broken mapping, a registry that says what should be there, and <code>agent_v2.py</code>, which catches the miss in code.</p>
+
+  <h2><span class="sn">15.1</span>Terms in this chapter</h2>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td>Schema linking</td><td>Matching the words of a question to the right classes, properties and tables</td><td>It's where text-to-SQL and text-to-SPARQL mostly go wrong</td><td>"spend" → <code>:purchasePrice</code> × <code>:quantity</code> on <code>:Order</code></td></tr>
+      <tr><td>Ontology slice</td><td>The few terms a question needs, plus their neighbors</td><td>The whole ontology won't fit, or costs too much</td><td><code>:Order</code> and its 8 properties, not all 48 terms</td></tr>
+      <tr><td>Source registry</td><td>Triples that say which sources must feed which metric</td><td>You can't detect what's missing without knowing what's expected</td><td><code>&lt;virtual://redshift_c360&gt; ops:provides :Order</code></td></tr>
+      <tr><td>Key-overlap probe</td><td>The share of a source's join keys that match known entities</td><td>A wrong IRI template joins nothing and raises no error</td><td>0 of 100 online-order customers are known customers</td></tr>
+      <tr><td>Answer contract</td><td>A fixed JSON shape for an answer: value, completeness, what's missing and why</td><td>So "partial" can't be lost in the LLM's prose</td><td><code>{"value": "502529.42", "complete": false, …}</code></td></tr>
+      <tr><td>Golden test</td><td>A question with an answer verified independently, rerun automatically</td><td>To catch regressions before users do</td><td>Carolyn's total must be 504,779.42 ± 0.01</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- ======================= PART A ======================= -->
+  <h2 id="schema-linking"><span class="sn">15.2</span>Question A: the ontology won't fit in the prompt</h2>
+
+  <p>Chapter 14's agent cheats in a way that only works at our size. Its system prompt holds a hand-written summary of the whole c360 ontology, 10 classes and 33 properties in about 700 tokens, and <code>get_ontology</code> returns all 48 terms in one go. A real enterprise model is a different animal: thousands of classes across finance, logistics, marketing and HR, tens of thousands of properties, and several near-duplicates of everything ("revenue", "net revenue", "booked revenue"). Even when a context window could technically hold it, you pay for every token on every call, and the model's attention thins out: the right property is somewhere in 200 pages of schema, next to four plausible wrong ones.</p>
+
+  <p>The research literature has a name for the hard part: <dfn>schema linking</dfn>, matching the words in a question to the right tables and columns (for us, classes and properties). Text-to-SQL researchers treat it as its own step; one 2025 paper calls it "a critical bottleneck in applying existing Text-to-SQL models to real-world, large-scale, multi-database environments." Writing the query once you know the right five terms is the easy part. Finding those five among 50,000 is the job.</p>
+
+  <aside class="box sql">
+    <p>You've done schema linking by hand in an unfamiliar warehouse: <code>SELECT table_name, column_name FROM information_schema.columns WHERE column_name ILIKE '%price%'</code>, then follow the foreign keys one hop to see what joins to what. That's exactly the recipe below: search, then expand one hop. <b>Where the analogy breaks:</b> column names are often cryptic (<code>amt_net_2</code>); an ontology carries human labels and comments ("price", "A concept representing a Customer's rewards account"), which makes search much better, and its "foreign keys" are properties with a domain and range, not constraints.</p>
+  </aside>
+
+  <p>Every approach that works at scale does the same thing in some order: <strong>narrow the search space, then give the model only the slice it needs.</strong> Four techniques, usually combined.</p>
+
+  <h2><span class="sn">15.3</span>Retrieve a slice: search, then expand one or two hops</h2>
+
+  <p>Take the words of the question, find the ontology terms whose labels or comments match, then add their neighbors: for a class, the properties whose domain or range it is; for a property, its domain and range classes; plus parents and children. One hop usually suffices; two hops if the question spans a join. The result is an <dfn>ontology slice</dfn>: twenty lines instead of the whole model. Press Play:</p>
+
+  <figure class="fig anim" id="f-15-1">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 640 330" role="img" aria-label="An ontology with many terms; a search for total spend and state lights up two terms, one-hop expansion adds their neighbors, and only that slice goes into the prompt.">
+      <g class="bg" fill="var(--line)">
+        <circle cx="40" cy="40" r="5"/><circle cx="90" cy="70" r="5"/><circle cx="60" cy="120" r="5"/><circle cx="130" cy="30" r="5"/><circle cx="170" cy="90" r="5"/><circle cx="30" cy="190" r="5"/><circle cx="80" cy="240" r="5"/><circle cx="140" cy="280" r="5"/><circle cx="40" cy="290" r="5"/><circle cx="200" cy="300" r="5"/><circle cx="250" cy="20" r="5"/><circle cx="300" cy="50" r="5"/><circle cx="360" cy="25" r="5"/><circle cx="390" cy="300" r="5"/><circle cx="330" cy="290" r="5"/><circle cx="110" cy="170" r="5"/><circle cx="20" cy="80" r="5"/><circle cx="230" cy="250" r="5"/><circle cx="400" cy="80" r="5"/><circle cx="410" cy="200" r="5"/><circle cx="180" cy="190" r="5"/><circle cx="270" cy="310" r="5"/><circle cx="60" cy="310" r="5"/><circle cx="410" cy="140" r="5"/>
+      </g>
+      <text x="215" y="322" text-anchor="middle" font-size="11" fill="var(--muted)">the rest of a large ontology: thousands of terms, never sent</text>
+      <g class="edges" stroke="var(--muted)" stroke-width="1.5">
+        <line x1="250" y1="110" x2="250" y2="170"/><line x1="250" y1="170" x2="170" y2="140"/><line x1="250" y1="170" x2="330" y2="140"/>
+        <line x1="250" y1="170" x2="250" y2="230"/><line x1="250" y1="230" x2="170" y2="250"/><line x1="170" y1="250" x2="330" y2="250"/>
+      </g>
+      <g class="hit">
+        <circle cx="250" cy="110" r="9" fill="var(--accent)"/><text x="262" y="100" font-size="11" fill="var(--ink)">ops:total_spend "total spend"</text>
+        <circle cx="330" cy="250" r="9" fill="var(--accent)"/><text x="342" y="254" font-size="11" fill="var(--ink)">:state "state"</text>
+      </g>
+      <g class="hop">
+        <circle cx="250" cy="170" r="8" fill="var(--accent2)"/><text x="262" y="176" font-size="11" fill="var(--ink)">:Order</text>
+        <circle cx="170" cy="140" r="7" fill="var(--accent2)"/><text x="100" y="133" font-size="11" fill="var(--ink)">:purchasePrice</text>
+        <circle cx="330" cy="140" r="7" fill="var(--accent2)"/><text x="342" y="144" font-size="11" fill="var(--ink)">:quantity</text>
+        <circle cx="250" cy="230" r="8" fill="var(--accent2)"/><text x="264" y="234" font-size="11" fill="var(--ink)">:Customer</text>
+        <circle cx="170" cy="250" r="7" fill="var(--accent2)"/><text x="120" y="272" font-size="11" fill="var(--ink)">:Address</text><text x="178" y="236" font-size="10.5" fill="var(--muted)">:address</text>
+        <text x="262" y="206" font-size="10.5" fill="var(--muted)">:purchasedBy</text>
+      </g>
+      <g class="slice">
+        <rect x="436" y="60" width="200" height="200" rx="8" fill="var(--soft)" stroke="var(--try)" stroke-width="2"/>
+        <text x="536" y="82" text-anchor="middle" font-size="12" font-weight="700" fill="var(--try)">slice for the prompt</text>
+        <text x="446" y="106" font-size="10.5" fill="var(--ink)">ops:total_spend requires :Order</text>
+        <text x="446" y="126" font-size="10.5" fill="var(--ink)">:Order</text>
+        <text x="446" y="146" font-size="10.5" fill="var(--ink)">:purchasePrice :Order→decimal</text>
+        <text x="446" y="166" font-size="10.5" fill="var(--ink)">:quantity :Order→integer</text>
+        <text x="446" y="186" font-size="10.5" fill="var(--ink)">:purchasedBy :Order→:Customer</text>
+        <text x="446" y="206" font-size="10.5" fill="var(--ink)">:address :Customer→:Address</text>
+        <text x="446" y="226" font-size="10.5" fill="var(--ink)">:state :Address→string</text>
+        <text x="536" y="250" text-anchor="middle" font-size="10.5" fill="var(--muted)">7 lines, not 50,000</text>
+        <line x1="408" y1="170" x2="428" y2="170" stroke="var(--try)" stroke-width="2"/><polygon points="426,165 434,170 426,175" fill="var(--try)"/>
+      </g>
+    </svg>
+    <p class="stepcap"></p>
+    <figcaption>Figure 15.1: Search finds the terms the question names; one hop adds what they connect to; only that slice reaches the LLM.</figcaption>
+  </figure>
+
+  <p>How you search matters. <strong>Lexical search</strong> matches word forms. Stardog has it built in: with the database option <code>search.enabled=true</code>, a query can ask its full-text index for literals matching a string. The docs show the predicate form, which binds the matching literal and, optionally, a score:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT ?term ?text WHERE {
+  (?text ?score) &lt;tag:stardog:api:property:textMatch&gt; 'price' .
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; { ?term rdfs:label ?text }
+}</pre></div>
+
+  <p>There's also a <code>SERVICE fts:textMatch { … }</code> form (with <code>fts:</code> = <code>tag:stardog:api:search:</code>) that takes extra parameters. Two limits from the docs matter here: search "is not supported over data in virtual sources", which is fine because the ontology is stored, not virtual; and options control which graphs get indexed. That second one bit me when I read your server's settings (read-only): on <code>kit-c360</code>, full-text search is on, but <code>search.index.contexts.filter</code> limits the lexical index to the default graph, so a <code>textMatch</code> over the model graphs will likely come back empty. Changing that means reindexing, and it's not worth it at our size, so <code>agent_v2.py</code> defaults to a plain <code>CONTAINS</code> scan over labels and comments. That's instant for a few hundred terms and too slow for millions, which is where the index earns its keep.</p>
+
+  <p>Lexical search also has a vocabulary problem. Search the c360 labels for "spend" and you get exactly one hit: <code>:Big_Spender</code>, Chapter 10's derived class for customers with any order over $250. That's the wrong concept for "total spend", and the right one, <code>:purchasePrice</code>, is labeled "price". <strong>Semantic search</strong> compares vector embeddings instead of word forms, so "spend" can land near "price". Stardog's docs describe a semantic mode in the same full-text machinery (<code>search.semantic.enabled</code>, queried with <code>fts:semantic true</code>, using a bundled embedding model), and your server has it switched on for the two model graphs; the same setting lists Voicebox's question graph, so this is presumably the index Voicebox uses to match a question's concepts to the ontology (Chapter 13). The third fix is cheaper than either: <strong>put the business vocabulary in the graph.</strong> Once Section 15.8 adds a metric labeled "total spend", plain <code>CONTAINS</code> finds it, and it points at <code>:Order</code>.</p>
+
+  <aside class="box gotcha">
+    <p><strong>A lexical hit is not an answer.</strong> "spend" → <code>:Big_Spender</code> is a textbook schema-linking error: the right word, the wrong concept. Always return the hit <em>with its neighbors and comments</em> so the model can see that Big_Spender is a subclass of Customer defined by a rule, not a sum of money.</p>
+  </aside>
+
+  <h2><span class="sn">15.4</span>Route first: modular ontologies</h2>
+
+  <p>Before searching everything, pick the business domain. Large ontologies are usually built as modules (one named graph, or one file, per domain: sales, logistics, HR), so a cheap first step, "which domain is this question about?", shrinks the search space by ten or a hundred times. Stardog already gives you the unit: Chapter 10's reasoning schemas are named sets of model graphs, and a query uses exactly one.</p>
+
+  <p>Uber has described this pattern publicly for its internal text-to-SQL tool, QueryGPT (Uber engineering blog, September 2024). An <em>intent agent</em> maps the question "to one or more business domains/workspaces", curated collections of tables and SQL samples for areas such as Ads or Mobility. A <em>table agent</em> then proposes tables, which the user can accept or edit, and a <em>column prune agent</em> removes irrelevant columns before the SQL is written. Intent, then workspace, then tables, then columns: each step narrows the next. That's routing plus schema linking, done in stages.</p>
+
+  <h2><span class="sn">15.5</span>Let the agent explore, like you would</h2>
+
+  <p>The fourth technique hands the search to the model. Instead of stuffing a slice into the prompt, give it tools to explore the schema step by step, the way you'd poke at <code>information_schema</code> in a new job:</p>
+
+  <ul>
+    <li><code>search_ontology(term)</code>: terms whose label or comment mentions a word, each with its one-hop neighbors.</li>
+    <li><code>describe_class(iri)</code>: one class or property and its neighborhood, the graph's <code>\d orders</code>.</li>
+  </ul>
+
+  <p>A typical run: the question says "total spend"; the model calls <code>search_ontology("spend")</code>, sees the metric and <code>:Big_Spender</code>, reads the comments, picks the metric, calls <code>describe_class(":Order")</code> to see its properties, and only then writes SPARQL. Three cheap calls on stored triples; neither warehouse wakes up. Here are the two search functions from <code>agent_v2.py</code>:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>def _hits(term: str) -&gt; list:
+    graphs = " ".join(f"&lt;{g}&gt;" for g in MODEL_GRAPHS + (REGISTRY,))
+    if SEARCH_MODE == "lexical":     # Stardog full-text index (search.enabled=true)
+        match = f"(?text ?score) &lt;tag:stardog:api:property:textMatch&gt; {literal(term)} ."
+    elif SEARCH_MODE == "semantic":  # Stardog semantic search (search.semantic.enabled=true)
+        match = f"SERVICE fts:textMatch {{ [] fts:query {literal(term)} ; fts:semantic true ; fts:result ?text }}"
+    else:                            # plain scan: fine for thousands of labels, not millions
+        match = f"FILTER(CONTAINS(LCASE(STR(?text)), LCASE({literal(term)})))"
+    q = f"""SELECT DISTINCT ?term WHERE {{
+  {match}
+  VALUES ?g {{ {graphs} }}
+  GRAPH ?g {{ ?term rdfs:label|rdfs:comment|ops:definition ?text }}</pre></div>
+
+  <p>The hits then go to <code>_slice()</code>, one query that adds each term's neighbors through <code>so:domainIncludes</code>, <code>so:rangeIncludes</code>, <code>rdfs:subClassOf</code> and <code>ops:requires</code>, and formats them like <code>get_ontology</code> does. The tool itself:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>def search_ontology(term: str) -&gt; str:
+    """Tool 3. Find ontology terms whose label/comment mentions `term`, plus 1-hop neighbors."""
+    try:
+        hits = _hits(term)
+        if not hits:
+            return f'No ontology term mentions "{term}". Try a synonym (spend -&gt; price, buyer -&gt; customer).'
+        return _slice(hits)
+    except (ValueError, RuntimeError, requests.RequestException) as e:
+        return str(e)</pre></div>
+
+  <p>Two details. <code>literal()</code> strips everything but letters, digits and a few punctuation marks before a word goes into a query, and <code>iri()</code> refuses anything that isn't a well-formed IRI, so neither can smuggle SPARQL in. And every query still goes through Chapter 14's <code>guard()</code>: read-only, capped <code>LIMIT</code>.</p>
+
+  <aside class="box java"><p>You've explored a schema from code before: JDBC's <code>DatabaseMetaData</code>.</p><div class="sbs"><div class="col"><p class="lbl">agent_v2.py tool</p><pre>describe_class(":Order")
+→ :Order (Class) "Order"
+  :purchasePrice (DatatypeProperty) "price"
+      :Order -&gt; xsd:decimal
+  :purchasedBy (ObjectProperty)
+      "purchased by" :Order -&gt; :Customer
+  …</pre></div><div class="col"><p class="lbl">Java (JDBC)</p><pre>DatabaseMetaData md = conn.getMetaData();
+try (ResultSet cols =
+       md.getColumns(null, "c360", "purchase", "%");
+     ResultSet fks =
+       md.getImportedKeys(null, "c360", "purchase")) {
+  // column names and types, then one FK hop
+}</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> <code>DatabaseMetaData</code> describes one physical database. <code>describe_class</code> describes meaning that may be stored in several warehouses, and its "types" include human labels and comments, which is what makes it searchable by an LLM.</p></aside>
+
+  <h2 id="few-shot"><span class="sn">15.6</span>Verified examples, retrieved on demand</h2>
+
+  <p>Chapter 13 introduced <dfn>few-shot examples</dfn>: a handful of solved question-and-query pairs placed in the prompt so the model copies their shape. At scale you can't include all of them either, so you retrieve the few most similar to the current question, and you only keep examples a person has checked. This is the most consistent pattern across vendors, each in its own words:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Product</th><th>What its vendor has described publicly</th></tr></thead>
+    <tbody>
+      <tr><td>Databricks Genie</td><td>Curated rooms per topic, renamed in July 2026 from "Genie spaces" to "Genie Agents", configured with Unity Catalog tables, example SQL, instructions and <em>trusted assets</em> (parameterized example queries and SQL functions). When a trusted query's exact text is used, Genie marks the response as a verified answer. The docs recommend five or fewer tables per room.</td></tr>
+      <tr><td>Snowflake Cortex Analyst</td><td>A semantic model (now semantic views; YAML files still supported) with a <em>verified query repository</em> of questions and SQL. Its API reports <code>verified_query_used</code>, including who verified it and when.</td></tr>
+      <tr><td>Stardog Voicebox</td><td>Uses an embedded vector store to match the question's concepts to the ontology, and recommends adding stored example queries (tagged <code>system:voiceboxQuestion</code>, "no more than 5 to 10" to start) for accuracy.</td></tr>
+      <tr><td>Uber QueryGPT</td><td>Each workspace carries SQL samples. An earlier prototype retrieved "7 relevant SQL samples" and "3 relevant tables" by similarity search.</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Notice the shared idea: <strong>a human-verified query is an asset</strong>, not a hint. Genie and Cortex Analyst even tell the user when an answer came from one. Your five competency questions from Chapter 14, with their SQL-checked answers, are the start of such a library, and in Section 15.12 they become golden tests.</p>
+
+  <aside class="box model">
+    <p>At scale, the agent doesn't know the schema; it <em>looks things up</em>. Route to a domain, search for the question's words, expand one hop, fetch similar verified examples, then write the query. Each step is cheap and inspectable, and none of them wakes a warehouse.</p>
+  </aside>
+
+  <!-- ======================= PART B ======================= -->
+  <h2 id="completeness"><span class="sn">15.7</span>Question B: the answer that's quietly missing a source</h2>
+
+  <p>Now the harder question. Schema retrieval makes the agent pick the <em>right</em> terms. It can't make the data behind them complete. Look at how our stack fails:</p>
+
+  <ul>
+    <li><strong>A wrong IRI template</strong> (Chapter 9): two graphs name the same customer differently, the join matches nothing, "no error, no rows".</li>
+    <li><strong>A graph you may not read</strong> (Chapter 12): silently dropped from the query's dataset. Empty, not an error.</li>
+    <li><strong>A source nobody mapped</strong>: the rows exist in a table, but no virtual graph mentions it. The graph can't miss what it was never told about.</li>
+    <li><strong>The open world</strong> (Chapter 5): absent triples are unknown, not false, so an empty result is a perfectly valid answer.</li>
+  </ul>
+
+  <p>Every one of these produces a smaller number, not an error. And the LLM can't catch it, because it only sees what came back: 15 orders summing to $502,529.42 look exactly like a complete answer. Telling the model "be careful about missing data" in the prompt doesn't help; it has nothing to be careful <em>with</em>. What's needed is a <dfn>completeness check</dfn>: code that compares the sources a metric should include with the sources that actually contributed, and says which are missing and why. So the rule of this half of the chapter:</p>
+
+  <aside class="box model">
+    <p><strong>Completeness is checked by code and data, not trusted to the LLM.</strong> Write down what a metric should include (data), probe each expected source (code), and hand the model a verdict it must repeat, not a number it must interpret.</p>
+  </aside>
+
+  <p>Let's make the failure real first.</p>
+
+  <aside class="box try">
+    <p><strong>Steps 1 to 3: add an online store with a broken mapping, then watch the agent miss it.</strong> This writes to Aurora and Stardog. Everything here can be removed at the end (Section 15.12, Cleanup).</p>
+    <p><strong>Step 1. Create the third source in Aurora.</strong> In DBeaver, on the Aurora connection (auto-commit on, as usual). Aurora may take 15 to 20 seconds to wake.</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>CREATE TABLE c360.online_order (
+  id         serial PRIMARY KEY,
+  cid        integer,
+  amount     numeric(12,2),
+  order_date date
+);
+
+-- every cid divisible by 5 gets one online order of cid * $10, dated 2024-01-15
+INSERT INTO c360.online_order (cid, amount, order_date)
+SELECT g, g * 10.00, DATE '2024-01-15'
+FROM generate_series(5, 500, 5) AS g;
+
+SELECT count(*) AS orders, sum(amount) AS total FROM c360.online_order;
+SELECT * FROM c360.online_order WHERE cid = 225;</pre></div>
+    <p>Expect <code>100 | 252500.00</code>, then one row for Carolyn: <code>cid 225, amount 2250.00, 2024-01-15</code>. (If you ran this as a user other than the data source's login, also <code>GRANT SELECT ON c360.online_order</code> to that login.) The truth is now: Carolyn's total spend is $502,529.42 in store plus $2,250.00 online, <strong>$504,779.42</strong>.</p>
+    <p><strong>Step 2. Map it, with a deliberate bug.</strong> In Studio, create a virtual graph exactly as in Chapter 8: name <code>aurora_online_c360</code>, database <code>kit-c360</code>, data source <code>aurora_c360</code>, syntax <code>SMS2</code>, and this mapping. Look at the second <code>BIND</code>: <code>cust:</code> instead of <code>customer:</code>.</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre># Virtual graph: aurora_online_c360 - online orders from Aurora.
+# DELIBERATE BUG (Chapter 15): the customer template says cust: instead of customer:
+prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+prefix : &lt;tag:stardog:api:ecomm:&gt;
+
+MAPPING &lt;urn:c360:aurora:online_order&gt;
+FROM SQL {
+  SELECT id, cid, amount, order_date, 1 AS qty,
+         'online ' || CAST(order_date AS varchar) || ' - $' || CAST(amount AS varchar) AS label
+  FROM c360.online_order
+}
+TO {
+  ?iri a :Order ; rdfs:label ?label ;
+    :purchasePrice ?p ; :quantity ?q ; :purchaseDate ?dt ; :purchasedBy ?cust_iri .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:purchase:online:{id}") AS ?iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:cust:{cid}") AS ?cust_iri)
+  BIND(xsd:decimal(?amount) AS ?p)
+  BIND(xsd:integer(?qty) AS ?q)
+  BIND(xsd:date(?order_date) AS ?dt)
+}</pre></div>
+    <p>Everything else follows the verified Redshift purchase mapping: <code>:purchasePrice</code> as <code>xsd:decimal</code>, <code>:quantity</code> as <code>xsd:integer</code> (a constant 1 from the SQL, since SMS2 can't compute), a date cast, and order IRIs (<code>purchase:online:{id}</code>) that can't collide with Redshift's <code>purchase:us:pos{id}</code>. If Stardog says it can't find <code>online_order</code>, the data source may be caching table metadata; tell Claude what you see.</p>
+    <p><strong>Step 3. Ask the Chapter 14 agent.</strong></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>python agent.py -v "What is Carolyn Inworth's total spend?"</pre></div>
+    <p>Expect something like "Carolyn Inworth's total spend is $502,529.42 across 15 orders." No warning. Its prompt only knows <code>redshift_c360</code> for orders, and even a prompt that listed the new graph wouldn't help, because the new graph's orders point at <code>urn:stardog:demos:c360:cust:225</code>, a customer that doesn't exist. Now see it from the graph's side, per source, in Studio:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?source (SUM(?p * ?q) AS ?spend) (COUNT(?o) AS ?orders)
+WHERE {
+  VALUES ?c { &lt;urn:stardog:demos:c360:customer:225&gt; }
+  { GRAPH &lt;virtual://redshift_c360&gt; { ?o :purchasedBy ?c ; :purchasePrice ?p ; :quantity ?q }
+    BIND("redshift_c360" AS ?source) }
+  UNION
+  { GRAPH &lt;virtual://aurora_online_c360&gt; { ?o :purchasedBy ?c ; :purchasePrice ?p ; :quantity ?q }
+    BIND("aurora_online_c360" AS ?source) }
+}
+GROUP BY ?source</pre></div>
+    <p>Expect <strong>one</strong> row: <code>redshift_c360 | 502529.42 | 15</code>. The online source doesn't show a zero; it doesn't show at all. A missing row is the whole failure, and nothing in the result says a row is missing. Finally, the key-alignment check:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT (COUNT(DISTINCT ?k) AS ?keys) (COUNT(DISTINCT ?known) AS ?matched)
+WHERE {
+  GRAPH &lt;virtual://aurora_online_c360&gt; { ?o :purchasedBy ?k }
+  OPTIONAL { GRAPH &lt;virtual://aurora_c360_safe&gt; { ?k a :Customer } BIND(?k AS ?known) }
+}</pre></div>
+    <p>Expect <code>100 | 0</code>: a hundred customer keys, none of which is a customer. Keep this result in mind; it's the heart of Section 15.9.</p>
+  </aside>
+
+  <aside class="box sql">
+    <p>In SQL you'd hunt orphans with an anti-join: <code>SELECT count(*) FROM c360.online_order o LEFT JOIN c360.customer c ON c.cid = o.cid WHERE c.cid IS NULL</code>. Run it in DBeaver: <strong>0 orphans</strong>. The table is fine. <b>Where the analogy breaks:</b> in SQL the join key is a column value, and a foreign key could reject bad rows at insert time. In the graph the key is an IRI minted by a template in the mapping, after the data left the database. The bug lives in neither table, only in the mapping, so only a check that runs <em>in the graph</em> can see it. No constraint anywhere would have stopped it.</p>
+  </aside>
+
+  <h2 id="registry"><span class="sn">15.8</span>The source registry: what should be there</h2>
+
+  <p>You can't notice a missing source unless something says it should be present. That something is a <dfn>source registry</dfn>: a few triples, in their own named graph <code>&lt;urn:c360:registry&gt;</code>, saying which sources provide which classes, how they join, and which classes each metric requires. It's data, so it lives in the graph next to the ontology, readable by SPARQL, versioned like everything else. We need a tiny vocabulary for it, <code>ops:</code> = <code>tag:c360:ops:</code>, with five terms:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>Meaning</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><code>ops:provides</code></td><td>This source holds instances of this class</td><td><code>&lt;virtual://redshift_c360&gt; ops:provides :Order</code></td></tr>
+      <tr><td><code>ops:joinsOn</code></td><td>The IRI template its customer keys must follow</td><td><code>"urn:stardog:demos:c360:customer:{cid}"</code></td></tr>
+      <tr><td><code>ops:keyProperty</code></td><td>The property that carries that key</td><td><code>:purchasedBy</code></td></tr>
+      <tr><td><code>ops:requires</code></td><td>A metric needs every source of this class</td><td><code>ops:total_spend ops:requires :Order</code></td></tr>
+      <tr><td><code>ops:definition</code></td><td>The business definition, in words</td><td>"SUM(:purchasePrice * :quantity) …"</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Notice what the registry does <em>not</em> say: it doesn't copy the mapping. It states the contract ("online orders join on <code>customer:{cid}</code>"), and a probe checks reality against it. The <code>provides</code> half could even be generated: the catalog database that came up during the kit cleanup stores Stardog's mappings as R2RML triples maps, with their IRI templates (such as <code>urn:stardog:demos:c360:customer:{cid}</code>) linked to tables and columns (whether and when it picks up your virtual graphs depends on Stardog's catalog jobs, so check before relying on it). But the <code>requires</code> half, "total spend must include online orders", is a business decision that no catalog can infer. Someone has to write it down once.</p>
+
+  <aside class="box try">
+    <p><strong>Step 4. Load the registry.</strong> In Studio, reasoning off:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX :     &lt;tag:stardog:api:ecomm:&gt;
+PREFIX ops:  &lt;tag:c360:ops:&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+INSERT DATA { GRAPH &lt;urn:c360:registry&gt; {
+  ops:total_spend a ops:Metric ;
+      rdfs:label "total spend" ;
+      ops:requires :Order ;
+      ops:definition "SUM(:purchasePrice * :quantity) over every :Order purchased by the customer, from every source that provides :Order" .
+
+  &lt;virtual://aurora_c360_safe&gt; a ops:Source ;
+      rdfs:label "Aurora customers (the customer master)" ;
+      ops:provides :Customer ;
+      ops:joinsOn "urn:stardog:demos:c360:customer:{cid}" .
+
+  &lt;virtual://redshift_c360&gt; a ops:Source ;
+      rdfs:label "Redshift in-store purchases" ;
+      ops:provides :Order ;
+      ops:keyProperty :purchasedBy ;
+      ops:joinsOn "urn:stardog:demos:c360:customer:{cid}" .
+
+  &lt;virtual://aurora_online_c360&gt; a ops:Source ;
+      rdfs:label "Aurora online orders" ;
+      ops:provides :Order ;
+      ops:keyProperty :purchasedBy ;
+      ops:joinsOn "urn:stardog:demos:c360:customer:{cid}" .
+} }</pre></div>
+    <p>Check it: <code>SELECT (COUNT(*) AS ?n) WHERE { GRAPH &lt;urn:c360:registry&gt; { ?s ?p ?o } }</code> should return <strong>18</strong>. The subjects are the virtual graphs' own names: an IRI is just a name (Chapter 3), so <code>&lt;virtual://redshift_c360&gt;</code> can have properties like anything else.</p>
+    <p>If you run agents as a restricted user from Chapter 12, grant that role read on <code>kit-c360\urn:c360:registry</code> and <code>kit-c360\virtual://aurora_online_c360</code>. Without the second grant, the new source is simply invisible to that user, which is one of the failures below.</p>
+  </aside>
+
+  <h2 id="key-overlap"><span class="sn">15.9</span>Probes: health, key alignment, per-source subtotals</h2>
+
+  <p>With the expected list in hand, <code>get_total_spend</code> runs three small checks per source, one query at a time so that one broken source can't hide the others:</p>
+
+  <ol>
+    <li><strong>Health and permission probe.</strong> <code>SELECT ?s WHERE { GRAPH &lt;g&gt; { ?s a :Order } } LIMIT 1</code>. An error means unreachable. A row means data of the right class exists. Nothing at all is ambiguous: empty, unreadable or undefined all look the same through <code>GRAPH</code>. So the probe asks again with <code>SERVICE &lt;g&gt;</code>, which (per Chapter 12 and the Virtual Graph Security docs) raises an error where <code>GRAPH</code> stays silent, and classifies the error text. Triples of some other class mean the mapping emits the wrong class.</li>
+    <li><strong><dfn>Key-overlap probe</dfn></strong> (key alignment). Sample up to 100 distinct customer keys from the source and count how many are customers in the master graph. The share is the source's key overlap. Redshift: 100%. Online orders with the bad template: 0%. A healthy source can have a few orphans; <strong>0% means the IRI template doesn't match</strong>, and the probe also tests the sample against the registry's template to say what the keys look like instead.</li>
+    <li><strong>Per-source subtotal.</strong> <code>SUM(?p * ?q)</code> and <code>COUNT</code> for the customer, one source at a time, so the answer can say where every dollar came from.</li>
+  </ol>
+
+  <p>Press Play to watch the check catch the miss that Step 3 didn't:</p>
+
+  <figure class="fig anim" id="f-15-2">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 640 360" role="img" aria-label="Two order sources point at Carolyn. Redshift's orders point at customer:225 and sum to 502,529.42. The online orders point at cust:225, a different node, so they join nothing. The registry expects both sources; the key-overlap probe shows 0 percent for the online source; the answer contract reports a partial value.">
+      <g class="c1">
+        <rect x="245" y="20" width="150" height="46" rx="23" fill="var(--soft)" stroke="var(--subj)" stroke-width="2"/>
+        <text x="320" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="var(--subj)">customer:225</text>
+        <text x="320" y="56" text-anchor="middle" font-size="10.5" fill="var(--muted)">Carolyn (Aurora master)</text>
+        <rect x="20" y="120" width="170" height="58" rx="8" fill="var(--soft)" stroke="var(--pred)"/>
+        <text x="105" y="143" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">redshift_c360</text>
+        <text x="105" y="162" text-anchor="middle" font-size="10.5" fill="var(--muted)">15 orders, $502,529.42</text>
+        <line x1="150" y1="120" x2="258" y2="64" stroke="var(--pred)" stroke-width="2"/>
+        <text x="160" y="92" font-size="10.5" fill="var(--pred)">:purchasedBy</text>
+      </g>
+      <g class="c2">
+        <rect x="450" y="120" width="170" height="58" rx="8" fill="var(--soft)" stroke="var(--pred)"/>
+        <text x="535" y="143" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">aurora_online_c360</text>
+        <text x="535" y="162" text-anchor="middle" font-size="10.5" fill="var(--muted)">1 order, $2,250.00</text>
+        <line x1="535" y1="120" x2="535" y2="78" stroke="var(--gotcha)" stroke-width="2" stroke-dasharray="5 4"/>
+        <rect x="470" y="40" width="130" height="36" rx="18" fill="none" stroke="var(--gotcha)" stroke-width="2" stroke-dasharray="4 3"/>
+        <text x="535" y="63" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--gotcha)">cust:225</text>
+        <text x="535" y="30" text-anchor="middle" font-size="10.5" fill="var(--gotcha)">a customer nobody knows</text>
+      </g>
+      <g class="c3">
+        <rect x="220" y="120" width="200" height="58" rx="8" fill="var(--soft)" stroke="var(--accent2)" stroke-width="2"/>
+        <text x="320" y="143" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent2)">SUM for customer:225</text>
+        <text x="320" y="162" text-anchor="middle" font-size="12" fill="var(--ink)">$502,529.42 (looks complete)</text>
+      </g>
+      <g class="c4">
+        <rect x="14" y="210" width="262" height="64" rx="8" fill="var(--paper)" stroke="var(--model)" stroke-width="2"/>
+        <text x="145" y="230" text-anchor="middle" font-size="12" font-weight="700" fill="var(--model)">&lt;urn:c360:registry&gt;</text>
+        <text x="145" y="248" text-anchor="middle" font-size="10.5" fill="var(--ink)">total_spend requires :Order</text>
+        <text x="145" y="264" text-anchor="middle" font-size="10.5" fill="var(--ink)">expected: redshift_c360, aurora_online_c360</text>
+      </g>
+      <g class="c5">
+        <rect x="370" y="210" width="256" height="64" rx="8" fill="var(--paper)" stroke="var(--gotcha)" stroke-width="2"/>
+        <text x="498" y="230" text-anchor="middle" font-size="12" font-weight="700" fill="var(--gotcha)">key-overlap probe</text>
+        <text x="498" y="248" text-anchor="middle" font-size="10.5" fill="var(--ink)">redshift_c360: 100% known customers</text>
+        <text x="498" y="264" text-anchor="middle" font-size="10.5" fill="var(--ink)">aurora_online_c360: 0 of 100 → mismatch</text>
+      </g>
+      <g class="c6">
+        <rect x="30" y="292" width="580" height="58" rx="8" fill="var(--soft)" stroke="var(--try)" stroke-width="2"/>
+        <text x="320" y="314" text-anchor="middle" font-size="12" font-weight="700" fill="var(--try)">Answer contract: complete = false</text>
+        <text x="320" y="334" text-anchor="middle" font-size="11" fill="var(--ink)">Partial: $502,529.42. Expected redshift_c360, aurora_online_c360; online missing: mapping mismatch</text>
+      </g>
+    </svg>
+    <p class="stepcap"></p>
+    <figcaption>Figure 15.2: The silent miss and the check. The join itself can't see the online order; the registry plus the key-overlap probe can.</figcaption>
+  </figure>
+
+  <p>Here is every failure mode, how the code tells them apart, and what the answer then says:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Source state</th><th>How it's detected</th><th>What the answer says</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Contributed</strong></td><td>Health probe finds the class, key overlap ≥ 90%, subtotal runs</td><td>Included, with its subtotal</td></tr>
+      <tr><td><strong>Reachable but no data</strong></td><td><code>GRAPH</code> and <code>SERVICE</code> both return nothing, no error</td><td>"missing because no data"</td></tr>
+      <tr><td><strong>Unreachable / error</strong></td><td>The probe raises an error (JDBC failure, timeout, warehouse paused past the timeout)</td><td>"missing because unreachable (…error text…)"</td></tr>
+      <tr><td><strong>No permission</strong> (Chapter 12's silent drop)</td><td><code>GRAPH</code> is empty; <code>SERVICE</code> errors with a permission message</td><td>"missing because no permission"</td></tr>
+      <tr><td><strong>Mapping mismatch: wrong class</strong></td><td>The graph has triples, but none of the class the registry promised</td><td>"missing because mapping mismatch (… no :Order …)"</td></tr>
+      <tr><td><strong>Mapping mismatch: wrong IRI template</strong></td><td>Key overlap 0%; the sample doesn't fit the registry's template</td><td>"missing because mapping mismatch (0% customer-key overlap …)"</td></tr>
+      <tr><td><strong>Not mapped at all</strong></td><td>Only the registry can reveal it: it lists a graph that <code>SERVICE</code> reports as not found</td><td>"missing because not mapped"</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Two honest caveats. The error classification reads Stardog's error text for words like "permission" or "not found"; the exact messages vary between versions, so an unrecognized error falls back to "unreachable" with the raw text attached, which is still a correct "missing". And the last row has a mirror image nothing can catch: a source that exists, is unmapped, <em>and</em> isn't in the registry. That's a governance gap, not a query problem; the fix is a process (no new source goes live without a registry entry), the same way no new table ships without a data contract (Section 15.13).</p>
+
+  <h2 id="contract"><span class="sn">15.10</span>The answer contract</h2>
+
+  <p>The last piece stops the LLM from rounding a partial answer into a complete-sounding sentence. <code>get_total_spend</code> returns an <dfn>answer contract</dfn>, a fixed JSON shape: <code>{value, complete, expected, included, missing: [{source, reason}]}</code>, plus the per-source subtotals and a ready-made <code>summary</code> sentence built by code. This is what it returns for Carolyn after Step 4 (the sample key's number may differ):</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>{
+  "metric": "ops:total_spend",
+  "value": "502529.42",
+  "complete": false,
+  "expected": ["aurora_online_c360", "redshift_c360"],
+  "included": ["redshift_c360"],
+  "missing": [{"source": "aurora_online_c360",
+               "reason": "mapping mismatch (0% customer-key overlap in 100 sampled keys; keys look like urn:stardog:demos:c360:cust:5, registry expects urn:stardog:demos:c360:customer:{cid})"}],
+  "subtotals": {"redshift_c360": {"spend": "502529.42", "orders": 15, "key_overlap": 1.0}},
+  "customers": ["Carolyn Inworth"],
+  "warnings": [],
+  "summary": "Partial: $502,529.42. Expected sources aurora_online_c360, redshift_c360; aurora_online_c360 missing because mapping mismatch (0% customer-key overlap in 100 sampled keys; keys look like urn:stardog:demos:c360:cust:5, registry expects urn:stardog:demos:c360:customer:{cid})."
+}</pre></div>
+
+  <p><code>complete</code> is computed, never judged: true only when there's a value, the registry listed at least one source, and nothing is missing. The system prompt then makes the presentation non-negotiable. Here's what <code>agent_v2.py</code> appends to Chapter 14's prompt:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SYSTEM_PROMPT = v1.SYSTEM_PROMPT + """
+
+Chapter 15 additions:
+- Total spend (for a customer by name or cid, or for a state) MUST come from get_total_spend,
+  never from your own run_sparql query: only get_total_spend checks that every source that
+  should feed the number actually did.
+- get_total_spend returns an answer contract (JSON). Begin your answer with its "summary"
+  field, copied verbatim. If "complete" is false, never call the value the total: say it is
+  partial, and list every entry in "missing" with its reason. Do not guess what is missing.
+- If the question uses a word you can't map to the ontology above, call search_ontology with
+  that word (or describe_class with a term) before writing SPARQL."""</pre></div>
+
+  <p>Why a pre-built <code>summary</code> instead of letting the model phrase it? Because paraphrase is where "partial" turns into "approximately" and then into nothing. Copying a sentence verbatim is the one thing LLMs do very reliably, and the golden tests in Section 15.12 check that it happened.</p>
+
+  <aside class="box java"><p>In Java 21 you'd make the contract a record and the missing-reasons a sealed hierarchy, so the compiler forces every caller to handle every failure mode.</p><div class="sbs"><div class="col"><p class="lbl">The contract (JSON from get_total_spend)</p><pre>{"value": "502529.42",
+ "complete": false,
+ "expected": ["aurora_online_c360",
+              "redshift_c360"],
+ "included": ["redshift_c360"],
+ "missing": [
+   {"source": "aurora_online_c360",
+    "reason": "mapping mismatch
+      (0% customer-key overlap …)"}]}</pre></div><div class="col"><p class="lbl">Java 21</p><pre>sealed interface Reason permits Unreachable,
+    NoData, NoPermission, MappingMismatch, NotMapped {}
+record Unreachable(String error) implements Reason {}
+record NoData() implements Reason {}
+record NoPermission() implements Reason {}
+record MappingMismatch(double keyOverlap,
+    String sampleKey) implements Reason {}
+record NotMapped() implements Reason {}
+
+record Missing(String source, Reason reason) {}
+record AnswerContract(BigDecimal value,
+    List&lt;String&gt; expected, List&lt;String&gt; included,
+    List&lt;Missing&gt; missing) {
+  boolean complete() {
+    return value != null &amp;&amp; !expected.isEmpty()
+        &amp;&amp; missing.isEmpty();
+  }
+}
+
+static String why(Reason r) {
+  return switch (r) {       // javac: every case covered
+    case Unreachable u -&gt; "unreachable (" + u.error() + ")";
+    case NoData n -&gt; "no data";
+    case NoPermission p -&gt; "no permission";
+    case MappingMismatch m -&gt; "mapping mismatch (%.0f%% overlap)"
+        .formatted(100 * m.keyOverlap());
+    case NotMapped x -&gt; "not mapped";
+  };
+}</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> the types vanish at the edge. The LLM receives JSON strings, not a sealed hierarchy, so the prompt (and the golden tests) have to enforce what the compiler enforces in Java; the Python version uses plain strings and gets no exhaustiveness check at all. And a sealed interface is a closed world: adding a sixth failure mode means changing code, while the registry beside it is open-world RDF you extend by inserting triples.</p></aside>
+
+  <h2><span class="sn">15.11</span>The code: <code>agent_v2.py</code></h2>
+
+  <p><a href="agent_v2.py"><code>agent_v2.py</code></a> (about 380 lines) imports Chapter 14's <code>agent.py</code> and keeps <code>run_sparql</code>, <code>get_ontology</code>, <code>guard()</code>, the environment variables and the OpenRouter switch unchanged. It adds the three schema tools from Part A, the completeness check, a longer prompt and a <code>--spend</code> mode that runs the check without any LLM. The heart of it:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>def probe(src: dict) -&gt; tuple:
+    """Health probe. Returns (status, detail). status 'ok' means rows of the class exist."""
+    g, cls = iri(src["graph"]), iri(src["cls"])
+    try:
+        if select(f"SELECT ?s WHERE {{ GRAPH {g} {{ ?s a {cls} }} }} LIMIT 1"):
+            return "ok", ""
+        if select(f"SELECT ?s WHERE {{ GRAPH {g} {{ ?s ?p ?o }} }} LIMIT 1"):
+            return "mapping_mismatch", f"the graph has triples but no {short(src['cls'])} (wrong class in the mapping?)"
+    except (RuntimeError, requests.RequestException) as e:
+        return classify_error(str(e)), str(e)[:200]
+    # Empty through GRAPH: truly empty, unreadable (silently dropped, Chapter 12) or not defined.
+    # SERVICE fails loudly where GRAPH stays silent, so ask again that way.
+    try:
+        rows = select(f"SELECT ?s WHERE {{ SERVICE {g} {{ ?s ?p ?o }} }} LIMIT 1")
+    except (RuntimeError, requests.RequestException) as e:
+        return classify_error(str(e)), str(e)[:200]
+    if rows:
+        return "no_permission", "visible through SERVICE but not through GRAPH"
+    return "no_data", "reachable, but the source returned no rows"
+
+
+def key_overlap(src: dict, master: dict) -&gt; tuple:
+    """Share of the source's customer keys that are known customers. Returns (share, n, example)."""
+    keys = [r["k"] for r in select(f"""SELECT DISTINCT ?k WHERE {{ GRAPH {iri(src['graph'])} {{
+  ?o a {iri(src['cls'])} ; {iri(src['keyProp'])} ?k }} }} LIMIT {KEY_SAMPLE}""")]
+    keys = [k for k in keys if SAFE_IRI.match(k)]
+    if not keys:
+        return 0.0, 0, ""
+    values = " ".join(f"&lt;{k}&gt;" for k in keys)
+    known = select(f"""SELECT (COUNT(DISTINCT ?k) AS ?n) WHERE {{ VALUES ?k {{ {values} }}
+  GRAPH {iri(master['graph'])} {{ ?k a :Customer }} }}""")
+    n = int(known[0]["n"]) if known else 0
+    return n / len(keys), len(keys), keys[0]</pre></div>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>def get_total_spend(customer_name=None, cid=None, state=None) -&gt; dict:
+    """Tool 5. Total spend with a deterministic completeness check. Returns the answer contract."""
+    sources, master = read_registry()
+    expected = [name_of(s["graph"]) for s in sources]
+    if not sources or not master:
+        return contract(None, expected, [], [{"source": "registry", "reason":
+                        f"no sources or customer master declared in &lt;{REGISTRY}&gt;"}], {}, [], [])
+    people = find_customers(master, customer_name, cid, state)
+    if not people:
+        return contract(None, expected, [], [], {}, [], [],
+                        note=f"no matching customer in {name_of(master['graph'])}")
+    cust = [p["c"] for p in people]
+    total, included, missing, subtotals, warnings = Decimal("0"), [], [], {}, []
+    for src in sources:
+        name = name_of(src["graph"])
+        status, detail = probe(src)
+        if status != "ok":
+            missing.append({"source": name, "reason": status.replace("_", " ") + (f" ({detail})" if detail else "")})
+            continue
+        try:
+            share, n, example = key_overlap(src, master)
+            if share == 0:
+                hint = "" if template_regex(src["template"]).match(example) else \
+                       f"; keys look like {example}, registry expects {src['template']}"
+                missing.append({"source": name, "reason":
+                                f"mapping mismatch (0% customer-key overlap in {n} sampled keys{hint})"})
+                continue
+            if share &lt; OVERLAP_MIN:
+                warnings.append(f"{name}: only {share:.0%} of {n} sampled customer keys are known customers")
+            amount, orders = subtotal(src, cust)
+        except (ValueError, RuntimeError, requests.RequestException) as e:
+            missing.append({"source": name, "reason": f"{classify_error(str(e))} ({str(e)[:200]})"})
+            continue
+        total += amount
+        included.append(name)
+        subtotals[name] = {"spend": f"{amount:.2f}", "orders": orders, "key_overlap": round(share, 3)}
+    return contract(total, expected, included, missing, subtotals,
+                    [p["name"] for p in people][:10], warnings)</pre></div>
+
+  <p>A reading guide:</p>
+  <ul>
+    <li><strong><code>read_registry()</code></strong> (not shown) asks <code>&lt;urn:c360:registry&gt;</code> which graphs provide what <code>ops:total_spend</code> requires, and which graph is the customer master. No registry means <code>complete: false</code>, never a silent pass.</li>
+    <li><strong><code>probe()</code></strong> is Section 15.9's health and permission probe, including the <code>SERVICE</code> retry.</li>
+    <li><strong><code>key_overlap()</code></strong> samples keys (Chapter 14's guard caps it at 100) and counts known customers with one <code>VALUES</code> query against the master graph.</li>
+    <li><strong><code>get_total_spend()</code></strong> skips any source that fails a probe, records why, and adds up only what passed. The value is always the sum of what was actually included, so a partial answer is still a correct partial answer.</li>
+  </ul>
+
+  <p>I tested the completeness logic offline against a fake Stardog covering every row of the failure table, a missing registry, an unknown customer and an injection attempt in the customer name; every query it generates also parses as standard SPARQL 1.1. It hasn't been run against your server yet, which is what the next steps do.</p>
+
+  <aside class="box try">
+    <p><strong>Step 5. Run the new agent against the broken mapping.</strong> Save <a href="agent_v2.py"><code>agent_v2.py</code></a> next to <code>agent.py</code>, with the same environment variables as Chapter 14. First the check alone, no LLM (it still imports <code>agent.py</code>, so the API-key variable must be set):</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>python agent_v2.py --spend "Carolyn Inworth"
+python agent_v2.py -v "What is Carolyn Inworth's total spend?"</pre></div>
+    <p>The first prints the contract from Section 15.10: <code>"complete": false</code>, <code>"value": "502529.42"</code>, and <code>aurora_online_c360</code> missing with "mapping mismatch (0% customer-key overlap …)". The second should begin with the same <code>Partial: $502,529.42. Expected sources aurora_online_c360, redshift_c360; aurora_online_c360 missing because mapping mismatch …</code> sentence, followed by whatever the model adds. With <code>-v</code> you'll see about ten small check queries before the answer; each wakes Aurora or Redshift, so don't loop it against Redshift's daily cap.</p>
+    <p><strong>Step 6. Fix the mapping and ask again.</strong> In Studio, open <strong>Virtual Graphs</strong> → <code>aurora_online_c360</code> and edit the mapping (the edit control varies between Studio versions; deleting and recreating the graph with the same name also works). Change the one line to:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust_iri)</pre></div>
+    <p>Save, then rerun both commands. Expect <code>"complete": true</code>, <code>"value": "504779.42"</code>, subtotals of 502529.42 (15 orders) from Redshift and 2250.00 (1 order) from online, and an answer starting <code>Complete: $504,779.42. All expected sources contributed: aurora_online_c360, redshift_c360.</code> Rerun Step 3's per-source query too: now two rows, and the key-alignment query returns <code>100 | 100</code>.</p>
+    <p>Other numbers, if you want to cross-check: online orders total $252,500.00 over 100 rows; the whole business goes from $34,816,752.87 to $35,069,252.87; and <code>--spend-state Wisconsin</code> goes from a partial $837,195.23 to a complete $839,445.23. The Wisconsin top three keep their order, because Carolyn (cid 225) is the only one of the three whose cid is a multiple of 5: Carolyn $504,779.42, Renaud Brosio $207,537.22, Sephira McKleod $76,339.43.</p>
+  </aside>
+
+  <aside class="box gotcha">
+    <p><strong>The ranking questions don't go through the check.</strong> <code>get_total_spend</code> guards one metric. "Top spenders in Wisconsin" is still answered by the model's own <code>run_sparql</code>, whose prompt only lists <code>redshift_c360</code>, so it reports Carolyn at $502,529.42 even after the fix: the right name, an incomplete number. In production you'd route every metric the business cares about through a checked tool (or let the check generate the query), and keep free-form SPARQL for exploration.</p>
+  </aside>
+
+  <h2><span class="sn">15.12</span>Golden tests: <code>eval.py</code></h2>
+
+  <p>A check you only run by hand stops being run. <a href="eval.py"><code>eval.py</code></a> turns the competency questions into <dfn>golden tests</dfn>: each question has an answer verified in SQL, the harness asks the agent, extracts the numbers, and compares within a cent. Spend questions carry an extra completeness assertion: the number must come from <code>get_total_spend</code>, and an incomplete contract fails the test even if the model admits it. Here it is in full:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>#!/usr/bin/env python3
+"""eval.py - golden tests for the c360 agent (Chapter 15).
+
+Each case is a competency question with an answer verified in plain SQL (DBeaver).
+The harness asks agent_v2, pulls the numbers out of the answer, compares them within a
+tolerance, and checks completeness: a spend answer must come from get_total_spend, and
+if that contract says complete=false, the answer must say "Partial".
+
+Usage:  python eval.py            (all cases; each one calls the LLM and Stardog)
+        python eval.py --direct   (spend cases only, straight through get_total_spend, no LLM)
+Exit code 0 when every case passes, so you can run it in CI.
+"""
+import json, re, sys
+import agent_v2
+
+CASES = [  # expected values: SQL over Aurora + Redshift, after Chapter 15 step 6
+    {"q": "What is Carolyn Inworth's total spend?", "number": 504779.42,
+     "spend": {"customer_name": "Carolyn Inworth"}},
+    {"q": "What is the total spend of all customers in Wisconsin?", "number": 839445.23,
+     "spend": {"state": "Wisconsin"}},
+    {"q": "How many customers live in Texas?", "number": 53},
+    {"q": "How many purchases are recorded in Redshift?", "number": 2500},
+    {"q": "Who is the top spender in Wisconsin?", "text": "Carolyn Inworth"},
+]
+TOLERANCE = 0.01
+
+
+def numbers(text: str) -&gt; list:
+    return [float(n.replace(",", "")) for n in re.findall(r"\d[\d,]*(?:\.\d+)?", text)]
+
+
+def check_answer(case: dict, answer: str, log: list) -&gt; list:
+    """Return a list of failure reasons (empty = PASS)."""
+    fails = []
+    if "number" in case and not any(abs(n - case["number"]) &lt;= TOLERANCE for n in numbers(answer)):
+        fails.append(f"expected {case['number']:,} in the answer")
+    if "text" in case and case["text"].lower() not in answer.lower():
+        fails.append(f"expected '{case['text']}' in the answer")
+    if "spend" in case:  # completeness assertion
+        contracts = [json.loads(r) for name, _, r in log if name == "get_total_spend"]
+        if not contracts:
+            fails.append("spend was not computed by get_total_spend (no completeness check)")
+        elif not contracts[-1].get("complete"):
+            if "partial" not in answer.lower():
+                fails.append("contract says incomplete but the answer does not say 'Partial'")
+            fails.append("incomplete: " + contracts[-1].get("summary", ""))
+    return fails
+
+
+def run(direct: bool) -&gt; int:
+    failed = 0
+    for case in CASES:
+        if direct:
+            if "spend" not in case:
+                continue
+            c = agent_v2.get_total_spend(**case["spend"])
+            answer, log = c["summary"], [("get_total_spend", case["spend"], json.dumps(c))]
+        else:
+            log = []
+            answer = agent_v2.ask(case["q"], log)
+        fails = check_answer(case, answer, log)
+        failed += bool(fails)
+        print(f"{'FAIL' if fails else 'PASS'}  {case['q']}")
+        for f in fails:
+            print(f"      - {f}")
+        if fails:
+            print(f"      answer: {answer[:300]}")
+    print(f"\n{failed} failed" if failed else "\nall passed")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(run("--direct" in sys.argv))</pre></div>
+
+  <p>The expected values were computed from the same rows you loaded (the kit's CSVs) plus Step 1's formula, and they reproduce Chapter 9's verified numbers exactly. Run <code>python eval.py --direct</code> before Step 6 and both spend cases fail, with the contract's partial summary printed; after the fix, both pass. <code>python eval.py</code> runs all five through the LLM. Wire it into CI and a future mapping change that drops a source fails a build instead of a board meeting. (After the cleanup below, the two spend numbers go back to $502,529.42 and $837,195.23.)</p>
+
+  <aside class="box try">
+    <p><strong>Cleanup (optional).</strong> Keeping the online source, the registry and the table is harmless: a hundred rows and eighteen triples, and nothing costs more. If you do remove them, go in this order, so no virtual graph points at a missing table:</p>
+    <ol>
+      <li>Studio → <strong>Virtual Graphs</strong> → <code>aurora_online_c360</code> → delete.</li>
+      <li>Studio query: <code>DROP GRAPH &lt;urn:c360:registry&gt;</code></li>
+      <li>DBeaver on Aurora: <code>DROP TABLE c360.online_order;</code></li>
+    </ol>
+    <p>Without the registry, <code>agent_v2.py</code> answers spend questions with <code>complete: false</code> and "no sources … declared", which is the safe failure.</p>
+  </aside>
+
+  <h2 id="practice"><span class="sn">15.13</span>Where this sits in industry practice</h2>
+
+  <p>None of this is new to data engineering; it's the same discipline applied one layer up, where an agent reads the data. Four ideas you'll meet by name:</p>
+
+  <ul>
+    <li><strong><dfn>Data contract</dfn>.</strong> An agreement between the team that produces a dataset and the teams that consume it: schema, meaning, freshness, and who is told when it changes. Our registry entry "online orders provide <code>:Order</code> and join on <code>customer:{cid}</code>" is a two-line data contract, and the key-overlap probe enforces it.</li>
+    <li><strong><dfn>Data observability</dfn>.</strong> Continuously checking data the way you monitor services. Monte Carlo popularized "five pillars" (freshness, distribution, volume, schema, lineage), and Great Expectations lets you write assertions such as <code>expect_table_row_count_to_be_between</code> or <code>expect_column_values_to_not_be_null</code>. Our probes are volume and schema checks run at question time.</li>
+    <li><strong>Lineage and <dfn>provenance</dfn>.</strong> Recording where a value came from. The W3C standard vocabulary is <dfn>PROV-O</dfn> (a W3C Recommendation since April 2013): <code>prov:Entity</code>, <code>prov:Activity</code>, <code>prov:Agent</code>, and links such as <code>prov:used</code>, <code>prov:wasGeneratedBy</code> and <code>prov:wasDerivedFrom</code>. Stardog's own catalog database uses <code>prov:used</code> and <code>prov:generated</code> to record its materialization runs. The contract's <code>included</code> and <code>subtotals</code> are provenance in miniature; a next step would emit them as PROV-O triples.</li>
+    <li><strong><dfn>Metrics layer</dfn>.</strong> Define a metric once, with its inputs, and have every tool use that definition: the dbt Semantic Layer (powered by MetricFlow, metrics in YAML on semantic models), Cube (measures and dimensions defined once, served over SQL, REST and GraphQL), and Looker's LookML (measures in views). <code>ops:total_spend ops:requires :Order</code> is the same idea in triples, and it's what lets code, rather than a model, know what "complete" means.</li>
+  </ul>
+
+  <aside class="box blog">
+    <p>The blog's closing section sells federation as "cooperation without coordination": each team maps its own source (Athena, say) and the IRIs join them, with no central integration project. This chapter is the fine print. Adding a source takes no coordination, but <em>trusting a metric</em> that spans sources takes a little: one registry entry saying the new source counts, and a probe that proves its keys line up. That's about twenty triples of coordination instead of an ETL project.</p>
+  </aside>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>Why is schema linking, not SPARQL syntax, the hard part at scale?</summary><p>Once the right handful of terms is known, writing the query is routine. Finding them among thousands of similar ones is where models fail. That's why every scaled system narrows first: route to a domain, search, expand one hop, retrieve similar verified examples.</p></details>
+    <details><summary>A lexical search for "spend" returns <code>:Big_Spender</code>. What went wrong, and name two fixes.</summary><p>The right word, the wrong concept: Big_Spender is a rule-derived class of customers, not a sum. Fixes: semantic (embedding) search, which can match "spend" to "price"; or putting the business vocabulary in the graph (a metric labeled "total spend" that requires <code>:Order</code>); and always return hits with their neighbors and comments.</p></details>
+    <details><summary>The online mapping says <code>cust:{cid}</code>. Why does DBeaver's orphan check find nothing wrong?</summary><p>The table's <code>cid</code> values are all valid customers. The bug is in the mapping, which mints IRIs after the data leaves Aurora, so only a check in the graph (the key-overlap probe) sees that 0 of 100 keys match a customer IRI.</p></details>
+    <details><summary>Why can't the LLM itself notice that a source is missing?</summary><p>It only sees what the query returned, and a missing source returns fewer rows, not an error: 15 orders look as complete as 16. Only something that knows what should be there (the registry) and checks each source (the probes) can tell.</p></details>
+    <details><summary>Through <code>GRAPH</code>, a source returns nothing. What are the possibilities, and how does the probe separate them?</summary><p>Truly empty, no read permission (silently dropped), or not defined at all. The probe asks again with <code>SERVICE</code>: no error means no data; an error mentioning permission means no permission; "not found" means not mapped. A graph with triples of another class is a wrong-class mapping.</p></details>
+    <details><summary>Why does the contract carry a pre-built <code>summary</code> sentence?</summary><p>So the words "Partial", the expected sources and the missing reasons come from code, and the model only copies them. Paraphrase is where partial answers get rounded into complete-sounding ones; the golden tests check the copy happened.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li>Big ontologies don't go in the prompt. Agents link schema by routing to a domain, searching labels (lexically or by embeddings), expanding one or two hops, and exploring with tools like <code>search_ontology</code> and <code>describe_class</code>.</li>
+    <li>Verified example queries, retrieved by similarity, are the industry's common trick: Genie's trusted assets, Cortex Analyst's verified query repository, Voicebox's stored questions, QueryGPT's SQL samples.</li>
+    <li>Federated graphs fail silently: wrong templates, dropped graphs and unmapped sources all yield smaller numbers, never errors. The LLM can't see what didn't come back.</li>
+    <li>Completeness is checked in code: a source registry in <code>&lt;urn:c360:registry&gt;</code> says what's expected; health, key-overlap and subtotal probes check each source; 0% key overlap means a template mismatch.</li>
+    <li>The answer contract (<code>value, complete, expected, included, missing</code>) plus a prompt rule makes the agent say "Partial: $502,529.42 … missing because …" instead of a confident wrong total. After the fix: complete, $504,779.42.</li>
+    <li>Golden tests (<code>eval.py</code>) keep it honest over time. The same ideas are called data contracts, data observability, provenance (PROV-O) and metrics layers elsewhere.</li>
+  </ul></section>
+
+  <section class="done">
+    <p><button class="sendback" type="button" data-chapter="15" data-step="8">Copy "Build step 8 done" message</button> <span class="sbmsg"></span></p>
+    <p class="donehint">Paste it to Claude with what you saw (the counts or results), so we can confirm it matches before the next build step relies on it.</p>
+  </section>
+
+  <nav class="pn">
+    <a href="ch14.html"><small>← Previous</small>Chapter 14 · The agent: from question to answer</a>
+    <a href="glossary.html" style="text-align:right"><small>Next →</small>Glossary</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f-15-1', (tl, cap) => {
+  const q = s => '#f-15-1 ' + s;
+  cap(tl, 'Question: "What is total spend by state?" The ontology has thousands of terms. None of them is sent yet.');
+  tl.from(q('.bg circle'), {opacity: 0, duration: .6, stagger: .02});
+  cap(tl, 'Search: "spend" matches the metric labeled "total spend"; "state" matches :state. (Over the kit alone, "spend" would only find :Big_Spender, the wrong concept.)', '+=.6');
+  tl.from(q('.hit'), {opacity: 0, scale: .4, transformOrigin: '50% 50%', duration: .6});
+  cap(tl, 'Expand one hop: the metric requires :Order, whose properties bring price, quantity and purchasedBy → :Customer; :state belongs to :Address, which :Customer reaches through :address.', '+=1.2');
+  tl.from(q('.edges line'), {opacity: 0, duration: .4, stagger: .2});
+  tl.from(q('.hop'), {opacity: 0, duration: .6}, '<.2');
+  cap(tl, 'Only this slice goes to the model: seven lines, as a prompt section or a tool result, instead of the whole ontology.', '+=1.4');
+  tl.from(q('.slice'), {opacity: 0, x: 24, duration: .6});
+});
+bookAnim('f-15-2', (tl, cap) => {
+  const q = s => '#f-15-2 ' + s;
+  cap(tl, 'Carolyn is customer:225 in the Aurora master. Redshift\'s orders point at that IRI: 15 orders, $502,529.42.');
+  tl.from(q('.c1'), {opacity: 0, duration: .6});
+  cap(tl, 'The online orders point at cust:225, the template typo. To the graph that\'s a different, unknown customer, so the join skips it without a word.', '+=1.4');
+  tl.from(q('.c2'), {opacity: 0, y: -10, duration: .6});
+  cap(tl, 'The naive SUM for customer:225 returns $502,529.42. No error, and nothing says a source is missing. This is what Chapter 14\'s agent reports.', '+=1.6');
+  tl.from(q('.c3'), {opacity: 0, scale: .9, transformOrigin: '50% 50%', duration: .6});
+  cap(tl, 'The registry says total spend requires every :Order source: redshift_c360 and aurora_online_c360.', '+=1.6');
+  tl.from(q('.c4'), {opacity: 0, x: -20, duration: .6});
+  cap(tl, 'The key-overlap probe samples each source\'s customer keys: Redshift 100% known customers; online 0 of 100, so the template doesn\'t match.', '+=1.6');
+  tl.from(q('.c5'), {opacity: 0, x: 20, duration: .6});
+  cap(tl, 'Code, not the LLM, writes the verdict: complete = false, the partial value, and why. The model must repeat the summary verbatim.', '+=1.6');
+  tl.from(q('.c6'), {opacity: 0, y: 12, duration: .6});
+});
+</script>
+</body>
+</html>

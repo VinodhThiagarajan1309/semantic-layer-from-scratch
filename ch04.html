@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 4 · SPARQL for people who know SQL</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <dfn>term</dfn>                       first definition of a glossary term
+   REQUIRED at the end of every chapter (before nav)
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 4</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 4</div>
+    <h1>SPARQL for people who know SQL</h1>
+    <p class="sub">You already know how to ask a database a question. By the end of this chapter you will ask a graph the same questions, and watch the JOIN keyword quietly disappear into the arrows.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">It is 4:55 on a Friday and someone from marketing leans over your desk: "Quick one. Which of our customers in Wisconsin spent the most?" You know the SQL: join <code>purchase</code> to <code>customer</code> on <code>cid</code>, <code>customer</code> to <code>address</code> on <code>location</code>, filter on the state, sum price times quantity, sort. You also know the catch: customers live in Aurora and purchases in Redshift, so "just join them" means an export, a staging table, or a pipeline. By Chapter 9 the graph will answer that question across both in one query. First you need the language the question is written in, and you already know most of it.</p>
+
+  <h2><span class="sn">4.1</span>What is SPARQL, and why does it exist?</h2>
+  <p><dfn>SPARQL</dfn> (pronounced "sparkle"; the letters stand for SPARQL Protocol and RDF Query Language) is the W3C standard query language for RDF graphs: to triples what SQL is to tables. SPARQL 1.1 (2013) added aggregates, subqueries and a write half called SPARQL Update. Every serious graph database, Stardog included, speaks it.</p>
+  <p>Why not just use SQL? Because SQL assumes tables with a fixed list of columns, and a graph has neither. You could store triples in a three-column table, <code>triples(subject, predicate, object)</code>, but then every arrow you follow is another self-join, and SQL has no idea that <code>&lt;urn:…customer:225&gt;</code> is a global name, that <code>"2013-04-18"^^xsd:date</code> is a typed value, or that triples live in named graphs (<a href="ch03.html">Chapter 3</a>). SPARQL builds those ideas in and makes "follow this arrow" the basic move.</p>
+  <p>The "Protocol" part defines how to send a query over HTTP and get JSON or CSV back. Every Stardog database is a <dfn>SPARQL endpoint</dfn>, a URL that accepts queries; that is how the agent in <a href="ch14.html">Chapter 14</a> will talk to our graph.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td>SPARQL</td><td>The W3C query language for RDF</td><td>SQL has no notion of triples, IRIs or graphs</td><td><code>SELECT ?n WHERE { ?c :name ?n }</code></td></tr>
+      <tr><td>SPARQL endpoint</td><td>An HTTP URL that runs SPARQL</td><td>So any program can query the graph</td><td>your <code>kit-c360</code> database</td></tr>
+      <tr><td>Triple pattern</td><td>A triple with some blanks</td><td>It describes the facts you are looking for</td><td><code>?c :name ?n .</code></td></tr>
+      <tr><td>Variable</td><td>A named blank, starting with <code>?</code></td><td>It marks what the engine should fill in</td><td><code>?c</code>, <code>?n</code></td></tr>
+      <tr><td>Binding</td><td>The value a variable gets for one match</td><td>Each set of bindings is one result row</td><td><code>?n = "Carolyn Inworth"</code></td></tr>
+      <tr><td>SPARQL Update</td><td>The write half of SPARQL</td><td>To add, remove and drop triples</td><td><code>INSERT DATA { … }</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="sn">4.2</span>A query is a picture with blanks</h2>
+  <p>In <a href="ch02.html">Chapter 2</a> you learned that every fact is a triple: <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>. Carolyn's name is <span class="s">customer:225</span> <span class="p">:name</span> <span class="o">"Carolyn Inworth"</span>. A <dfn>triple pattern</dfn> is the same shape with some positions replaced by <dfn>variables</dfn>:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>?customer  :name  ?name .</pre></div>
+
+  <p>Read it aloud: "find anything that has a <code>:name</code>; call the thing <code>?customer</code> and the name <code>?name</code>." For every triple whose predicate is <code>:name</code>, the engine <dfn>binds</dfn> the variables. One match, one row.</p>
+
+  <figure class="fig anim" id="f41">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 680 290" role="img" aria-label="A triple pattern with two variables is compared against three stored triples; two match and become result rows, one with a different predicate is skipped">
+      <defs><marker id="a41" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--pred)"/></marker></defs>
+      <g class="pat">
+        <text x="20" y="26" style="fill:var(--muted);font-size:11.5px;letter-spacing:.08em">THE PATTERN YOU WRITE</text>
+        <rect x="20" y="36" width="300" height="40" rx="8" style="fill:var(--code);stroke:var(--line)"/>
+        <text x="36" y="62" style="fill:var(--subj);font-size:15px;font-weight:700;font-family:ui-monospace,Menlo,monospace">?customer</text>
+        <text x="138" y="62" style="fill:var(--pred);font-size:15px;font-weight:700;font-family:ui-monospace,Menlo,monospace">:name</text>
+        <text x="200" y="62" style="fill:var(--obj);font-size:15px;font-weight:700;font-family:ui-monospace,Menlo,monospace">?name .</text>
+      </g>
+      <text x="20" y="112" style="fill:var(--muted);font-size:11.5px;letter-spacing:.08em">THE TRIPLES STORED IN THE GRAPH</text>
+      <rect class="h1" x="12" y="122" width="364" height="42" rx="8" style="fill:var(--try);opacity:.18"/>
+      <rect class="h3" x="12" y="222" width="364" height="42" rx="8" style="fill:var(--try);opacity:.18"/>
+      <g>
+        <rect x="20" y="126" width="112" height="34" rx="17" style="fill:var(--paper);stroke:var(--subj);stroke-width:2"/>
+        <text x="76" y="148" text-anchor="middle" style="fill:var(--ink);font-size:12.5px">customer:225</text>
+        <line x1="132" y1="143" x2="198" y2="143" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a41)"/>
+        <text x="165" y="136" text-anchor="middle" style="fill:var(--pred);font-size:11.5px">:name</text>
+        <rect x="200" y="128" width="168" height="30" style="fill:var(--paper);stroke:var(--obj);stroke-width:2"/>
+        <text x="284" y="148" text-anchor="middle" style="fill:var(--ink);font-size:12.5px">"Carolyn Inworth"</text>
+      </g>
+      <g class="ign">
+        <rect x="20" y="176" width="112" height="34" rx="17" style="fill:var(--paper);stroke:var(--subj);stroke-width:2"/>
+        <text x="76" y="198" text-anchor="middle" style="fill:var(--ink);font-size:12.5px">customer:225</text>
+        <line x1="132" y1="193" x2="198" y2="193" style="stroke:var(--muted);stroke-width:2" marker-end="url(#a41)"/>
+        <text x="165" y="186" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">:email</text>
+        <rect x="200" y="178" width="168" height="30" style="fill:var(--paper);stroke:var(--muted);stroke-width:2"/>
+        <text x="284" y="198" text-anchor="middle" style="fill:var(--muted);font-size:12.5px">"cinworth68@g.co"</text>
+        <text class="skip" x="384" y="198" style="fill:var(--gotcha);font-size:11.5px">skipped: wrong predicate</text>
+      </g>
+      <g>
+        <rect x="20" y="226" width="112" height="34" rx="17" style="fill:var(--paper);stroke:var(--subj);stroke-width:2"/>
+        <text x="76" y="248" text-anchor="middle" style="fill:var(--ink);font-size:12.5px">customer:88</text>
+        <line x1="132" y1="243" x2="198" y2="243" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a41)"/>
+        <text x="165" y="236" text-anchor="middle" style="fill:var(--pred);font-size:11.5px">:name</text>
+        <rect x="200" y="228" width="168" height="30" style="fill:var(--paper);stroke:var(--obj);stroke-width:2"/>
+        <text x="284" y="248" text-anchor="middle" style="fill:var(--ink);font-size:12.5px">"Marlane Shadwick"</text>
+      </g>
+      <text x="440" y="26" style="fill:var(--muted);font-size:11.5px;letter-spacing:.08em">THE RESULT</text>
+      <rect x="440" y="36" width="230" height="100" rx="6" style="fill:var(--paper);stroke:var(--line)"/>
+      <line x1="440" y1="66" x2="670" y2="66" style="stroke:var(--line)"/>
+      <line x1="545" y1="36" x2="545" y2="136" style="stroke:var(--line)"/>
+      <text x="452" y="57" style="fill:var(--subj);font-size:12px;font-weight:700">?customer</text>
+      <text x="557" y="57" style="fill:var(--obj);font-size:12px;font-weight:700">?name</text>
+      <g class="r1"><text x="452" y="90" style="fill:var(--ink);font-size:12px">customer:225</text><text x="557" y="90" style="fill:var(--ink);font-size:12px">Carolyn Inworth</text></g>
+      <g class="r2"><text x="452" y="120" style="fill:var(--ink);font-size:12px">customer:88</text><text x="557" y="120" style="fill:var(--ink);font-size:12px">Marlane Shadwick</text></g>
+    </svg>
+    <p class="stepcap">Press Play to watch the engine match the pattern, one triple at a time.</p>
+    <figcaption>Figure 4.1: A triple pattern is a triple with blanks. Every stored triple that fits the fixed parts produces one row, with the blanks filled in.</figcaption>
+  </figure>
+
+  <p>A full query wraps patterns in <code>WHERE { … }</code> and lists the variables you want back:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+
+SELECT ?customer ?name
+WHERE {
+  ?customer :name ?name .
+}</pre></div>
+
+  <p>The <code>PREFIX</code> line is the shorthand from <a href="ch03.html">Chapter 3</a>: <code>:name</code> expands to <code>&lt;tag:stardog:api:ecomm:name&gt;</code>. Every query in this book declares its prefixes, so each one runs on its own.</p>
+  <aside class="box java">
+    <p>Picture the graph as one big <code>List&lt;Triple&gt;</code>. A one-pattern <code>SELECT</code> is a stream over it: the fixed parts become a <code>filter</code>, the variables the fields you <code>map</code> into a row.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">SPARQL</p><pre>SELECT ?customer ?name
+WHERE {
+  ?customer :name ?name .
+}</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>record Triple(String s, String p, Object o) {}
+record Row(String customer, Object name) {}
+
+List&lt;Row&gt; rows = graph.stream()          // List&lt;Triple&gt;
+    .filter(t -&gt; t.p().equals(":name"))  // the fixed part
+    .map(t -&gt; new Row(t.s(), t.o()))     // fill the blanks
+    .toList();</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> the Java version says <em>how</em> (scan every triple, in this order). SPARQL only says <em>what</em> shape you want. Stardog keeps triples in several sorted indexes, and its planner chooses which to read and in what order. You describe the answer; the engine writes the loop.</p>
+  </aside>
+
+  <aside class="box gotcha">
+    <p>Never rely on a database's built-in prefixes: a new Stardog database usually binds <code>:</code> to <code>http://api.stardog.com/</code>, not our <code>tag:stardog:api:ecomm:</code>. Forget the <code>PREFIX :</code> line and <code>:name</code> silently means an IRI no triple uses: the query runs and returns nothing.</p>
+  </aside>
+
+  <h2><span class="sn">4.3</span>The shared variable is the join</h2>
+  <p>Now put three patterns together and reuse variables:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>?customer :name    ?name .
+?customer :address ?addr .
+?addr     :city    ?city .</pre></div>
+
+  <p>Because <code>?customer</code> appears in the first two patterns, both must match the <em>same</em> customer; because <code>?addr</code> appears in the last two, the city must belong to that customer's address. That is the whole trick: <strong>a variable used in more than one pattern is a join condition.</strong> No <code>JOIN</code>, no <code>ON</code>. Here is the same question over the Aurora tables:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT c.full_name, a.city
+FROM   c360.customer c
+JOIN   c360.address  a ON a.id = c.location;</pre></div>
+
+  <p>The SPARQL never mentions the key columns <code>location</code> and <code>id</code>. In the graph, <code>:address</code> is not a key to match but an arrow pointing straight at the address. You do not join on it, you follow it.</p>
+  <aside class="box java">
+    <p>The shared variable is a hash join: build a <code>Map</code> keyed on the join value, then look each row up in it. <code>?customer</code> and <code>?addr</code> are the keys.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">SPARQL</p><pre>?customer :name    ?name .
+?customer :address ?addr .
+?addr     :city    ?city .</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>Map&lt;String, Object&gt; addrOf = graph.stream()
+    .filter(t -&gt; t.p().equals(":address"))
+    .collect(Collectors.toMap(Triple::s, Triple::o));
+Map&lt;String, Object&gt; cityOf = graph.stream()
+    .filter(t -&gt; t.p().equals(":city"))
+    .collect(Collectors.toMap(Triple::s, Triple::o));
+
+var rows = graph.stream()
+    .filter(t -&gt; t.p().equals(":name"))
+    .filter(t -&gt; cityOf.containsKey(addrOf.get(t.s())))
+    .map(t -&gt; List.of(t.o(), cityOf.get(addrOf.get(t.s()))))
+    .toList();</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> <code>Collectors.toMap</code> assumes one value per key and throws on a duplicate. RDF has no such rule: a customer with two <code>:address</code> triples gives one row per combination. And the planner, not you, picks the build side and join order.</p>
+  </aside>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Following arrows from an order to a customer to an address to a city, compared with the equivalent SQL joins">
+      <defs><marker id="a42" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--pred)"/></marker></defs>
+      <rect x="10" y="40" width="130" height="40" rx="20" style="fill:none;stroke:var(--subj);stroke-width:2"/>
+      <text x="75" y="65" text-anchor="middle" style="fill:var(--ink);font-size:13px">?order</text>
+      <line x1="140" y1="60" x2="198" y2="60" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a42)"/>
+      <text x="170" y="50" text-anchor="middle" style="fill:var(--pred);font-size:11px">:purchasedBy</text>
+      <rect x="200" y="40" width="130" height="40" rx="20" style="fill:none;stroke:var(--subj);stroke-width:2"/>
+      <text x="265" y="65" text-anchor="middle" style="fill:var(--ink);font-size:13px">?customer</text>
+      <line x1="330" y1="60" x2="388" y2="60" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a42)"/>
+      <text x="360" y="50" text-anchor="middle" style="fill:var(--pred);font-size:11px">:address</text>
+      <rect x="390" y="40" width="130" height="40" rx="20" style="fill:none;stroke:var(--subj);stroke-width:2"/>
+      <text x="455" y="65" text-anchor="middle" style="fill:var(--ink);font-size:13px">?addr</text>
+      <line x1="520" y1="60" x2="558" y2="60" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a42)"/>
+      <text x="540" y="50" text-anchor="middle" style="fill:var(--pred);font-size:11px">:city</text>
+      <rect x="560" y="42" width="110" height="36" style="fill:none;stroke:var(--obj);stroke-width:2"/>
+      <text x="615" y="65" text-anchor="middle" style="fill:var(--ink);font-size:13px">?city</text>
+      <line x1="265" y1="84" x2="265" y2="96" style="stroke:var(--accent2);stroke-width:2"/>
+      <line x1="455" y1="84" x2="455" y2="96" style="stroke:var(--accent2);stroke-width:2"/>
+      <text x="340" y="114" text-anchor="middle" style="fill:var(--muted);font-size:12px">each variable that appears twice (?customer, ?addr) glues two patterns together</text>
+      <text x="20" y="150" style="fill:var(--muted);font-size:12px;letter-spacing:.08em">THE SAME QUESTION IN SQL</text>
+      <rect x="10" y="160" width="660" height="80" rx="8" style="fill:var(--code);stroke:var(--line)"/>
+      <text x="26" y="184" style="fill:var(--ink);font-size:12.5px;font-family:ui-monospace,Menlo,monospace">FROM redshift.purchase p</text>
+      <text x="26" y="204" style="fill:var(--ink);font-size:12.5px;font-family:ui-monospace,Menlo,monospace">JOIN aurora.customer c ON c.cid = p.cid        <tspan style="fill:var(--accent2)">-- ?customer</tspan></text>
+      <text x="26" y="224" style="fill:var(--ink);font-size:12.5px;font-family:ui-monospace,Menlo,monospace">JOIN aurora.address  a ON a.id  = c.location   <tspan style="fill:var(--accent2)">-- ?addr</tspan></text>
+    </svg>
+    <figcaption>Figure 4.2: A chain of patterns is a chain of joins. The shared variables play the part of the ON clauses; the keys never appear. (The SQL is only a picture: Aurora and Redshift cannot be joined in one SQL statement without extra plumbing.)</figcaption>
+  </figure>
+
+  <aside class="box model">
+    <p>The <code>WHERE</code> block is a small graph with some nodes left blank; the engine reports every place it fits the big graph exactly. An empty result almost always means one arrow in your shape does not exist under that exact name: a typo, a wrong prefix, or the wrong graph.</p>
+  </aside>
+
+  <h2><span class="sn">4.4</span>GRAPH: which folder to look in</h2>
+  <p>Named graphs are folders of triples (<a href="ch03.html">Chapter 3</a>). A Stardog query with no <code>GRAPH</code> keyword reads only the default graph (unless the database option <code>query.all.graphs</code> is switched on; it is off by default and this book assumes it stays off). Our practice data lives in the folder <code>&lt;urn:book:ch04&gt;</code>, so every query in this chapter names it:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT ?customer ?name
+WHERE {
+  GRAPH &lt;urn:book:ch04&gt; {
+    ?customer :name ?name .
+  }
+}</pre></div>
+
+  <p><code>GRAPH &lt;iri&gt; { … }</code> is SPARQL's nearest thing to the <code>c360.</code> in <code>FROM c360.customer</code>. <code>GRAPH ?g { … }</code> searches every folder, with <code>?g</code> naming the one each match came from. In <a href="ch09.html">Chapter 9</a> this keyword is the heart of federation: one <code>GRAPH</code> block aimed at Aurora, another at Redshift, in one query.</p>
+
+  <h2><span class="sn">4.5</span>The SQL-to-SPARQL phrasebook</h2>
+  <p>The rest of SPARQL is clauses you already know, spelled differently.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>You want to…</th><th>SQL</th><th>SPARQL</th></tr></thead>
+    <tbody>
+      <tr><td>Pick output columns</td><td><code>SELECT a, b</code></td><td><code>SELECT ?a ?b</code> (no commas)</td></tr>
+      <tr><td>Name the source</td><td><code>FROM c360.customer</code></td><td><code>GRAPH &lt;urn:…&gt; { … }</code></td></tr>
+      <tr><td>Join</td><td><code>JOIN … ON x.k = y.k</code></td><td>Reuse a variable in two patterns</td></tr>
+      <tr><td>Filter rows</td><td><code>WHERE price &gt; 1000</code></td><td><code>FILTER (?price &gt; 1000)</code> inside <code>WHERE</code></td></tr>
+      <tr><td>Keep rows with no match</td><td><code>LEFT JOIN</code></td><td><code>OPTIONAL { … }</code></td></tr>
+      <tr><td>Test for missing</td><td><code>WHERE phone IS NULL</code></td><td><code>FILTER (!BOUND(?phone))</code></td></tr>
+      <tr><td>Remove duplicates</td><td><code>SELECT DISTINCT</code></td><td><code>SELECT DISTINCT</code></td></tr>
+      <tr><td>Aggregate</td><td><code>SUM(x) … GROUP BY k</code></td><td><code>(SUM(?x) AS ?total) … GROUP BY ?k</code></td></tr>
+      <tr><td>Filter groups</td><td><code>HAVING SUM(x) &gt; 100</code></td><td><code>HAVING (SUM(?x) &gt; 100)</code></td></tr>
+      <tr><td>Sort and page</td><td><code>ORDER BY x DESC LIMIT 10</code></td><td><code>ORDER BY DESC(?x) LIMIT 10</code></td></tr>
+      <tr><td>Computed column</td><td><code>price * quantity AS spend</code></td><td><code>BIND(?price * ?qty AS ?spend)</code></td></tr>
+      <tr><td>Yes/no question</td><td><code>SELECT EXISTS (…)</code></td><td><code>ASK { … }</code></td></tr>
+      <tr><td>Insert rows</td><td><code>INSERT INTO … VALUES</code></td><td><code>INSERT DATA { GRAPH &lt;g&gt; { … } }</code></td></tr>
+      <tr><td>Delete rows</td><td><code>DELETE FROM … WHERE</code></td><td><code>DELETE DATA { … }</code></td></tr>
+      <tr><td>Drop a table</td><td><code>DROP TABLE t</code></td><td><code>DROP GRAPH &lt;g&gt;</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Two differences deserve a warning. There is no fixed column list: a thing has whatever triples it has, and a query asks only for the ones it names. And there is no <code>NULL</code>: a missing value is simply an absent triple. Section 4.7 shows what that does to LEFT JOIN, and <a href="ch05.html">Chapter 5</a> why it matters.</p>
+
+  <h2><span class="sn">4.6</span>FILTER: row conditions, and why datatypes matter</h2>
+  <p>Row conditions go in a <dfn>FILTER</dfn> inside <code>WHERE</code>. Filters compare numbers, strings and dates, combine with <code>&amp;&amp;</code>, <code>||</code> and <code>!</code>, and call functions such as <code>CONTAINS</code>, <code>STRSTARTS</code>, <code>REGEX</code> and <code>YEAR</code>:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>?order :purchasePrice ?price ;
+       :purchaseDate  ?date .
+FILTER (?price &gt; 1000 &amp;&amp; ?date &gt;= "2015-01-01"^^xsd:date)</pre></div>
+
+  <p>Here <a href="ch03.html">Chapter 3</a>'s datatypes pay off. <code>?price &gt; 1000</code> compares numerically only because the price is an <code>xsd:decimal</code>. Store it as the string <code>"10479.00"</code> and the comparison errors for that row, and the trap is that an error inside a filter does not stop the query: it counts as "not true", and the row silently disappears. (The semicolon is Turtle's "same subject, another predicate": two patterns sharing <code>?order</code>, so a join.)</p>
+
+  <h2><span class="sn">4.7</span>OPTIONAL: LEFT JOIN without NULLs</h2>
+  <p><dfn>OPTIONAL</dfn> keeps a row even when part of the pattern has no match, like LEFT JOIN:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>?c a :Customer ;
+   :name ?name .
+OPTIONAL { ?c :phone ?phone }</pre></div>
+
+  <p>With no phone triple, the row stays and <code>?phone</code> is <dfn>unbound</dfn>: an empty cell in Studio. Unbound is not a value; <code>?phone = ""</code> will not find it. Test with <code>FILTER (!BOUND(?phone))</code>.</p>
+  <aside class="box java">
+    <p>An unbound variable is closer to <code>Optional.empty()</code> than to <code>null</code>: the row survives, the slot is empty, and you test it (<code>BOUND</code> / <code>isPresent()</code>) instead of comparing it to a value.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">SPARQL</p><pre>?c a :Customer ;
+   :name ?name .
+OPTIONAL { ?c :phone ?phone }
+
+# only the ones with no phone:
+FILTER (!BOUND(?phone))</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>record Row(String iri, String name, Optional&lt;String&gt; phone) {}
+
+// OPTIONAL: every customer stays, phone may be empty
+List&lt;Row&gt; all = customers.stream()
+    .map(c -&gt; new Row(c.iri(), c.name(),
+            Optional.ofNullable(phoneOf.get(c.iri()))))
+    .toList();
+
+// a plain pattern is an inner join: no phone, no row
+var withPhone = all.stream()
+    .filter(r -&gt; r.phone().isPresent()).toList();
+// FILTER (!BOUND(?phone))
+var noPhone = all.stream()
+    .filter(r -&gt; r.phone().isEmpty()).toList();</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> an <code>Optional</code> holds at most one value; two <code>:phone</code> triples would give two rows. And unbound does not mean "has no phone" (Chapter 5's open world), only that no phone triple is in the graph you queried.</p>
+  </aside>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 210" role="img" aria-label="With OPTIONAL both customers are returned, one with an empty phone cell; without OPTIONAL only the customer with a phone is returned">
+      <defs><marker id="a43" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--pred)"/></marker></defs>
+      <rect x="10" y="30" width="120" height="34" rx="17" style="fill:none;stroke:var(--subj);stroke-width:2"/>
+      <text x="70" y="52" text-anchor="middle" style="fill:var(--ink);font-size:13px">customer:225</text>
+      <line x1="130" y1="47" x2="188" y2="47" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a43)"/>
+      <text x="159" y="39" text-anchor="middle" style="fill:var(--pred);font-size:11px">:phone</text>
+      <rect x="190" y="32" width="110" height="30" style="fill:none;stroke:var(--obj);stroke-width:2"/>
+      <text x="245" y="52" text-anchor="middle" style="fill:var(--ink);font-size:12px">"704-619-5453"</text>
+      <rect x="10" y="100" width="120" height="34" rx="17" style="fill:none;stroke:var(--subj);stroke-width:2"/>
+      <text x="70" y="122" text-anchor="middle" style="fill:var(--ink);font-size:13px">customer:88</text>
+      <line x1="130" y1="117" x2="188" y2="117" style="stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4"/>
+      <text x="159" y="109" text-anchor="middle" style="fill:var(--muted);font-size:11px">no :phone</text>
+      <text x="200" y="122" style="fill:var(--muted);font-size:12px">(no triple at all)</text>
+      <text x="340" y="22" style="fill:var(--muted);font-size:12px;letter-spacing:.06em">WITH OPTIONAL (LEFT JOIN)</text>
+      <rect x="340" y="30" width="330" height="72" rx="6" style="fill:var(--paper);stroke:var(--line)"/>
+      <text x="352" y="54" style="fill:var(--ink);font-size:12px">Carolyn Inworth</text><text x="520" y="54" style="fill:var(--ink);font-size:12px">704-619-5453</text>
+      <line x1="340" y1="66" x2="670" y2="66" style="stroke:var(--line)"/>
+      <text x="352" y="88" style="fill:var(--ink);font-size:12px">Marlane Shadwick</text><text x="520" y="88" style="fill:var(--muted);font-size:12px;font-style:italic">(unbound)</text>
+      <text x="340" y="132" style="fill:var(--muted);font-size:12px;letter-spacing:.06em">WITHOUT OPTIONAL (INNER JOIN)</text>
+      <rect x="340" y="140" width="330" height="40" rx="6" style="fill:var(--paper);stroke:var(--line)"/>
+      <text x="352" y="165" style="fill:var(--ink);font-size:12px">Carolyn Inworth</text><text x="520" y="165" style="fill:var(--ink);font-size:12px">704-619-5453</text>
+      <text x="340" y="200" style="fill:var(--muted);font-size:11.5px">Marlane silently disappears: every plain pattern must match.</text>
+    </svg>
+    <figcaption>Figure 4.3: OPTIONAL keeps the row and leaves the variable unbound. A plain pattern is an inner join: no phone triple, no row.</figcaption>
+  </figure>
+
+  <aside class="box gotcha">
+    <p>The classic SQL-person bug: adding <code>?c :phone ?phone .</code> to a customer report "just to show the phone". Every customer without a phone vanishes. If a column is nice-to-have, wrap it in <code>OPTIONAL</code>.</p>
+  </aside>
+
+  <h2><span class="sn">4.8</span>Aggregates, ASK, and changing data</h2>
+  <p>Aggregates work as in SQL (<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>, and <code>GROUP_CONCAT</code> for <code>string_agg</code>), with one spelling rule: in <code>SELECT</code> an aggregate goes in parentheses with a name, <code>(SUM(?price * ?qty) AS ?spend)</code>. That formula is the <code>SUM(price * quantity)</code> behind the book's headline number, Carolyn Inworth's $502,529.42. <code>SELECT DISTINCT</code> matters because following arrows multiplies rows: "cities of customers who ordered" gives one row per <em>order</em> without it. And put a <code>LIMIT</code> on exploratory queries; from <a href="ch09.html">Chapter 9</a> on, they reach a Redshift cluster that bills by the second.</p>
+  <aside class="box java">
+    <p><code>GROUP BY</code> with <code>SUM</code> is <code>Collectors.groupingBy</code> with a summing collector; <code>ORDER BY DESC(...) LIMIT</code> is <code>sorted(...).limit(...)</code>. <code>BigDecimal</code>, because this is money.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">SPARQL</p><pre>SELECT ?name (SUM(?price * ?qty) AS ?spend)
+WHERE {
+  ?order :purchasedBy   ?customer ;
+         :purchasePrice ?price ;
+         :quantity      ?qty .
+  ?customer :name ?name .
+}
+GROUP BY ?name
+ORDER BY DESC(?spend)
+LIMIT 3</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>record Order(String name, BigDecimal price, int qty) {}
+
+Map&lt;String, BigDecimal&gt; spend = orders.stream()
+    .collect(Collectors.groupingBy(Order::name,
+        Collectors.reducing(BigDecimal.ZERO,
+            o -&gt; o.price().multiply(BigDecimal.valueOf(o.qty())),
+            BigDecimal::add)));
+
+var top3 = spend.entrySet().stream()
+    .sorted(Map.Entry.&lt;String, BigDecimal&gt;comparingByValue()
+                     .reversed())
+    .limit(3)
+    .toList();</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> the obvious <code>Collectors.summingDouble</code> would reproduce the cent drift from Chapter 3; SPARQL sums <code>xsd:decimal</code> exactly, like <code>BigDecimal</code>. And the Java runs as written, while the SPARQL planner may reorder patterns, use indexes, or (from Chapter 9 on) push the whole <code>SUM</code> down into Redshift as SQL.</p>
+  </aside>
+  <p>Two more query forms: <dfn>ASK</dfn> returns only true or false ("does this shape exist anywhere?"), and <dfn>CONSTRUCT</dfn> returns new triples built from a template instead of a table.</p>
+  <p>Writes use <dfn>SPARQL Update</dfn>, and you need three statements: <code>INSERT DATA</code> adds literal triples (no variables; think <code>INSERT … VALUES</code>), <code>DELETE DATA</code> removes exactly the triples you list, and <code>DROP GRAPH</code> empties a whole named graph (how every scratch exercise cleans up).</p>
+
+  <aside class="box gotcha">
+    <p>A graph is a <em>set</em> of triples. Inserting a triple that is already there changes nothing: no duplicate, no error. <code>INSERT DATA</code> is safe to rerun, but there is no "1 row inserted" signal; check with a <code>COUNT</code>.</p>
+  </aside>
+
+  <h2><span class="sn">4.9</span>The practice dataset</h2>
+  <p>The values below are real c360 rows from Aurora and Redshift; only the selection is ours. Two customers: Carolyn Inworth (cid 225, Milwaukee, Wisconsin) and Marlane Shadwick (cid 88, Brooksville, Florida), the number-two spender overall. Their addresses, two orders each, and the four products those orders point at. The IRIs are exactly the ones the virtual graphs will mint in Chapters 8 and 9. One deliberate edit: we left out Marlane's phone so the OPTIONAL exercise has a gap to find.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Order (id, shortened)</th><th>Customer</th><th>Product</th><th>Date</th><th>Qty</th><th>Price</th><th>Price × qty</th></tr></thead>
+    <tbody>
+      <tr><td>363f9784…</td><td>Carolyn (225)</td><td>Wax Paper</td><td>2013-04-18</td><td>21</td><td>10479.00</td><td>220,059.00</td></tr>
+      <tr><td>4d7483bc…</td><td>Carolyn (225)</td><td>Softball Cleats</td><td>2019-02-22</td><td>10</td><td>199.70</td><td>1,997.00</td></tr>
+      <tr><td>433d33e7…</td><td>Marlane (88)</td><td>Tent</td><td>2017-10-03</td><td>15</td><td>74.85</td><td>1,122.75</td></tr>
+      <tr><td>3552866c…</td><td>Marlane (88)</td><td>Lemonade</td><td>2022-12-25</td><td>25</td><td>13749.75</td><td>343,743.75</td></tr>
+    </tbody>
+  </table></div>
+
+  <aside class="box try">
+    <p><strong>Step 1: load the practice data.</strong> In Studio's <strong>Workspace</strong>, open a new query tab on database <code>kit-c360</code>, <strong>reasoning</strong> off, paste and run. This writes only to the scratch graph <code>&lt;urn:book:ch04&gt;</code>. <b>Paste it; don't save it as a file.</b> This block is a SPARQL <i>update</i> (it starts with <code>INSERT DATA</code>), not a Turtle file. Studio's <b>Load Data</b> only reads Turtle, and rejects this with <code>Expected ':', found ' ' [L4]</code>. Turtle files hold bare triples, like Chapter 3's <code>.ttl</code>; the Workspace runs statements like this one.</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX :    &lt;tag:stardog:api:ecomm:&gt;
+PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+
+INSERT DATA {
+  GRAPH &lt;urn:book:ch04&gt; {
+
+    # --- two customers (from Aurora, c360.customer) ---
+    &lt;urn:stardog:demos:c360:customer:225&gt; a :Customer ;
+        :firstName "Carolyn" ;
+        :lastName  "Inworth" ;
+        :name      "Carolyn Inworth" ;
+        :email     "cinworth68@g.co" ;
+        :phone     "704-619-5453" ;
+        :address   &lt;urn:stardog:demos:c360:location:b80ea2ce-2361-408a-b443-721594cbbb35&gt; .
+
+    &lt;urn:stardog:demos:c360:customer:88&gt; a :Customer ;
+        :firstName "Marlane" ;
+        :lastName  "Shadwick" ;
+        :name      "Marlane Shadwick" ;
+        :email     "mshadwick2f@xing.com" ;
+        :address   &lt;urn:stardog:demos:c360:location:d2b31bd9-cd91-4665-942a-d25e105a722e&gt; .
+        # (Marlane's phone is left out on purpose: we need a gap for OPTIONAL.)
+
+    # --- their two addresses (Aurora, c360.address) ---
+    &lt;urn:stardog:demos:c360:location:b80ea2ce-2361-408a-b443-721594cbbb35&gt; a :Address ;
+        :streetAddress "78945 Thompson Plaza" ;
+        :city "Milwaukee" ; :state "Wisconsin" ; :zipCode "53285" .
+
+    &lt;urn:stardog:demos:c360:location:d2b31bd9-cd91-4665-942a-d25e105a722e&gt; a :Address ;
+        :streetAddress "36 Manitowish Point" ;
+        :city "Brooksville" ; :state "Florida" ; :zipCode "34605" .
+
+    # --- four of their orders (Redshift, c360.purchase) ---
+    &lt;urn:stardog:demos:c360:purchase:us:pos363f9784-3d57-4a40-a273-4362b436cd8f&gt; a :Order ;
+        :purchasedBy   &lt;urn:stardog:demos:c360:customer:225&gt; ;
+        :itemPurchased &lt;urn:stardog:demos:c360:product:268&gt; ;
+        :purchaseDate  "2013-04-18"^^xsd:date ;
+        :quantity      21 ;
+        :purchasePrice 10479.00 .
+
+    &lt;urn:stardog:demos:c360:purchase:us:pos4d7483bc-7561-4372-bebe-647802ba6a0b&gt; a :Order ;
+        :purchasedBy   &lt;urn:stardog:demos:c360:customer:225&gt; ;
+        :itemPurchased &lt;urn:stardog:demos:c360:product:445&gt; ;
+        :purchaseDate  "2019-02-22"^^xsd:date ;
+        :quantity      10 ;
+        :purchasePrice 199.70 .
+
+    &lt;urn:stardog:demos:c360:purchase:us:pos3552866c-baf6-4fbe-bfef-ae81dff1ac56&gt; a :Order ;
+        :purchasedBy   &lt;urn:stardog:demos:c360:customer:88&gt; ;
+        :itemPurchased &lt;urn:stardog:demos:c360:product:449&gt; ;
+        :purchaseDate  "2022-12-25"^^xsd:date ;
+        :quantity      25 ;
+        :purchasePrice 13749.75 .
+
+    &lt;urn:stardog:demos:c360:purchase:us:pos433d33e7-bb10-4475-a90f-0db175fbebd8&gt; a :Order ;
+        :purchasedBy   &lt;urn:stardog:demos:c360:customer:88&gt; ;
+        :itemPurchased &lt;urn:stardog:demos:c360:product:34&gt; ;
+        :purchaseDate  "2017-10-03"^^xsd:date ;
+        :quantity      15 ;
+        :purchasePrice 74.85 .
+
+    # --- the four products those orders point at (Redshift, c360.product) ---
+    &lt;urn:stardog:demos:c360:product:268&gt; a :Product ; :name "Wax Paper" .
+    &lt;urn:stardog:demos:c360:product:445&gt; a :Product ; :name "Softball Cleats" .
+    &lt;urn:stardog:demos:c360:product:449&gt; a :Product ; :name "Lemonade" .
+    &lt;urn:stardog:demos:c360:product:34&gt;  a :Product ; :name "Tent" .
+  }
+}</pre></div>
+    <p><strong>Step 2: count it.</strong> Expect <strong>55</strong> triples (customer 225: 7, customer 88: 6, two addresses: 5 each, four orders: 6 each, four products: 2 each).</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT (COUNT(*) AS ?triples) WHERE { GRAPH &lt;urn:book:ch04&gt; { ?s ?p ?o } }</pre></div>
+  </aside>
+
+  <h2><span class="sn">4.10</span>Five graded queries</h2>
+  <p>Run each one and compare with the expected result. If yours differs, the difference is the lesson.</p>
+
+  <h3>Query 1: a list</h3>
+  <p>"Every customer and their name." <code>?customer a :Customer</code> means "things of type Customer"; <code>a</code> is short for <code>rdf:type</code>, the star of <a href="ch05.html">Chapter 5</a>.</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?customer ?name
+WHERE {
+  GRAPH &lt;urn:book:ch04&gt; {
+    ?customer a :Customer ;
+              :name ?name .
+  }
+}
+ORDER BY ?name</pre></div>
+  <p>Expected: <strong>2 rows</strong>: <code>…customer:225</code> Carolyn Inworth, then <code>…customer:88</code> Marlane Shadwick.</p>
+
+  <h3>Query 2: a filter</h3>
+  <p>"Which orders have a price above 1,000?"</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?order ?date ?price
+WHERE {
+  GRAPH &lt;urn:book:ch04&gt; {
+    ?order a :Order ;
+           :purchaseDate  ?date ;
+           :purchasePrice ?price .
+    FILTER (?price &gt; 1000)
+  }
+}
+ORDER BY ?date</pre></div>
+  <p>Expected: <strong>2 rows</strong>: wax paper (2013-04-18, 10479.00) and lemonade (2022-12-25, 13749.75). Studio may print <code>10479.0</code>; same decimal. Now change the filter to <code>FILTER (?price &gt; 1000 &amp;&amp; ?date &gt;= "2015-01-01"^^xsd:date)</code> and add <code>PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;</code> at the top: only the lemonade remains.</p>
+
+  <h3>Query 3: a join by following arrows</h3>
+  <p>"For each order: who bought it, where do they live, what did they buy?" Zero join keywords.</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?customerName ?city ?productName ?date
+WHERE {
+  GRAPH &lt;urn:book:ch04&gt; {
+    ?order    :purchasedBy   ?customer ;
+              :itemPurchased ?product ;
+              :purchaseDate  ?date .
+    ?customer :name    ?customerName ;
+              :address ?addr .
+    ?addr     :city    ?city .
+    ?product  :name    ?productName .
+  }
+}
+ORDER BY ?customerName ?date</pre></div>
+  <div class="tbl"><table>
+    <thead><tr><th>customerName</th><th>city</th><th>productName</th><th>date</th></tr></thead>
+    <tbody>
+      <tr><td>Carolyn Inworth</td><td>Milwaukee</td><td>Wax Paper</td><td>2013-04-18</td></tr>
+      <tr><td>Carolyn Inworth</td><td>Milwaukee</td><td>Softball Cleats</td><td>2019-02-22</td></tr>
+      <tr><td>Marlane Shadwick</td><td>Brooksville</td><td>Tent</td><td>2017-10-03</td></tr>
+      <tr><td>Marlane Shadwick</td><td>Brooksville</td><td>Lemonade</td><td>2022-12-25</td></tr>
+    </tbody>
+  </table></div>
+  <p>Expected: <strong>4 rows</strong>. In the finished system this exact shape spans Redshift (orders) and Aurora (customers); the query only cares that the IRIs agree. Bonus: <code>SELECT DISTINCT ?city</code> gives 2 rows instead of 4.</p>
+
+  <h3>Query 4: OPTIONAL</h3>
+  <p>"Every customer, with a phone if we have one."</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?name ?phone
+WHERE {
+  GRAPH &lt;urn:book:ch04&gt; {
+    ?c a :Customer ;
+       :name ?name .
+    OPTIONAL { ?c :phone ?phone }
+  }
+}
+ORDER BY ?name</pre></div>
+  <p>Expected: <strong>2 rows</strong>; Carolyn with <code>704-619-5453</code>, Marlane with an empty phone cell. Now delete <code>OPTIONAL {</code> and its closing brace and rerun: <strong>1 row</strong>, Carolyn only. That is Figure 4.3 on your screen.</p>
+
+  <h3>Query 5: GROUP BY and total spend</h3>
+  <p>"Orders and total spend per customer, biggest first": the headline question in miniature.</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?name (COUNT(?order) AS ?orders) (SUM(?price * ?qty) AS ?spend)
+WHERE {
+  GRAPH &lt;urn:book:ch04&gt; {
+    ?order    :purchasedBy   ?customer ;
+              :purchasePrice ?price ;
+              :quantity      ?qty .
+    ?customer :name ?name .
+  }
+}
+GROUP BY ?name
+ORDER BY DESC(?spend)</pre></div>
+  <div class="tbl"><table>
+    <thead><tr><th>name</th><th>orders</th><th>spend</th></tr></thead>
+    <tbody>
+      <tr><td>Marlane Shadwick</td><td>2</td><td>344866.50</td></tr>
+      <tr><td>Carolyn Inworth</td><td>2</td><td>222056.00</td></tr>
+    </tbody>
+  </table></div>
+  <p>Expected: <strong>2 rows</strong>, Marlane first (Studio may show <code>344866.5</code> and <code>222056.0</code>). Marlane beats Carolyn, the overall number one, because we loaded only two orders each. A total is only as complete as the data you queried: keep that thought for <a href="ch05.html">Chapter 5</a>.</p>
+
+  <aside class="box try">
+    <p><strong>Step 3: one DELETE, then clean up.</strong> Remove Carolyn's phone and rerun Query 4: both phone cells are now empty, and the Step 2 count drops to <strong>54</strong>.</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+
+DELETE DATA {
+  GRAPH &lt;urn:book:ch04&gt; {
+    &lt;urn:stardog:demos:c360:customer:225&gt; :phone "704-619-5453" .
+  }
+}</pre></div>
+    <p>Then drop the scratch graph. The Step 2 count should now return <strong>0</strong>.</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>DROP GRAPH &lt;urn:book:ch04&gt;</pre></div>
+    <p>Rerun the <code>DROP</code> and Stardog may complain the graph does not exist; <code>DROP SILENT GRAPH &lt;urn:book:ch04&gt;</code> suppresses that. Nothing outside <code>&lt;urn:book:ch04&gt;</code> is touched.</p>
+  </aside>
+
+  <aside class="box blog">
+    <p>The AWS blog's "sample queries" are four SPARQL queries: Aurora-only ("List ten customers and their state"), Redshift-only ("Top ten products by units sold"), federated ("Top ten customer spenders with their state") and reasoning ("How many big spenders per state?"). The first three are this chapter's Queries 1, 5 and 3 with <code>GRAPH</code> blocks aimed at virtual graphs and a <code>LIMIT 10</code>. In the blog the agent writes them; <a href="ch14.html">Chapter 14</a> shows how.</p>
+  </aside>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>What is SPARQL, and why not just use SQL on a table of triples?</summary><p>The W3C query language (and HTTP protocol) for RDF. In a three-column SQL table every hop is another self-join, and SQL knows nothing about IRIs, typed literals or named graphs. SPARQL makes "follow this arrow" the basic operation.</p></details>
+    <details><summary>In SPARQL, what plays the role of <code>JOIN … ON a.k = b.k</code>?</summary><p>Using the same variable in two or more triple patterns: all must match the same value, an equi-join. You follow the arrow instead of matching key columns.</p></details>
+    <details><summary>You add <code>?c :email ?email .</code> to a working customer report and three customers disappear. Why, and how do you fix it?</summary><p>Every plain pattern is an inner join, so customers with no email triple drop out. Wrap it: <code>OPTIONAL { ?c :email ?email }</code>.</p></details>
+    <details><summary>A query with no <code>GRAPH</code> keyword returns nothing, though you know the data is there. The likely cause?</summary><p>The triples are in a named graph, and without <code>GRAPH</code> Stardog reads only the default graph (<code>query.all.graphs</code> is off by default). Add <code>GRAPH &lt;urn:book:ch04&gt; { … }</code>, or <code>GRAPH ?g { … }</code> to search every named graph.</p></details>
+    <details><summary>When would <code>FILTER (?price &gt; 1000)</code> silently return nothing?</summary><p>When the prices are plain strings, not typed numbers. Comparing a string with a number is an error, and a filter error counts as false: the rows vanish silently.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li>SPARQL is the W3C query language and protocol for RDF; every Stardog database is a SPARQL endpoint.</li>
+    <li>A query is a picture of triples with blanks; each place it fits is one row.</li>
+    <li>A variable shared between patterns is a join: you follow arrows, never key columns.</li>
+    <li><code>GRAPH &lt;iri&gt;</code> picks the folder. FILTER needs correct datatypes, and its errors silently drop rows.</li>
+    <li>OPTIONAL is LEFT JOIN; there is no NULL, only unbound variables and absent triples.</li>
+    <li>Aggregates, DISTINCT, ORDER BY and LIMIT work as in SQL. INSERT DATA is idempotent because a graph is a set.</li>
+    <li>On two orders each, Marlane Shadwick (344,866.50) outspent Carolyn Inworth (222,056.00). You then dropped <code>&lt;urn:book:ch04&gt;</code>.</li>
+  </ul></section>
+
+  <nav class="pn">
+    <a href="ch03.html"><small>← Previous</small>Chapter 3 · Names, values and files</a>
+    <a href="ch05.html" style="text-align:right"><small>Next →</small>Chapter 5 · The T-Box, part 1: classes (RDFS)</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f41', (tl, cap) => {
+  tl.set(['#f41 .h1', '#f41 .h3', '#f41 .r1', '#f41 .r2', '#f41 .skip'], {opacity: 0});
+  cap(tl, 'Step 1: You write a pattern. The predicate :name is fixed; ?customer and ?name are blanks.');
+  tl.from('#f41 .pat', {opacity: 0, y: -12, duration: 0.6});
+  cap(tl, 'Step 2: First stored triple: its predicate is :name, so it fits. ?customer = customer:225, ?name = "Carolyn Inworth". One row.', '+=0.8');
+  tl.to('#f41 .h1', {opacity: 0.18, duration: 0.4});
+  tl.fromTo('#f41 .r1', {opacity: 0, x: -30}, {opacity: 1, x: 0, duration: 0.6});
+  cap(tl, 'Step 3: Next triple: its predicate is :email, not :name. It does not fit, so it is skipped.', '+=1.6');
+  tl.to('#f41 .skip', {opacity: 1, duration: 0.4});
+  cap(tl, 'Step 4: The third triple fits: ?customer = customer:88, ?name = "Marlane Shadwick". A second row.', '+=1.6');
+  tl.to('#f41 .h3', {opacity: 0.18, duration: 0.4});
+  tl.fromTo('#f41 .r2', {opacity: 0, x: -30}, {opacity: 1, x: 0, duration: 0.6});
+  cap(tl, 'Done: two matches, two rows. Every SELECT works this way, however many patterns you add.', '+=1.6');
+});
+</script>
+</body>
+</html>

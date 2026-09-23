@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 13 · The Stardog toolbox</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <aside class="box java"><p>intro</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>…</pre></div><div class="col"><p class="lbl">Java</p><pre>…</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> …</p></aside>   side-by-side Java analogy
+    <dfn>term</dfn>                       first definition of a glossary term
+   REQUIRED at the end of every chapter (before nav)
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 13</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 13</div>
+    <h1>The Stardog toolbox</h1>
+    <p class="sub">Which Stardog tool is for whom, which login each one needs, and how Voicebox turns a plain-English question into SPARQL.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">Here's a puzzle. You paste the federated query from Chapter 9 into Studio, press Run, and there's Carolyn Inworth at the top with $502,529.42. You copy the same query into a five-line Python script, point it at the same database, and log in with the same email and password. The answer: <code>401 Unauthorized</code>. What changed?</p>
+
+  <p>Section 13.2 answers that, and the answer explains how Stardog Cloud is put together. Then we tour the toolbox, including its star, <strong>Voicebox</strong>, which does for business users what Chapter 14's agent will do for you. Nothing gets built here. The one hands-on step is read-only: ask Voicebox a question and read the SPARQL it writes, which works only because your ontology and virtual graphs (Chapters 6 to 9) are in place.</p>
+
+  <h2><span class="sn">13.1</span>Terms in this chapter</h2>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td><dfn>Stardog Cloud portal</dfn></td><td>The website where people sign in</td><td>Manages endpoints, launches apps</td><td><code>cloud.stardog.com</code>, email login</td></tr>
+      <tr><td><dfn>Endpoint</dfn></td><td>The Stardog server itself</td><td>Stores graphs, answers queries</td><td><code>&lt;your-endpoint&gt;.stardog.cloud:5820</code></td></tr>
+      <tr><td><dfn>Native user</dfn></td><td>A user account on the endpoint</td><td>Programs need credentials the server knows</td><td><code>stardog_admin</code>, role <code>cloud</code></td></tr>
+      <tr><td><dfn>Voicebox</dfn></td><td>Stardog's natural-language question box</td><td>Questions without writing SPARQL</td><td>"Top spenders in Wisconsin?" → SPARQL → answer</td></tr>
+      <tr><td><dfn>Grounded</dfn> answer</td><td>An answer whose facts all came from a query</td><td>So an LLM can't make numbers up</td><td>The answer shows its SPARQL</td></tr>
+      <tr><td><dfn>Stored query</dfn></td><td>A named SPARQL query saved on the server</td><td>Reuse, sharing, teaching Voicebox</td><td><code>system:QueryQ10546</code> in the kit</td></tr>
+      <tr><td><dfn>Knowledge kit</dfn></td><td>A packaged semantic layer described by <code>kit.yaml</code></td><td>Installs model, rules, data and queries at once</td><td>The c360 training kit</td></tr>
+      <tr><td><dfn>MCP</dfn> (Model Context Protocol)</td><td>A standard plug between AI apps and tools</td><td>Any AI host can call any tool server</td><td>Claude Desktop calling <code>voicebox_ask</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="sn">13.2</span>Two front doors: the portal and the endpoint</h2>
+
+  <p>Stardog Cloud has two things with two addresses. The <strong>portal</strong>, <code>cloud.stardog.com</code>, is where you sign in with your email: a control panel that lists your endpoints, launches the web apps, and manages API keys. The <strong>endpoint</strong>, <code>https://&lt;your-endpoint&gt;.stardog.cloud:5820</code>, is the actual Stardog 12.1.4 server in us-west-2. It has its own HTTP API (<code>POST /kit-c360/query</code> runs SPARQL) and <em>its own users</em>, unrelated to portal accounts.</p>
+
+  <p>That's the answer to the puzzle. In Studio, the portal connects to the endpoint on your behalf. A Python script has no portal in the middle, so it must bring credentials the endpoint knows, which your email isn't. Hence this project's native Stardog user, <code>stardog_admin</code>, with the role <code>cloud</code>. Every program in this book, including the Chapter 14 agent, signs in as <code>stardog_admin</code> (or as one of the narrower users from Chapter 12).</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 300" role="img" aria-label="Portal and endpoint: two logins">
+      <rect x="20" y="30" width="170" height="110" rx="10" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+      <text x="105" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">You</text>
+      <text x="105" y="82" text-anchor="middle" font-size="12" fill="var(--muted)">browser</text>
+      <text x="105" y="120" text-anchor="middle" font-size="12" fill="var(--muted)">email / SSO login</text>
+      <rect x="20" y="170" width="170" height="110" rx="10" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+      <text x="105" y="198" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">Your program</text>
+      <text x="105" y="222" text-anchor="middle" font-size="12" fill="var(--muted)">agent.py, pystardog, curl</text>
+      <text x="105" y="260" text-anchor="middle" font-size="12" fill="var(--muted)">native user + password</text>
+      <rect x="250" y="30" width="170" height="110" rx="10" fill="var(--soft)" stroke="var(--accent2)" stroke-width="2"/>
+      <text x="335" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="var(--accent2)">Cloud portal</text>
+      <text x="335" y="80" text-anchor="middle" font-size="12" fill="var(--ink)">cloud.stardog.com</text>
+      <text x="335" y="102" text-anchor="middle" font-size="12" fill="var(--muted)">Studio, Designer,</text>
+      <text x="335" y="120" text-anchor="middle" font-size="12" fill="var(--muted)">Explorer, Voicebox, API keys</text>
+      <rect x="434" y="120" width="200" height="160" rx="10" fill="var(--soft)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="535" y="148" text-anchor="middle" font-size="14" font-weight="700" fill="var(--accent)">Endpoint</text>
+      <text x="535" y="170" text-anchor="middle" font-size="11" fill="var(--ink)">&lt;your-endpoint&gt;.stardog.cloud:5820</text>
+      <text x="535" y="196" text-anchor="middle" font-size="12" fill="var(--muted)">database kit-c360</text>
+      <text x="535" y="216" text-anchor="middle" font-size="12" fill="var(--muted)">its own users and roles</text>
+      <text x="535" y="236" text-anchor="middle" font-size="12" fill="var(--muted)">stardog_admin (role cloud),</text>
+      <text x="535" y="254" text-anchor="middle" font-size="12" fill="var(--muted)">hr_user, marketing_user</text>
+      <line x1="190" y1="85" x2="246" y2="85" stroke="var(--accent2)" stroke-width="2"/>
+      <polygon points="246,80 254,85 246,90" fill="var(--accent2)"/>
+      <line x1="420" y1="110" x2="470" y2="130" stroke="var(--accent2)" stroke-width="2" stroke-dasharray="5 4"/>
+      <text x="335" y="160" font-size="11" fill="var(--muted)">apps connect</text>
+      <text x="335" y="174" font-size="11" fill="var(--muted)">on your behalf</text>
+      <line x1="190" y1="225" x2="446" y2="225" stroke="var(--accent)" stroke-width="2"/>
+      <polygon points="446,220 454,225 446,230" fill="var(--accent)"/>
+      <line x1="200" y1="160" x2="240" y2="200" stroke="var(--gotcha)" stroke-width="2"/>
+      <line x1="240" y1="160" x2="200" y2="200" stroke="var(--gotcha)" stroke-width="2"/>
+      <text x="250" y="196" font-size="11" fill="var(--gotcha)">portal login does not work here</text>
+    </svg>
+    <figcaption>Figure 13.1: Two front doors. People sign in to the portal; programs talk to the endpoint as a native Stardog user.</figcaption>
+  </figure>
+
+  <aside class="box sql">
+    <p>You know this split from RDS: the AWS console user who can click "Modify DB instance" is not a Postgres role. Portal = console, native user = database role. The Chapter 12 users live on the endpoint, next to <code>stardog_admin</code>.</p>
+  </aside>
+
+  <aside class="box java"><p>A program reaching the endpoint is like one reaching a database through a <code>DataSource</code>: its own URL, database user and password.</p><div class="sbs"><div class="col"><p class="lbl">Stardog HTTP API</p><pre>POST https://&lt;your-endpoint&gt;.stardog.cloud:5820
+     /kit-c360/query
+Authorization: Basic &lt;stardog_admin:…&gt;
+Accept: application/sparql-results+json
+
+query=SELECT …</pre></div><div class="col"><p class="lbl">Java</p><pre>var ds = new PGSimpleDataSource();
+ds.setUrl("jdbc:postgresql://host:5432/c360");
+ds.setUser("app_reader");   // a DB role,
+                            // not your SSO login
+ds.setPassword(System.getenv("PGPASSWORD"));
+try (var c = ds.getConnection()) { … }</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> there's no driver or connection pool, just stateless HTTPS requests with Basic auth on each. And behind the endpoint, Stardog may be talking to Aurora and Redshift at once.</p></aside>
+
+  <aside class="box gotcha">
+    <p>Keep the stardog_admin password in an environment variable or a password manager, never in a committed file. Chapter 14 reads it from <code>STARDOG_PASSWORD</code>.</p>
+  </aside>
+
+  <h2><span class="sn">13.3</span>Studio, Designer and Explorer: one graph, three audiences</h2>
+
+  <p><strong>Studio</strong> is the engineer's IDE, the tool you've lived in since Chapter 2: DBeaver that speaks SPARQL. It holds the query editor with its reasoning toggle (Chapter 10), Databases for loading data and setting properties (Chapter 6), the Models view, the Data area for data sources and virtual graphs (Chapters 7 to 9), and Security (Chapter 12).</p>
+
+  <p><strong>Designer</strong> is for modelers. You draw classes as boxes and relationships as arrows, attach a table or CSV to each class, and publish; Designer writes the ontology into a named graph and creates the mappings. Its fingerprints are in the kit: in <code>c360_extended_rules.ttl</code>, each <code>rule:content</code> has a <code>&lt;tag:stardog:designer:rule:content&gt;</code> copy and a compressed <code>designer:rule:data</code> blob from Designer's rule editor. So why write everything by hand? Because when something breaks (a missing <code>sql.schemas</code>, the reserved word <code>date</code>, a float drifting by two cents), you need to know what Designer generates underneath: the same triples, just faster.</p>
+
+  <p><strong>Explorer</strong> is for browsing: search for a customer, land on her page, click her address or an order, and keep walking. It's Chapter 2's "follow the arrows" as a web page; the kit's <code>kit.yaml</code> gives it a starting point, <code>initialSearch: "`urn:stardog:demos:c360:customer:230`"</code>. Its search depends on the full-text index (<code>search.enabled</code>), and virtual-graph data isn't stored in Stardog, so it may not be indexed. If Explorer can't find "Carolyn Inworth" but your Chapter 9 query can, that's probably why; check the docs for your version before promising Explorer on a purely virtual setup.</p>
+
+  <aside class="box blog">
+    <p>The blog built its c360 ontology in Designer (its "bootstrap the ontology" step). You built the same model by hand in Chapters 5 and 6, and it's the same 161 triples (160 if you removed the bad inverse axiom in Chapter 10) in <code>&lt;urn:stardog:training-c360:1.0:model&gt;</code>.</p>
+  </aside>
+
+  <h2><span class="sn">13.4</span>Voicebox: English in, SPARQL out</h2>
+
+  <p>A business user types "Who are the top spenders in Wisconsin?" and Voicebox writes SPARQL, runs it, answers in a sentence, and shows the query. Underneath is a large language model (LLM), but what makes it work is your semantic layer. Press Play to watch.</p>
+
+  <figure class="fig anim" id="f-13-2">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 640 420" role="img" aria-label="Voicebox translating an English question into SPARQL">
+      <g class="v0">
+        <rect x="120" y="12" width="400" height="40" rx="8" fill="var(--soft)" stroke="var(--muted)"/>
+        <text x="320" y="38" text-anchor="middle" font-size="15" fill="var(--ink)">Who are the <tspan fill="var(--subj)" font-weight="700">top</tspan> <tspan fill="var(--pred)" font-weight="700">spenders</tspan> in <tspan fill="var(--obj)" font-weight="700">Wisconsin</tspan>?</text>
+      </g>
+      <g class="v1">
+        <line x1="330" y1="52" x2="115" y2="82" stroke="var(--pred)" stroke-width="1.5"/>
+        <rect x="10" y="84" width="200" height="118" rx="8" fill="var(--soft)" stroke="var(--pred)" stroke-width="2"/>
+        <text x="110" y="104" text-anchor="middle" font-size="12" font-weight="700" fill="var(--pred)">"spenders" → ontology labels</text>
+        <text x="20" y="126" font-size="11" fill="var(--ink)">"price" = :purchasePrice</text>
+        <text x="20" y="144" font-size="11" fill="var(--ink)">"quantity" = :quantity</text>
+        <text x="20" y="162" font-size="11" fill="var(--ink)">"purchased by" = :purchasedBy</text>
+        <text x="20" y="180" font-size="11" fill="var(--ink)">Order → Customer</text>
+        <text x="20" y="196" font-size="10" fill="var(--muted)">(rdfs:label, so:domainIncludes)</text>
+      </g>
+      <g class="v2">
+        <line x1="440" y1="52" x2="320" y2="82" stroke="var(--obj)" stroke-width="1.5"/>
+        <rect x="220" y="84" width="200" height="118" rx="8" fill="var(--soft)" stroke="var(--obj)" stroke-width="2"/>
+        <text x="320" y="104" text-anchor="middle" font-size="12" font-weight="700" fill="var(--obj)">"Wisconsin" → search</text>
+        <text x="230" y="126" font-size="11" fill="var(--ink)">a value, not a class</text>
+        <text x="230" y="144" font-size="11" fill="var(--ink)">found as a "state"</text>
+        <text x="230" y="162" font-size="11" fill="var(--ink)">:state on :Address,</text>
+        <text x="230" y="180" font-size="11" fill="var(--ink)">reached by :address</text>
+        <text x="230" y="196" font-size="10" fill="var(--muted)">(full-text search index)</text>
+      </g>
+      <g class="v3">
+        <line x1="258" y1="52" x2="530" y2="82" stroke="var(--subj)" stroke-width="1.5"/>
+        <rect x="430" y="84" width="200" height="118" rx="8" fill="var(--soft)" stroke="var(--subj)" stroke-width="2"/>
+        <text x="530" y="104" text-anchor="middle" font-size="12" font-weight="700" fill="var(--subj)">"top" → examples</text>
+        <text x="440" y="126" font-size="11" fill="var(--ink)">similar stored queries</text>
+        <text x="440" y="144" font-size="11" fill="var(--ink)">show the pattern:</text>
+        <text x="440" y="162" font-size="11" fill="var(--ink)">SUM, GROUP BY,</text>
+        <text x="440" y="180" font-size="11" fill="var(--ink)">ORDER BY DESC, LIMIT</text>
+        <text x="440" y="196" font-size="10" fill="var(--muted)">(system:voiceboxQuestion)</text>
+      </g>
+      <rect x="10" y="222" width="620" height="186" rx="8" fill="var(--code)" stroke="var(--line)"/>
+      <text x="22" y="242" font-size="11" font-weight="700" fill="var(--muted)">Generated SPARQL (illustrative)</text>
+      <g font-family="ui-monospace,Menlo,monospace" font-size="12">
+        <text class="v4" x="22" y="264" fill="var(--ink)">SELECT ?name <tspan fill="var(--subj)">(SUM(?price * ?qty) AS ?spend)</tspan> WHERE {</text>
+        <text class="v4" x="40" y="284" fill="var(--ink)">?c a :Customer ; :name ?name ; <tspan fill="var(--obj)">:address ?a .</tspan></text>
+        <text class="v4" x="40" y="304" fill="var(--obj)">?a :state "Wisconsin" .</text>
+        <text class="v4" x="40" y="324" fill="var(--pred)">?o :purchasedBy ?c ; :purchasePrice ?price ; :quantity ?qty .</text>
+        <text class="v4" x="22" y="344" fill="var(--ink)">}</text>
+        <text class="v4" x="22" y="364" fill="var(--subj)">GROUP BY ?name ORDER BY DESC(?spend) LIMIT 10</text>
+      </g>
+      <text class="v5" x="22" y="396" font-size="12" fill="var(--accent)">→ Stardog runs it over the virtual graphs → "Carolyn Inworth, $502,529.42 …"</text>
+    </svg>
+    <p class="stepcap"></p>
+    <figcaption>Figure 13.2: How Voicebox turns words into a query. The colors match each word to the part of the query it produced.</figcaption>
+  </figure>
+
+  <h3>How does Voicebox know how to query this ontology?</h3>
+  <p>Not from its training data. It reads four things you built:</p>
+  <ol>
+    <li><strong>The ontology (the T-Box).</strong> Per the Voicebox developer guide, it uses <code>rdfs:label</code> for names, <code>rdfs:comment</code> for descriptions, <code>rdfs:subClassOf</code> for the hierarchy, and <code>so:domainIncludes</code>/<code>so:rangeIncludes</code> for which properties connect which classes. The guide recommends the schema.org pair over <code>rdfs:domain</code>/<code>rdfs:range</code>, the practical reason the c360 kit uses them (Chapter 6). "Spenders" matches no class, but it lands near the labels "price", "quantity" and "purchased by".</li>
+    <li><strong>The search index.</strong> "Wisconsin" is a value, not part of the ontology. Voicebox finds values with full-text search, which is why enabling Voicebox also switches on <code>search.enabled</code>.</li>
+    <li><strong>Example questions.</strong> Shared stored queries tagged with <code>system:voiceboxQuestion</code> are shown to the LLM as worked examples. This is <dfn>few-shot prompting</dfn>: teaching by showing a few solved problems.</li>
+    <li><strong>The engine.</strong> Stardog runs the finished query the normal way, virtual graphs and pushdown included (Chapter 9).</li>
+  </ol>
+
+  <aside class="box java"><p>Voicebox reads your ontology the way your IDE reads a JPA entity: names, types and Javadoc say what connects to what.</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>:purchasedBy a owl:ObjectProperty ;
+  rdfs:label "purchased by" ;
+  so:domainIncludes :Order ;
+  so:rangeIncludes  :Customer .
+
+:purchasePrice a owl:DatatypeProperty ;
+  rdfs:label "price" ;
+  so:rangeIncludes xsd:decimal .</pre></div><div class="col"><p class="lbl">Java</p><pre>@Entity
+class Order {
+  /** purchased by */
+  @ManyToOne Customer purchasedBy;
+
+  /** price */
+  BigDecimal purchasePrice;
+}</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> <code>so:domainIncludes</code> is a hint, not a type (Chapter 6). One property can serve several classes (<code>:name</code> is on Customer, Vendor, Category and Product), and no compiler catches a mistake.</p></aside>
+
+  <p>Here is one of the kit's 317 stored queries, trimmed; each pairs English with SPARQL:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>system:QueryQ10546 a system:StoredQuery , system:SharedQuery ;
+  system:queryDatabase "kit-c360" ;
+  system:voiceboxQuestion "Which rewards account customers bought at least $10K in a single order?" ;
+  system:queryString """SELECT DISTINCT ?customer0 WHERE {
+  ?order0 a ecomm:Order .
+  ?order0 ecomm:purchasePrice ?dat_0 .
+  ?order0 ecomm:purchasedBy ?customer0 .
+  ?customer0 ecomm:hasRewards ?rewardsAccount0 .
+  FILTER ("10000.00"^^xsd:decimal &lt;= ?dat_0)
+}""".</pre></div>
+
+  <p>This one example teaches that the arrow runs from order to customer (<code>?order0 ecomm:purchasedBy ?customer0</code>), that money is compared as <code>xsd:decimal</code>, and that the query returns IRIs rather than names. The docs recommend exactly that (Voicebox looks up the labels before showing results), and suggest starting with five to ten examples that together cover the whole model.</p>
+
+  <aside class="box model">
+    <p>Voicebox is a translator for a very precise database. The ontology is its dictionary, the search index its phone book, the stored queries its phrasebook, and Stardog the only source of facts it may quote. That last part is what <em>grounded</em> means: if the query is wrong, the answer is wrong, but in a way you can inspect.</p>
+  </aside>
+
+  <p>Three notes for our database. First, Voicebox has to be on: the database option <code>voicebox.enabled</code> (the kit's <code>kit.yaml</code> sets it to <code>true</code>) can only be enabled if the server's license allows Voicebox. Second, a Voicebox app lets you choose its data graph, schema and reasoning setting. Our facts live only in virtual graphs, so if Voicebox finds nothing where your Chapter 9 query finds Carolyn, check that setting first. Third, the kit's examples were written for its CSV data, and a couple use properties our mappings don't produce (<code>ecomm:race</code>). The best examples are ones you write, such as your Chapter 9 query saved as "Who are the top spenders?".</p>
+
+  <aside class="box try">
+    <p><strong>Ask Voicebox, then read its SPARQL (read-only).</strong></p>
+    <ol>
+      <li>First check Studio → Databases → kit-c360 → Properties → <code>voicebox.enabled</code>. If it's <code>false</code>, turning it on is a configuration change and your call; if you'd rather not, skip to step 5 and read along.</li>
+      <li>At <code>cloud.stardog.com</code>, open Voicebox (listed next to Studio, Designer and Explorer) and connect it to your endpoint and <code>kit-c360</code>. If you can't see it on the Free tier, or it asks for a license, stop and tell Claude what you see.</li>
+      <li>Ask: <code>Who are the top spenders in Wisconsin?</code></li>
+      <li>Open the generated SPARQL. Look for three things: a path to the state through <code>:address</code> and <code>:state</code>; a <code>SUM</code> over <code>:purchasePrice</code> times <code>:quantity</code>; and some way of reaching both warehouses (<code>GRAPH &lt;virtual://…&gt;</code> blocks or the app's data-graph setting).</li>
+      <li>Paste that query into Studio and run it yourself.</li>
+    </ol>
+    <p><strong>Expected:</strong> Carolyn Inworth (Milwaukee) first with <strong>$502,529.42</strong>, then Renaud Brosio ($207,537.22) and Sephira McKleod ($76,339.43). Eight Wisconsin customers have orders. If Voicebox gives Carolyn a smaller number, check whether it forgot <code>* ?qty</code>. That's the real lesson: an LLM-written query needs a reference answer you trust.</p>
+  </aside>
+
+  <h2><span class="sn">13.5</span>Stored queries and knowledge kits</h2>
+
+  <p>A stored query is SPARQL saved on the server under a name, with metadata. The kit ships its 317 as Turtle, since Stardog keeps stored queries as triples in its system catalog. The types: <code>system:StoredQuery</code> (saved), <code>system:SharedQuery</code> (visible to others; Voicebox learns only from shared ones), and <code>system:ReasoningQuery</code> (run with reasoning on). In Studio you save one from the editor. Chapter 14's five competency questions, with their verified queries, are ideal candidates: a regression suite, Voicebox examples, and reference answers for the agent.</p>
+
+  <aside class="box java"><p>A stored query is the graph world's <code>@NamedQuery</code>: written once, given a name, reused everywhere.</p><div class="sbs"><div class="col"><p class="lbl">SPARQL (stored)</p><pre>system:QueryTopSpenders
+  a system:StoredQuery, system:SharedQuery ;
+  system:queryName "top-spenders" ;
+  system:voiceboxQuestion
+    "Who are the top spenders?" ;
+  system:queryString """SELECT … """ .</pre></div><div class="col"><p class="lbl">Java</p><pre>@Entity
+@NamedQuery(name = "Customer.topSpenders",
+  query = "select c.name, sum(o.price * o.quantity) "
+        + "from Order o join o.purchasedBy c "
+        + "group by c.name order by 2 desc")
+class Customer { … }</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> a <code>@NamedQuery</code> ships with your app. A stored query lives on the server (in SQL terms, a shared saved query, not a stored procedure), so Studio, Voicebox and every user see it, and it can carry example questions that teach an LLM.</p></aside>
+
+  <p>A knowledge kit is a semantic layer in a box. Its manifest, <code>kit.yaml</code>, reads like this book's summary:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>kit.yaml section</th><th>What the c360 kit says</th><th>Where you did it</th></tr></thead>
+    <tbody>
+      <tr><td><code>options</code></td><td><code>search.enabled</code>, <code>graph.aliases</code>, <code>voicebox.enabled</code> all <code>true</code></td><td>The database the kit created</td></tr>
+      <tr><td><code>namespaces</code></td><td><code>ecomm: "tag:stardog:api:ecomm:"</code></td><td>Chapter 3</td></tr>
+      <tr><td><code>data</code> (models)</td><td><code>schema.ttl</code> → the model graph; extended model and rules → <code>urn:stardog:c360_extended_rules:1.0:model</code></td><td>Chapters 5, 6, 10</td></tr>
+      <tr><td><code>data</code> (CSVs)</td><td>Eight CSVs with <code>.sms</code> mappings, copied into <code>urn:stardog:training-c360:1.0:data</code></td><td><strong>Replaced</strong> by virtual graphs (Chapters 7 to 9)</td></tr>
+      <tr><td><code>schemas</code></td><td><code>c360_schema</code>, <code>c360_extended_rules</code></td><td><code>reasoning.schemas</code> (Chapters 6, 10)</td></tr>
+      <tr><td><code>queries</code></td><td><code>kit-queries.ttl</code></td><td>Stored queries, above</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>The fourth row is the interesting one. The kit <em>materializes</em> its data (Chapter 7's ETL-style option). You kept its model, rules and IRI patterns and swapped that one section for live virtual graphs. Because your mappings mint the same IRIs (<code>urn:stardog:demos:c360:customer:{cid}</code> and friends), the kit's rules and stored queries still fit: the Chapter 9 IRI trick pays off a second time.</p>
+
+  <h2><span class="sn">13.6</span>The Stardog Cloud MCP server</h2>
+
+  <p>MCP (Model Context Protocol) is an open standard for connecting AI applications to tools. An MCP <em>server</em> advertises tools, each with a name, a description and a JSON schema for its arguments. An MCP <em>host</em> (Claude Desktop, Claude Code, Cursor, or your own agent) discovers them and lets its model call them. MCP is to AI tools roughly what JDBC is to databases: one standard plug.</p>
+
+  <p>Stardog publishes an open-source server on GitHub, <code>stardog-union/stardog-cloud-mcp</code>. Its README lists exactly three tools, all built on the Voicebox APIs:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Tool</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>voicebox_settings</code></td><td>Returns your Voicebox application's settings: database, model and configuration.</td></tr>
+      <tr><td><code>voicebox_ask</code></td><td>Asks a natural-language question and returns Voicebox's full answer, with its reasoning chain, the SPARQL it ran, and provenance.</td></tr>
+      <tr><td><code>voicebox_generate_query</code></td><td>Turns a question into SPARQL without running it, so your code can check the query first.</td></tr>
+    </tbody>
+  </table></div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 210" role="img" aria-label="MCP host, MCP server, Voicebox, Stardog">
+      <rect x="10" y="50" width="130" height="90" rx="10" fill="var(--soft)" stroke="var(--muted)"/>
+      <text x="75" y="82" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">MCP host</text>
+      <text x="75" y="103" text-anchor="middle" font-size="11" fill="var(--muted)">Claude Desktop,</text>
+      <text x="75" y="119" text-anchor="middle" font-size="11" fill="var(--muted)">Cursor, your agent</text>
+      <rect x="175" y="40" width="150" height="110" rx="10" fill="var(--soft)" stroke="var(--accent2)" stroke-width="2"/>
+      <text x="250" y="66" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent2)">stardog-cloud-mcp</text>
+      <text x="250" y="90" text-anchor="middle" font-size="11" fill="var(--ink)">voicebox_settings</text>
+      <text x="250" y="108" text-anchor="middle" font-size="11" fill="var(--ink)">voicebox_ask</text>
+      <text x="250" y="126" text-anchor="middle" font-size="11" fill="var(--ink)">voicebox_generate_query</text>
+      <rect x="360" y="50" width="120" height="90" rx="10" fill="var(--soft)" stroke="var(--obj)"/>
+      <text x="420" y="82" text-anchor="middle" font-size="13" font-weight="700" fill="var(--obj)">Voicebox API</text>
+      <text x="420" y="103" text-anchor="middle" font-size="11" fill="var(--muted)">cloud.stardog.com</text>
+      <text x="420" y="119" text-anchor="middle" font-size="11" fill="var(--muted)">API key (app)</text>
+      <rect x="515" y="50" width="115" height="90" rx="10" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      <text x="572" y="82" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent)">Endpoint</text>
+      <text x="572" y="103" text-anchor="middle" font-size="11" fill="var(--muted)">kit-c360 →</text>
+      <text x="572" y="119" text-anchor="middle" font-size="11" fill="var(--muted)">Aurora, Redshift</text>
+      <line x1="140" y1="95" x2="171" y2="95" stroke="var(--muted)" stroke-width="2"/><polygon points="169,90 177,95 169,100" fill="var(--muted)"/>
+      <line x1="325" y1="95" x2="356" y2="95" stroke="var(--muted)" stroke-width="2"/><polygon points="354,90 362,95 354,100" fill="var(--muted)"/>
+      <line x1="480" y1="95" x2="511" y2="95" stroke="var(--muted)" stroke-width="2"/><polygon points="509,90 517,95 509,100" fill="var(--muted)"/>
+      <text x="320" y="185" text-anchor="middle" font-size="11" fill="var(--muted)">local: started by the host via uv  ·  remote (beta): HTTP on port 7001, token in x-sdc-api-key</text>
+    </svg>
+    <figcaption>Figure 13.3: The MCP server is a thin adapter. It doesn't run your SPARQL; it passes questions to Voicebox, which writes and runs the SPARQL.</figcaption>
+  </figure>
+
+  <p>To run it you need a <strong>Voicebox API token</strong>: in the portal's profile menu, choose Manage API Keys, create an application and generate a secret. That's a third kind of credential, neither your portal login nor <code>stardog_admin</code>. The Voicebox developer guide says API access is currently limited, so your account may not have it. Locally, the server runs on Python 3.12 or 3.13 with <code>uv</code>, started by the host (<code>uv run stardog-cloud-mcp --token … --client_id …</code>). The remote mode is beta: a Docker container serving HTTP on port 7001, with the token in an <code>x-sdc-api-key</code> header.</p>
+
+  <aside class="box gotcha">
+    <p>There is no "run this SPARQL" tool, so the MCP server can't run a query you've already verified. That's what Chapter 14's direct SPARQL tool is for. The two approaches complement each other.</p>
+  </aside>
+
+  <aside class="box blog">
+    <p>This is the blog's <strong>Path B</strong> (beta and gated): AgentCore Gateway registers <code>stardog-cloud-mcp</code> as a tool target, and AgentCore Identity injects the token there, so agent code never sees it. Its <strong>Path A</strong>, a direct SPARQL tool that works on the Free tier, is what you build next.</p>
+  </aside>
+
+  <h2><span class="sn">13.7</span>Which tool, for whom, with which login</h2>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Tool</th><th>For</th><th>Signs in with</th><th>Best at</th></tr></thead>
+    <tbody>
+      <tr><td>Studio</td><td>Engineers</td><td>Portal login</td><td>SPARQL, loading, virtual graphs, security</td></tr>
+      <tr><td>Designer</td><td>Modelers</td><td>Portal login</td><td>Drawing ontologies and mappings</td></tr>
+      <tr><td>Explorer</td><td>Analysts</td><td>Portal login</td><td>Browsing entities and links</td></tr>
+      <tr><td>Voicebox</td><td>Business users</td><td>Portal login</td><td>Plain-English questions, with the query shown</td></tr>
+      <tr><td>HTTP API / pystardog</td><td>Programs, the Chapter 14 agent</td><td>Native user</td><td>Running exact SPARQL</td></tr>
+      <tr><td>MCP server</td><td>AI hosts and agents</td><td>Voicebox API token</td><td>Voicebox as a tool</td></tr>
+    </tbody>
+  </table></div>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>Back to the opening puzzle: why does the script get a 401 when Studio works?</summary><p>Studio goes through the portal, which connects to the endpoint for you. The script talks to the endpoint directly, and the endpoint doesn't know portal accounts. Programs need a native Stardog user: <code>stardog_admin</code> or a narrower Chapter 12 user.</p></details>
+    <details><summary>Name the four things Voicebox relies on to answer a question.</summary><p>The ontology's labels, comments and domain/range hints; the full-text search index (for values like "Wisconsin"); shared stored queries with <code>system:voiceboxQuestion</code> examples; and the Stardog engine, which runs the query through the virtual graphs.</p></details>
+    <details><summary>What does "grounded" mean, and what can still go wrong?</summary><p>Every fact in the answer came from a query against your graph, and the query is shown. The query can still be wrong (a missing <code>* quantity</code>, the wrong graph), so you keep reference answers.</p></details>
+    <details><summary>The kit loads CSVs into a data graph. Why do its rules and queries still work over your virtual graphs?</summary><p>Your mappings mint the same IRIs and use the same ontology terms, so rules and queries match virtual triples exactly as they would copied ones.</p></details>
+    <details><summary>Can the Stardog Cloud MCP server run a specific SPARQL query you've verified?</summary><p>No. All three of its tools go through Voicebox. For exact queries use the HTTP API or pystardog, which is Path A in Chapter 14.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li>Portal (<code>cloud.stardog.com</code>, email login) and endpoint (<code>&lt;your-endpoint&gt;.stardog.cloud:5820</code>, native users) are different doors. Programs use <code>stardog_admin</code> or another native user.</li>
+    <li>Studio is for engineers, Designer for modelers, Explorer for browsing, Voicebox for plain-English questions.</li>
+    <li>Voicebox reads your ontology's labels and domain/range hints, the search index, and example questions in shared stored queries, then runs a grounded query and shows it.</li>
+    <li>Stored queries are named SPARQL with metadata: examples, tests and reference answers.</li>
+    <li>A knowledge kit packages a semantic layer in <code>kit.yaml</code>. You kept the c360 kit's model, rules and IRIs and swapped its CSV data for virtual graphs.</li>
+    <li>The Stardog Cloud MCP server exposes Voicebox to any MCP host through <code>voicebox_settings</code>, <code>voicebox_ask</code> and <code>voicebox_generate_query</code>, with a gated Voicebox API token. This is the blog's Path B.</li>
+  </ul></section>
+
+  <nav class="pn">
+    <a href="ch12.html"><small>← Previous</small>Chapter 12 · Governance: same question, different answers</a>
+    <a href="ch14.html" style="text-align:right"><small>Next →</small>Chapter 14 · The agent: from question to answer</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f-13-2', (tl, cap) => {
+  const q = s => '#f-13-2 ' + s;
+  cap(tl, 'Step 1: A business user types a question. Voicebox sees only words so far.');
+  tl.from(q('.v0'), {opacity: 0, y: -10, duration: .6});
+  cap(tl, 'Step 2: "spenders" matches no class, but it lands near the ontology labels "price", "quantity" and "purchased by" (Order → Customer).');
+  tl.from(q('.v1'), {opacity: 0, y: 12, duration: .7}, '+=.6');
+  cap(tl, 'Step 3: "Wisconsin" is a value, not a concept. The search index finds it as a state, the :state of an :Address.');
+  tl.from(q('.v2'), {opacity: 0, y: 12, duration: .7}, '+=1.4');
+  cap(tl, 'Step 4: "top" matches stored example questions, which show the pattern: SUM, GROUP BY, ORDER BY DESC, LIMIT.');
+  tl.from(q('.v3'), {opacity: 0, y: 12, duration: .7}, '+=1.4');
+  cap(tl, 'Step 5: The LLM assembles the SPARQL. Each colored line comes from one of the three lookups.');
+  tl.from(q('.v4'), {opacity: 0, x: -12, duration: .45, stagger: .35}, '+=1.4');
+  cap(tl, 'Step 6: Stardog runs the query through the virtual graphs; the answer is grounded in real rows, and the query is shown.');
+  tl.from(q('.v5'), {opacity: 0, duration: .7}, '+=.8');
+  cap(tl, 'Words → ontology labels, search index and examples → SPARQL → Stardog → grounded answer. Press Play to replay.', '+=1.5');
+});
+</script>
+</body>
+</html>

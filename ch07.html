@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 7 · Where the data lives: materialized vs virtual</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <dfn>term</dfn>                       first definition of a glossary term
+   REQUIRED at the end of every chapter (before nav)
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 7</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 7</div>
+    <h1>Where the data lives: materialized vs virtual</h1>
+    <p class="sub">Two ways to give your ontology real data, why we leave ours in Aurora and Redshift, and the plumbing that lets Stardog reach them.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">Try a quick experiment in your head. Open Studio, pick <code>kit-c360</code>, and ask for Carolyn Inworth: <code>SELECT * { ?c :name "Carolyn Inworth" }</code>. You'd get nothing. After two chapters of modeling, your database knows exactly what a <code>:Customer</code> is, but not a single actual customer. You built the table definitions, and the rows are sitting in Aurora and Redshift. This chapter is about how Stardog gets at them, and the choice you make here (copy them in, or reach out to them) shapes cost, freshness, security and speed for the rest of the book.</p>
+
+  <h2><span class="sn">7.1</span>The schema is loaded; the rows are not</h2>
+  <p>Recall Chapter 5's split. The <strong>T-Box</strong> is the vocabulary (161 triples in <code>&lt;urn:stardog:training-c360:1.0:model&gt;</code>). The <strong>A-Box</strong> is facts about individual things: "customer 225 is named Carolyn Inworth". In Postgres the DDL and the rows live in one engine; in Stardog the A-Box can live somewhere else entirely. Ours does:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Engine</th><th>Database / schema</th><th>Tables (rows)</th></tr></thead>
+    <tbody>
+      <tr><td>Aurora PostgreSQL 16 (Serverless v2)</td><td><code>c360</code> / <code>c360</code></td><td>customer (500), address (500), credit_card (500), rewards_account (500)</td></tr>
+      <tr><td>Redshift Serverless</td><td><code>dev</code> / <code>c360</code></td><td>purchase (2,500), product (580), category (31), vendor (418)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="sn">7.2</span>Option one: materialize (copy the triples in)</h2>
+  <p>A <dfn>materialized graph</dfn> is instance data that has been converted to triples and stored inside Stardog's own storage. Your <code>INSERT DATA</code> triples about Carolyn in Chapters 2 to 4 were a tiny version. At scale you'd bulk-load: export tables to CSV or Turtle, or run a mapping once with the admin command <code>virtual import</code>, which writes the resulting triples into a database. The original c360 knowledge kit works this way: its loader turns <code>US_Customers.csv</code>, <code>Purchases.csv</code> and friends into triples stored in <code>kit-c360</code>, and queries never leave Stardog.</p>
+  <aside class="box sql">
+    <p>Materializing is ETL into a warehouse: extract, transform rows into triples, load into a separate store. Queries are fast and self-contained, and the copy is as fresh as your last pipeline run. The only real difference is the target shape (triples instead of fact and dimension tables).</p>
+  </aside>
+
+  <h2><span class="sn">7.3</span>Option two: virtualize (leave the data where it is)</h2>
+  <p>A <dfn>virtual graph</dfn> is a named graph whose triples are never stored in Stardog. Instead, Stardog holds three things: a connection to the source database, a <em>mapping</em> that says how rows turn into triples (Chapter 8), and a name such as <code>virtual://aurora_c360_safe</code>. When a query touches that graph, Stardog translates that part into SQL, sends it to the source, and turns the returned rows into triples on the fly. Only query results cross the wire.</p>
+  <p>The technique that makes this workable is <dfn>pushdown</dfn>: instead of dragging whole tables into Stardog and filtering there, Stardog pushes as much work as it can (filters, joins within one source, aggregates, limits) into the SQL it sends, because the database has the indexes (the Stardog docs call it moving the compute to the data). For example: ask for customers in Texas and Aurora receives <code>… WHERE state = 'Texas'</code>, returning 53 rows instead of 500. Chapter 9 takes pushdown apart on a real federated query.</p>
+  <aside class="box java">
+    <p>Materialized versus virtual is eager copy versus lazy view.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">Stardog</p><pre># Materialized: triples copied into Stardog
+# (INSERT DATA, bulk load, virtual import).
+# Fast, and as fresh as the last load.
+
+# Virtual: only a mapping and a name.
+GRAPH &lt;virtual://aurora_c360_safe&gt; {
+  ?c :address ?a .
+  ?a :state "Texas" .
+}
+# becomes SQL: ... WHERE state = 'Texas'</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>// Materialized: an eager snapshot
+List&lt;Customer&gt; copy = List.copyOf(repo.findAll());
+var texans = copy.stream()
+    .filter(c -&gt; c.state().equals("Texas"))
+    .toList();
+
+// Virtual: a lazy view; each call runs fresh SQL
+interface CustomerView { List&lt;Customer&gt; byState(String s); }
+CustomerView view = s -&gt; jdbc.query(
+    "SELECT c.* FROM c360.customer c " +
+    "JOIN c360.address a ON a.id = c.location " +
+    "WHERE a.state = ?", customerMapper, s);</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> a Hibernate lazy proxy fetches the whole row on first touch and then keeps it; a virtual graph keeps nothing between queries and pushes work down as SQL, like the hand-written <code>CustomerView</code>. What Java does not give you is one query spanning two such views on two databases, with the join done for you (Chapter 9).</p>
+  </aside>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 330" role="img" aria-label="Materialized versus virtual: in the materialized path, a load job copies rows from Aurora and Redshift into Stardog storage and queries read the copy. In the virtual path, Stardog stores only mappings and sends SQL to the sources at query time.">
+      <text x="170" y="22" text-anchor="middle" font-size="14" font-weight="700" style="fill:var(--ink)">Materialized</text>
+      <text x="510" y="22" text-anchor="middle" font-size="14" font-weight="700" style="fill:var(--ink)">Virtual</text>
+      <line x1="340" y1="10" x2="340" y2="320" style="stroke:var(--line)" stroke-width="2"/>
+      <!-- left -->
+      <rect x="20" y="40" width="130" height="50" rx="8" style="fill:var(--soft);stroke:var(--accent2)" stroke-width="1.5"/>
+      <text x="85" y="62" text-anchor="middle" font-size="12" style="fill:var(--ink)">Aurora</text>
+      <text x="85" y="78" text-anchor="middle" font-size="11" style="fill:var(--muted)">customers</text>
+      <rect x="190" y="40" width="130" height="50" rx="8" style="fill:var(--soft);stroke:var(--accent2)" stroke-width="1.5"/>
+      <text x="255" y="62" text-anchor="middle" font-size="12" style="fill:var(--ink)">Redshift</text>
+      <text x="255" y="78" text-anchor="middle" font-size="11" style="fill:var(--muted)">purchases</text>
+      <path d="M85 92 L150 140 M255 92 L190 140" style="stroke:var(--accent)" stroke-width="2" fill="none"/>
+      <rect x="95" y="140" width="150" height="34" rx="6" style="fill:var(--paper);stroke:var(--accent)" stroke-width="1.5"/>
+      <text x="170" y="162" text-anchor="middle" font-size="12" style="fill:var(--accent)">nightly load job (ETL)</text>
+      <path d="M170 176 L170 206" style="stroke:var(--accent)" stroke-width="2"/>
+      <polygon points="164,202 176,202 170,212" style="fill:var(--accent)"/>
+      <rect x="60" y="212" width="220" height="56" rx="8" style="fill:var(--soft);stroke:var(--ink)" stroke-width="1.5"/>
+      <text x="170" y="234" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--ink)">Stardog storage</text>
+      <text x="170" y="252" text-anchor="middle" font-size="11" style="fill:var(--muted)">a full copy of every triple</text>
+      <text x="170" y="296" text-anchor="middle" font-size="11" style="fill:var(--muted)">query reads the copy:</text>
+      <text x="170" y="312" text-anchor="middle" font-size="11" style="fill:var(--muted)">fast, but as old as the last load</text>
+      <!-- right -->
+      <rect x="360" y="40" width="130" height="50" rx="8" style="fill:var(--soft);stroke:var(--accent2)" stroke-width="1.5"/>
+      <text x="425" y="62" text-anchor="middle" font-size="12" style="fill:var(--ink)">Aurora</text>
+      <text x="425" y="78" text-anchor="middle" font-size="11" style="fill:var(--muted)">rows stay here</text>
+      <rect x="530" y="40" width="130" height="50" rx="8" style="fill:var(--soft);stroke:var(--accent2)" stroke-width="1.5"/>
+      <text x="595" y="62" text-anchor="middle" font-size="12" style="fill:var(--ink)">Redshift</text>
+      <text x="595" y="78" text-anchor="middle" font-size="11" style="fill:var(--muted)">rows stay here</text>
+      <rect x="400" y="212" width="220" height="56" rx="8" style="fill:var(--soft);stroke:var(--ink)" stroke-width="1.5"/>
+      <text x="510" y="234" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--ink)">Stardog</text>
+      <text x="510" y="252" text-anchor="middle" font-size="11" style="fill:var(--muted)">mappings + data sources only</text>
+      <path d="M470 210 L430 96" style="stroke:var(--pred)" stroke-width="2" fill="none"/>
+      <polygon points="425,98 436,98 430,90" style="fill:var(--pred)"/>
+      <path d="M550 210 L590 96" style="stroke:var(--pred)" stroke-width="2" fill="none"/>
+      <polygon points="584,98 596,98 590,90" style="fill:var(--pred)"/>
+      <text x="418" y="160" font-size="11" style="fill:var(--pred)">SQL at</text>
+      <text x="418" y="174" font-size="11" style="fill:var(--pred)">query time</text>
+      <text x="575" y="160" font-size="11" style="fill:var(--pred)">SQL at</text>
+      <text x="575" y="174" font-size="11" style="fill:var(--pred)">query time</text>
+      <text x="510" y="296" text-anchor="middle" font-size="11" style="fill:var(--muted)">query is translated and sent out:</text>
+      <text x="510" y="312" text-anchor="middle" font-size="11" style="fill:var(--muted)">always current, as fast as the sources</text>
+    </svg>
+    <figcaption>Figure 7.1: Two ways to bind an A-Box. Left: copy the triples into Stardog. Right: keep the rows in the source and translate each query into SQL.</figcaption>
+  </figure>
+
+  <aside class="box sql">
+    <p>A virtual graph is closest to a <strong>foreign table</strong>: Postgres's <code>postgres_fdw</code>, Redshift Spectrum, or Athena federated query. You declare a remote table once, query it as if it were local, and the engine pushes predicates to the remote side. Two differences: rows become triples, with each key turned into a globally unique IRI (what makes cross-database joins possible, Chapter 9); and one SPARQL query can span virtual graphs on different engines, with Stardog as the host doing the cross-engine join.</p>
+  </aside>
+
+  <h2><span class="sn">7.4</span>Choosing between them</h2>
+  <p>Neither option is "the right one". The trade-offs are the ones between a federated query engine and a warehouse.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Concern</th><th>Materialized</th><th>Virtual</th></tr></thead>
+    <tbody>
+      <tr><td>Freshness</td><td>As old as the last load. Needs a refresh pipeline.</td><td>Live. A row inserted a second ago shows up in the next query.</td></tr>
+      <tr><td>Query speed</td><td>Fastest. Everything is in Stardog's indexes.</td><td>Bounded by the sources plus network. Our Aurora cold start adds 15 to 20 seconds after a pause.</td></tr>
+      <tr><td>Load on the sources</td><td>Only during the load.</td><td>Every query hits your production databases.</td></tr>
+      <tr><td>Storage and cost</td><td>You pay to store a second copy (and the Free tier has limits).</td><td>No copy. You pay the sources' compute per query (Redshift's 60-second minimum, for example).</td></tr>
+      <tr><td>Governance</td><td>Sensitive data now lives in a second system needing its own controls, retention and audit.</td><td>Data stays in the system of record. Stardog controls who can query which graph (Chapter 12); the source keeps its own grants.</td></tr>
+      <tr><td>Availability</td><td>Queries work even if a source is down.</td><td>If Redshift is paused or unreachable, queries that touch it fail or wait.</td></tr>
+      <tr><td>Changing the mapping</td><td>Re-run the load to see the change.</td><td>Edit the mapping; the next query uses it.</td></tr>
+    </tbody>
+  </table></div>
+  <p>For this book we go <strong>virtual</strong>, for three reasons that match the AWS blog's pitch: we want live answers ("no ETL" is the point of the demo); SSNs and card numbers should stay in Aurora, not be copied into another store; and a semantic layer <em>over</em> existing systems is the architecture the book teaches, which materializing would quietly turn back into a warehouse project.</p>
+  <p>Real deployments often mix the two: virtualize big, sensitive or fast-changing tables; materialize small, stable reference data. (Stardog also has virtual-graph caching as a middle ground; check the docs for your tier.)</p>
+
+  <aside class="box model">
+    <p>Think of a virtual graph as a <strong>lens</strong>, not a bucket. The mapping lets Stardog look at a SQL table and see <code>:Customer</code>s and <code>:address</code> arrows. Nothing is poured into Stardog.</p>
+  </aside>
+
+  <h2><span class="sn">7.5</span>Data sources: the connection half of a virtual graph</h2>
+  <p>Stardog splits a virtual graph into two separately managed objects. The first is the <dfn>data source</dfn>: a named, reusable connection to an external database, plus a cached copy of its metadata (schemas, tables, columns, types, keys, row-count estimates). The other half, the mapping, is Chapter 8. The split lets one connection serve many graphs: in Chapter 8 you'll build <em>two</em> virtual graphs over the one data source <code>aurora_c360</code>, with the password stored in one place.</p>
+  <p>The connection itself is <dfn>JDBC</dfn> (Java Database Connectivity): the standard Java API for SQL databases, with a vendor-supplied driver per database. DBeaver uses it too, which is why the settings will look familiar.</p>
+  <aside class="box java">
+    <p>A Stardog data source is a <code>javax.sql.DataSource</code>: in Spring terms, the one <code>DataSource</code> bean that several repositories (here, virtual graphs) are wired to.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">Stardog data source options</p><pre># data source: aurora_c360
+jdbc.url=jdbc:postgresql://&lt;your-aurora-cluster&gt;…
+         :5432/c360?sslmode=require
+jdbc.driver=org.postgresql.Driver
+jdbc.username=(masked)
+jdbc.password=(masked)
+sql.schemas=c360</pre></div>
+      <div class="col"><p class="lbl">Java 21 + HikariCP</p><pre>var cfg = new HikariConfig();
+cfg.setJdbcUrl(
+    "jdbc:postgresql://…:5432/c360?sslmode=require");
+cfg.setDriverClassName("org.postgresql.Driver");
+cfg.setUsername(System.getenv("PGUSER"));
+cfg.setPassword(System.getenv("PGPASSWORD"));
+cfg.setSchema("c360");
+
+DataSource aurora = new HikariDataSource(cfg);
+// one DataSource, many users of it</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> <code>setSchema</code> only sets the default schema of each connection. <code>sql.schemas</code> also decides which tables Stardog reads into its <em>cached metadata</em>, which it validates mappings against, much like Hibernate's <code>hbm2ddl.auto=validate</code> at boot, and which likewise misses later DDL changes (the schema-drift trap below).</p>
+  </aside>
+  <p>Your two data sources were created during the AWS setup; you won't change them. Their options, as Stardog reports them:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Option</th><th><code>aurora_c360</code> (PostgreSQL)</th><th><code>redshift_c360</code> (Redshift)</th></tr></thead>
+    <tbody>
+      <tr><td><code>jdbc.url</code></td><td><code>jdbc:postgresql://&lt;your-aurora-cluster&gt;.us-west-2.rds.amazonaws.com:5432/c360?sslmode=require</code></td><td><code>jdbc:redshift://&lt;your-workgroup&gt;.us-west-2.redshift-serverless.amazonaws.com:5439/dev</code></td></tr>
+      <tr><td><code>jdbc.driver</code></td><td><code>org.postgresql.Driver</code></td><td><code>com.amazon.redshift.jdbc42.Driver</code></td></tr>
+      <tr><td><code>jdbc.username</code> / <code>jdbc.password</code></td><td>(masked)</td><td>(masked)</td></tr>
+      <tr><td><code>sql.schemas</code></td><td><code>c360</code></td><td><code>c360</code></td></tr>
+      <tr><td><code>initialSize</code></td><td><code>0</code></td><td><code>0</code></td></tr>
+      <tr><td><code>minIdle</code> / <code>maxIdle</code></td><td><code>0</code> / <code>0</code></td><td><code>0</code> / <code>0</code></td></tr>
+      <tr><td><code>testOnBorrow</code></td><td><code>true</code></td><td><code>true</code></td></tr>
+      <tr><td><code>timeBetweenEvictionRunsMillis</code></td><td><code>0</code></td><td><code>0</code></td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>URL, driver, username, password</strong>: the same four things DBeaver asks for. Stardog Cloud ships both drivers. <code>sslmode=require</code> forces TLS over the public internet.</li>
+    <li><strong><code>sql.schemas=c360</code></strong>: by default a data source only sees the user's default schema (<code>public</code>); this adds <code>c360</code>, where our tables live. See the Gotcha.</li>
+    <li><strong>The pool settings</strong>: Section 7.6, because they're about money.</li>
+  </ul>
+
+  <aside class="box gotcha">
+    <p>Without <code>sql.schemas=c360</code>, creating a virtual graph fails with something like <code>Object 'customer' not found within 'c360'</code>, though DBeaver shows the table right there. Stardog validates the mapping's SQL against its <em>cached metadata</em> (the wording comes from Apache Calcite, the SQL library inside its virtual-graph engine; Chapter 9), which covers only the default schema unless you list others.</p>
+    <p>A related trap, <dfn>schema drift</dfn>: the metadata is cached when the data source is added, so a later new table or changed column stays invisible until you refresh it (<code>data-source refresh-metadata</code>, or the equivalent Studio action). If a mapping insists a column doesn't exist, refresh first, debug second.</p>
+  </aside>
+
+  <h2><span class="sn">7.6</span>The connection pool, and why <code>minIdle=0</code> saves money</h2>
+  <p>A <dfn>connection pool</dfn> keeps database connections open between queries so the next query doesn't pay for a new TCP connection, a TLS handshake and a login. Stardog's JDBC data sources use a standard Java pool (the Tomcat JDBC pool), and its defaults suit an always-on database: open 3 connections up front (<code>initialSize=3</code>), keep idle ones, and validate them periodically in the background.</p>
+  <p>Ours sleeps on purpose. Aurora Serverless v2 is configured with a minimum of 0 ACUs and <strong>auto-pause after 5 minutes</strong> of inactivity; while paused, compute costs $0. But Aurora only pauses when there are <em>no</em> open user connections, so a pool holding three idle connections means it bills $0.12 per ACU-hour around the clock. Nothing breaks; the bill just never drops to zero.</p>
+  <aside class="box java">
+    <p>Every Java service on a serverless database has the same leak: HikariCP's default keeps <code>minimumIdle</code> equal to <code>maximumPoolSize</code> (10), so ten idle connections stay open forever.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">Stardog pool options</p><pre>initialSize=0
+minIdle=0
+maxIdle=0
+testOnBorrow=true
+timeBetweenEvictionRunsMillis=0</pre></div>
+      <div class="col"><p class="lbl">Java 21 + HikariCP</p><pre>// tuned so Aurora can auto-pause
+cfg.setMinimumIdle(0);          // ~ minIdle=0: no warm spares
+cfg.setIdleTimeout(10_000);     // retire idle ones after 10 s
+cfg.setMaximumPoolSize(5);
+cfg.setInitializationFailTimeout(-1);
+                                // no connection at startup
+                                // (~ initialSize=0)
+// Hikari validates a connection on borrow
+// if it sat idle (~ testOnBorrow=true)</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> Stardog uses the Tomcat JDBC pool, whose property names are exactly the ones on the left; HikariCP has no <code>maxIdle=0</code> "close on return" mode, so with a short <code>idleTimeout</code> an idle connection lingers up to about 40 seconds (the housekeeper runs every 30). That is still well inside Aurora's 5-minute pause window.</p>
+  </aside>
+  <p>So both data sources use the settings the Stardog docs list for <strong>disabling pooling</strong>:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Setting</th><th>Value</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>initialSize</code></td><td>0</td><td>Don't open connections when the data source loads.</td></tr>
+      <tr><td><code>minIdle</code></td><td>0</td><td>Never keep a minimum number of idle connections around.</td></tr>
+      <tr><td><code>maxIdle</code></td><td>0</td><td>When a query finishes, close its connection instead of parking it.</td></tr>
+      <tr><td><code>testOnBorrow</code></td><td>true</td><td>Check a connection is alive before using it (useful when the database may have just woken up).</td></tr>
+      <tr><td><code>timeBetweenEvictionRunsMillis</code></td><td>0</td><td>Turn off the background thread that would otherwise touch idle connections.</td></tr>
+    </tbody>
+  </table></div>
+  <p>The price: every query opens a fresh connection (a few hundred milliseconds), and the first query after a pause waits 15 to 20 seconds while Aurora resumes. A fine trade for a sandbox; in production you'd keep a pool and a nonzero minimum capacity.</p>
+  <p>Redshift Serverless bills differently: $0.375 per RPU-hour with a <strong>60-second minimum</strong> per wake-up, $0 when idle. With pooling off it runs only when a query needs it, and our cap of 1 RPU-hour per day (about 15 minutes at 4 RPUs) is plenty for the book.</p>
+
+
+  <h2><span class="sn">7.7</span>The network path: Stardog Cloud's egress IP and your security group</h2>
+  <p>Stardog Cloud runs in Stardog's AWS account, not yours. Its SQL reaches Aurora over the public internet, made safe enough for a sandbox by two things.</p>
+  <p>First, Stardog Cloud sends all virtual-graph traffic from a single, published <dfn>egress IP</dfn> per region: for <code>us-west-2</code>, where our endpoint lives, <strong>44.238.183.206</strong> (DNS name <code>produswest2-vg-egress.stardog.cloud</code>).</p>
+  <p>Second, the Aurora cluster and the Redshift workgroup sit behind a <dfn>security group</dfn> (AWS's stateful firewall) that allows inbound traffic on 5432 (Postgres) and 5439 (Redshift) from exactly two /32 addresses: Stardog's egress IP and your laptop's IP (so DBeaver works). Everything else is dropped. Both databases need a public IP (two of the $0.005/hour IPv4 charges in the cost sheet) so Stardog Cloud can reach them.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 300" role="img" aria-label="Network path: Stardog Cloud in us-west-2 sends SQL from egress IP 44.238.183.206 through the internet to a security group that allows only that IP and your laptop, which protects Aurora on port 5432 and Redshift on port 5439.">
+      <rect x="15" y="40" width="190" height="130" rx="10" style="fill:var(--soft);stroke:var(--accent)" stroke-width="1.5"/>
+      <text x="110" y="64" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--ink)">Stardog Cloud</text>
+      <text x="110" y="82" text-anchor="middle" font-size="11" style="fill:var(--muted)">Stardog's AWS account, us-west-2</text>
+      <rect x="35" y="96" width="150" height="26" rx="5" style="fill:var(--paper);stroke:var(--line)"/>
+      <text x="110" y="113" text-anchor="middle" font-size="11" style="fill:var(--ink)">data sources (JDBC)</text>
+      <text x="110" y="150" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">egress 44.238.183.206</text>
+      <rect x="15" y="200" width="190" height="60" rx="10" style="fill:var(--soft);stroke:var(--accent2)" stroke-width="1.5"/>
+      <text x="110" y="225" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--ink)">Your laptop</text>
+      <text x="110" y="244" text-anchor="middle" font-size="11" style="fill:var(--muted)">DBeaver, Studio in the browser</text>
+      <path d="M207 105 C 290 105, 300 150, 372 150" style="stroke:var(--accent)" stroke-width="2" fill="none"/>
+      <path d="M207 230 C 290 230, 300 170, 372 170" style="stroke:var(--accent2)" stroke-width="2" fill="none" stroke-dasharray="5 4"/>
+      <text x="290" y="100" text-anchor="middle" font-size="11" style="fill:var(--muted)">internet (TLS)</text>
+      <rect x="372" y="20" width="22" height="260" rx="4" style="fill:var(--gotcha)" opacity="0.85"/>
+      <text x="383" y="150" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--paper)" transform="rotate(-90 383 150)">security group</text>
+      <text x="480" y="290" text-anchor="middle" font-size="10.5" style="fill:var(--muted)">inbound 5432, 5439 from 44.238.183.206/32 and your-ip/32 only</text>
+      <rect x="420" y="30" width="240" height="100" rx="10" style="fill:var(--soft);stroke:var(--accent2)" stroke-width="1.5"/>
+      <text x="540" y="56" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--ink)">Aurora PostgreSQL :5432</text>
+      <text x="540" y="76" text-anchor="middle" font-size="11" style="fill:var(--muted)">db c360, schema c360</text>
+      <text x="540" y="94" text-anchor="middle" font-size="11" style="fill:var(--muted)">0 to 1 ACU, pauses after 5 min idle</text>
+      <text x="540" y="112" text-anchor="middle" font-size="11" style="fill:var(--muted)">customer, address, card, rewards</text>
+      <rect x="420" y="160" width="240" height="100" rx="10" style="fill:var(--soft);stroke:var(--accent2)" stroke-width="1.5"/>
+      <text x="540" y="186" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--ink)">Redshift Serverless :5439</text>
+      <text x="540" y="206" text-anchor="middle" font-size="11" style="fill:var(--muted)">db dev, schema c360</text>
+      <text x="540" y="224" text-anchor="middle" font-size="11" style="fill:var(--muted)">4 RPU, 60 s minimum, 1 RPU-hr/day cap</text>
+      <text x="540" y="242" text-anchor="middle" font-size="11" style="fill:var(--muted)">purchase, product, category, vendor</text>
+      <path d="M394 150 L418 90 M394 165 L418 205" style="stroke:var(--ink)" stroke-width="1.5" fill="none"/>
+    </svg>
+    <figcaption>Figure 7.2: Who can reach the databases. Only two addresses get through the security group: Stardog Cloud's published egress IP and your laptop.</figcaption>
+  </figure>
+
+  <p>Know the limit: every Stardog Cloud tenant in us-west-2 shares that egress IP, so the allowlist means "Stardog Cloud", not "your endpoint"; the password and TLS do the real work. Production setups use private networking, such as the blog's self-managed Stardog on EKS inside your VPC.</p>
+
+  <aside class="box blog">
+    <p>The blog's "where to start" list has a step called "stand up virtual graphs", and its architecture queries Aurora and Redshift in place with no ETL: the virtual column of the table in 7.4. It also contrasts <strong>Stardog Cloud</strong> (managed, reaching your databases over the network, which is what we use) with <strong>self-managed Stardog on EKS</strong> (inside your VPC). The egress-IP allowlist in 7.7 is the price of the managed option.</p>
+  </aside>
+
+  <h2><span class="sn">7.8</span>Try it: look, don't touch</h2>
+  <p>This part is read-only: look at the two data sources in Studio and the rows in DBeaver, so you know exactly what Chapter 8 turns into triples.</p>
+
+  <aside class="box try">
+    <p><strong>Step 1. Inspect the data sources in Studio.</strong> Open <a href="https://cloud.stardog.com/u/0/studio">Studio</a> and connect to your endpoint as <code>stardog_admin</code>. In the left rail, open <strong>Data</strong> (the Studio section for data sources). You should see two entries: <code>aurora_c360</code> and <code>redshift_c360</code>. Click each one and compare its settings with the table in 7.5: the JDBC URL, the driver, <code>sql.schemas = c360</code>, and the pool settings.</p>
+    <p><em>Do not edit or save anything.</em> The password field is shown blank or masked, so saving could overwrite the real password. Just close the panel. If the Data section is laid out differently in your Studio version, tell Claude what you see.</p>
+    <p><strong>Step 2 (optional). Confirm the same thing over the HTTP API.</strong> If you like terminals, this read-only call lists the data sources. Set <code>STARDOG_PASSWORD</code> to your stardog_admin password first; don't paste it into the command.</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>curl -s -u "stardog_admin:$STARDOG_PASSWORD" \
+  https://&lt;your-endpoint&gt;.stardog.cloud:5820/admin/data_sources/list</pre></div>
+    <p>Expected: two entries, <code>data-source://aurora_c360</code> with type <code>POSTGRESQL</code> and <code>data-source://redshift_c360</code> with type <code>REDSHIFT</code>, both <code>"available":true</code>. Swap the path for <code>/admin/virtual_graphs</code> and you'll get <code>{"virtual_graphs":[]}</code>: none exist yet. You create them in Chapters 8 and 9.</p>
+    <p><strong>Step 3. See Carolyn as SQL.</strong> In DBeaver, open your Aurora connection and run:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>-- Aurora (Postgres). The first query after a pause can take 15-20 s.
+SELECT c.cid, c.full_name, c.email, c.phone, c.location,
+       a.street_number || ' ' || a.street_name || ' ' || a.street_suffix AS street,
+       a.city, a.state, a.zip
+FROM c360.customer c
+JOIN c360.address  a ON a.id = c.location
+WHERE c.cid = 225;</pre></div>
+    <p>Expected: one row. cid 225, Carolyn Inworth, <code>cinworth68@g.co</code>, 704-619-5453, location <code>b80ea2ce-2361-408a-b443-721594cbbb35</code>, 78945 Thompson Plaza, Milwaukee, Wisconsin, 53285.</p>
+    <p><strong>Step 4. See her orders.</strong> Switch to your Redshift connection and run:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>-- Redshift. Note the double quotes: date and time are reserved words.
+SELECT id, pid, "date", "time", quantity, price, price * quantity AS line_total
+FROM c360.purchase
+WHERE cid = 225
+ORDER BY "date";</pre></div>
+    <p>Expected: a list of Carolyn's orders. Notice what is <em>not</em> here: her name. Redshift knows her only as 225; Aurora knows her name but not her orders. That is the problem Chapter 9 solves.</p>
+    <p><strong>Cleanup:</strong> none. Nothing was written.</p>
+  </aside>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>In one sentence each, what is a materialized graph and what is a virtual graph?</summary><p>A materialized graph is triples copied into Stardog's own storage (like loading a warehouse). A virtual graph's triples are produced on demand: Stardog translates the query into SQL, runs it on the source, and turns the rows into triples.</p></details>
+    <details><summary>Name two reasons this book virtualizes the c360 data instead of loading it.</summary><p>Any two of: answers must be live (no ETL, which is the point of the demo); sensitive columns such as SSNs should stay in the system of record rather than be copied; the book teaches a semantic layer <em>over</em> existing systems; changing a mapping takes effect immediately without a reload.</p></details>
+    <details><summary>What is the difference between a data source and a virtual graph?</summary><p>A data source is the connection (JDBC URL, driver, credentials, options such as <code>sql.schemas</code> and pool settings) plus cached metadata. A virtual graph is a name plus a mapping that uses a data source. One shared data source can back several virtual graphs, as <code>aurora_c360</code> will back both <code>aurora_c360_safe</code> and <code>aurora_c360_pii</code>.</p></details>
+    <details><summary>Why would Stardog's default connection pool keep Aurora from ever auto-pausing, and which settings prevent that?</summary><p>The default pool opens connections up front and keeps idle ones open, and Aurora only pauses with no connections, so it would bill around the clock. <code>initialSize=0</code>, <code>minIdle=0</code>, <code>maxIdle=0</code>, <code>timeBetweenEvictionRunsMillis=0</code> (plus <code>testOnBorrow=true</code>) close connections after each query and stop background activity.</p></details>
+    <details><summary>A mapping fails with "Object 'customer' not found within 'c360'", yet DBeaver shows <code>c360.customer</code>. What do you check?</summary><p>The data source's <code>sql.schemas</code> option. Without <code>c360</code> listed, Stardog's metadata only covers the default schema (<code>public</code>). If the option is set and a recently added table is still missing, refresh the data source's metadata (schema drift).</p></details>
+    <details><summary>Why does the security group allow 44.238.183.206, and what does that allowlist not protect against?</summary><p>That's Stardog Cloud's published virtual-graph egress IP for us-west-2, so every SQL query from Stardog arrives from it. Every Stardog Cloud tenant in the region shares it, so the allowlist doesn't distinguish your endpoint from anyone else's; credentials and TLS do the real work. Private networking (for example Stardog on EKS in your VPC) removes the public exposure.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li>The T-Box is loaded; the A-Box (the actual customers and orders) lives in Aurora and Redshift.</li>
+    <li><strong>Materialized</strong> = copy triples into Stardog (ETL): fast, but stale between loads and a second copy to govern.</li>
+    <li><strong>Virtual</strong> = leave rows in place; Stardog translates each query into SQL and <strong>pushes down</strong> what it can: live, no copy, but bounded by the sources.</li>
+    <li>A <strong>data source</strong> is a shared, named JDBC connection plus cached metadata. Ours: <code>aurora_c360</code> and <code>redshift_c360</code>, both with <code>sql.schemas=c360</code>.</li>
+    <li>Pooling is disabled (<code>initialSize/minIdle/maxIdle=0</code>, <code>testOnBorrow=true</code>, <code>timeBetweenEvictionRunsMillis=0</code>) so Aurora can pause and Redshift isn't woken needlessly. The cost: a fresh connection per query and a 15 to 20 second cold start.</li>
+    <li>Stardog Cloud reaches your databases from one egress IP per region (44.238.183.206 in us-west-2); the security group allows only that and your laptop.</li>
+  </ul></section>
+
+  <nav class="pn">
+    <a href="ch06.html"><small>← Previous</small>Chapter 6 · The T-Box, part 2: properties and the c360 ontology (OWL)</a>
+    <a href="ch08.html" style="text-align:right"><small>Next →</small>Chapter 8 · Mappings: teaching Stardog to read your tables</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+</body>
+</html>

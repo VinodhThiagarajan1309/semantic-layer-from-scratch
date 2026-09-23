@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 6 · The T-Box, part 2: properties and the c360 ontology (OWL)</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 6</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 6</div>
+    <h1>The T-Box, part 2: properties and the c360 ontology (OWL)</h1>
+    <p class="sub">Relationships and attributes, the domain-and-range trap that catches every SQL person, and a tour of the complete c360 model, which you will load into Stardog by the end of the chapter.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">A riddle to start. You tell a reasoner one rule: "only orders can be <em>purchased by</em> someone." Then a buggy loader writes a single triple saying that product 268, a box of Wax Paper, was purchased by Carolyn. A database would reject the row with a foreign-key error. The reasoner does not complain at all: it concludes, with perfect logic, that Wax Paper is an order. By the end of this chapter you will know why, why the c360 kit is written so that this cannot happen, and you will have the kit's complete ontology (all 161 triples) loaded into Stardog as build step 2.</p>
+
+  <h2><span class="sn">6.1</span>Properties: the columns and foreign keys of a graph</h2>
+  <p>The ten classes from <a href="ch05.html">Chapter 5</a> have no columns: our <code>:Customer</code> has no name, no email, no address. That is deliberate. In a graph, columns and foreign keys are played by a <dfn>property</dfn>: anything used as the predicate of a triple, such as <code>:firstName</code> or <code>:purchasedBy</code>. A property has its own IRI and is declared on its own, outside any class, so that many classes can share it and the model can say things about the property itself (its label, what it connects). OWL splits properties into two kinds:</p>
+  <ul>
+    <li>An <dfn>object property</dfn> (<code>owl:ObjectProperty</code>) links a thing to another thing, an IRI you can keep following. <code>order :purchasedBy customer:225</code>. This is your <strong>foreign key</strong>.</li>
+    <li>A <dfn>datatype property</dfn> (<code>owl:DatatypeProperty</code>) links a thing to a literal (string, number, date). <code>customer:225 :firstName "Carolyn"</code>. This is your <strong>plain column</strong>.</li>
+  </ul>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 230" role="img" aria-label="An object property points from an order node to a customer node, like a foreign key; a datatype property points from the customer node to a literal string, like a plain column">
+      <defs><marker id="a61" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--pred)"/></marker></defs>
+      <rect x="20" y="40" width="170" height="44" rx="22" style="fill:none;stroke:var(--subj);stroke-width:2"/>
+      <text x="105" y="67" text-anchor="middle" style="fill:var(--ink);font-size:13px">order pos363f9784…</text>
+      <line x1="190" y1="62" x2="268" y2="62" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a61)"/>
+      <text x="229" y="52" text-anchor="middle" style="fill:var(--pred);font-size:12px">:purchasedBy</text>
+      <rect x="270" y="40" width="150" height="44" rx="22" style="fill:none;stroke:var(--subj);stroke-width:2"/>
+      <text x="345" y="67" text-anchor="middle" style="fill:var(--ink);font-size:13px">customer:225</text>
+      <line x1="420" y1="62" x2="498" y2="62" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a61)"/>
+      <text x="459" y="52" text-anchor="middle" style="fill:var(--pred);font-size:12px">:firstName</text>
+      <rect x="500" y="42" width="120" height="40" style="fill:none;stroke:var(--obj);stroke-width:2"/>
+      <text x="560" y="67" text-anchor="middle" style="fill:var(--ink);font-size:13px">"Carolyn"</text>
+      <text x="229" y="112" text-anchor="middle" style="fill:var(--accent2);font-size:12px;font-weight:700">owl:ObjectProperty</text>
+      <text x="229" y="128" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">value is a node (IRI)</text>
+      <text x="229" y="143" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">you can keep following it</text>
+      <text x="459" y="112" text-anchor="middle" style="fill:var(--accent2);font-size:12px;font-weight:700">owl:DatatypeProperty</text>
+      <text x="459" y="128" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">value is a literal</text>
+      <text x="459" y="143" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">the path ends here</text>
+      <rect x="20" y="165" width="640" height="52" rx="8" style="fill:var(--code);stroke:var(--line)"/>
+      <text x="36" y="187" style="fill:var(--muted);font-size:11px;letter-spacing:.06em">IN SQL</text>
+      <text x="36" y="206" style="fill:var(--ink);font-size:12.5px;font-family:ui-monospace,Menlo,monospace">purchase.cid → customer.cid   (foreign key)</text>
+      <text x="400" y="206" style="fill:var(--ink);font-size:12.5px;font-family:ui-monospace,Menlo,monospace">customer.first_name   (column)</text>
+    </svg>
+    <figcaption>Figure 6.1: Object properties are relationships (foreign keys); datatype properties are attributes (columns).</figcaption>
+  </figure>
+
+  <aside class="box sql">
+    <p>The analogy has three limits. A property is not owned by a table: one <code>:name</code> serves customers, products, categories and vendors, where SQL has four unrelated <code>name</code> columns. There is no cardinality by default: zero, one or five values are all fine (open world). And many-to-many needs no join table; you just write more triples.</p>
+  </aside>
+
+  <p>The kit's <code>:firstName</code>, exactly as in <code>schema.ttl</code>:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>:firstName a owl:DatatypeProperty ;
+    rdfs:label "first name" ;
+    so:domainIncludes :Customer ;
+    so:rangeIncludes xsd:string .</pre></div>
+
+  <p>The last two lines say which class the property is for and what kind of value it takes. Why they use <code>so:</code> rather than the textbook <code>rdfs:</code> is the story of the riddle.</p>
+  <aside class="box java">
+    <p>A datatype property is a <code>String</code>, <code>int</code> or <code>LocalDate</code> field; an object property is a reference to another object. The big difference is where the property lives.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">OWL (Turtle)</p><pre>:firstName   a owl:DatatypeProperty .
+:purchasedBy a owl:ObjectProperty .
+
+# declared once, outside any class,
+# usable on anything:
+:name so:domainIncludes :Customer, :Product,
+                        :Category, :Vendor .</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>class Customer {
+    String firstName;        // datatype property
+}
+class Order {
+    Customer purchasedBy;    // object property
+}
+
+// nearest thing to a free-standing property:
+interface Named { String name(); }
+record Product(String name) implements Named {}
+record Vendor(String name)  implements Named {}</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> a Java field belongs to its class. A property has its own IRI, and any subject may use it, with no <code>implements</code> to write. It is multi-valued by default, so <code>:firstName</code> behaves more like a <code>List&lt;String&gt;</code>. And the property is itself queryable data, like <code>java.lang.reflect.Field</code> stored next to the values.</p>
+  </aside>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td>Property</td><td>A predicate declared as a thing itself</td><td>So it can be shared and described</td><td><code>:firstName</code></td></tr>
+      <tr><td>Object property</td><td>Links a thing to a thing</td><td>Relationships (FKs)</td><td><code>:purchasedBy</code></td></tr>
+      <tr><td>Datatype property</td><td>Links a thing to a literal</td><td>Attributes (columns)</td><td><code>:city</code></td></tr>
+      <tr><td>Domain</td><td>The class of a property's subject</td><td>Says what the property is used on</td><td>purchasedBy: Order</td></tr>
+      <tr><td>Range</td><td>The class or datatype of its object</td><td>Says what values it takes</td><td>purchasedBy: Customer</td></tr>
+      <tr><td><code>rdfs:domain</code> / <code>rdfs:range</code></td><td>RDFS's domain and range: inference rules</td><td>Let a reasoner derive types</td><td>see Figure 6.2</td></tr>
+      <tr><td><code>so:domainIncludes</code> / <code>so:rangeIncludes</code></td><td>schema.org's version: descriptions only</td><td>Say "expected here" without side effects</td><td><code>:name so:domainIncludes :Vendor</code></td></tr>
+      <tr><td><code>owl:inverseOf</code></td><td>One relationship read both ways</td><td>Name the reverse direction</td><td>placedOrder ↔ purchasedBy</td></tr>
+      <tr><td>Reasoning schema</td><td>A named set of graphs Stardog treats as the T-Box</td><td>So the reasoner knows where the axioms are</td><td><code>c360_schema</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="sn">6.2</span>rdfs:domain and rdfs:range: rules, not checks</h2>
+  <p>RDFS attaches a property to classes with <dfn>rdfs:domain</dfn> (the class of the subject) and <dfn>rdfs:range</dfn> (the class of the object). <code>:purchasedBy rdfs:domain :Order ; rdfs:range :Customer .</code> Every SQL person reads that as a constraint: "only orders may have <code>:purchasedBy</code>, and its value must be a customer." That reading is wrong, and why is the most useful idea in this chapter.</p>
+  <p>In RDFS, domain and range are <strong>inference rules</strong>:</p>
+  <ul>
+    <li>If <code>P rdfs:domain C</code> and the graph has <code>x P y</code>, conclude <code>x a C</code>.</li>
+    <li>If <code>P rdfs:range D</code> and the graph has <code>x P y</code>, conclude <code>y a D</code>.</li>
+  </ul>
+  <p>Nothing is ever rejected. In an open world (<a href="ch05.html">Chapter 5</a>) the reasoner assumes the data is right and the type merely unstated, so it fills it in.</p>
+
+  <figure class="fig anim" id="f62">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 680 250" role="img" aria-label="A mistaken triple saying a product was purchased by customer 225, combined with rdfs:domain Order, makes the reasoner infer that the product is an Order">
+      <defs>
+        <marker id="a62" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--pred)"/></marker>
+        <marker id="a62c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/></marker>
+      </defs>
+      <g class="rule">
+        <rect x="10" y="10" width="660" height="56" rx="8" style="fill:var(--soft);stroke:var(--line)"/>
+        <text x="24" y="32" style="fill:var(--model);font-size:11.5px;font-weight:700;letter-spacing:.06em">T-BOX (HYPOTHETICAL, NOT THE KIT)</text>
+        <text x="24" y="54" style="fill:var(--ink);font-size:13px;font-family:ui-monospace,Menlo,monospace">:purchasedBy rdfs:domain :Order ; rdfs:range :Customer .</text>
+      </g>
+      <g class="bad">
+        <text x="24" y="98" style="fill:var(--muted);font-size:11.5px;font-weight:700;letter-spacing:.06em">A-BOX: A LOADING BUG (THE SUBJECT SHOULD HAVE BEEN AN ORDER)</text>
+        <rect x="40" y="112" width="150" height="40" rx="20" style="fill:none;stroke:var(--subj);stroke-width:2"/>
+        <text x="115" y="137" text-anchor="middle" style="fill:var(--ink);font-size:13px">product:268</text>
+        <line x1="190" y1="132" x2="318" y2="132" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a62)"/>
+        <text x="254" y="123" text-anchor="middle" style="fill:var(--pred);font-size:12px">:purchasedBy</text>
+        <rect x="320" y="112" width="150" height="40" rx="20" style="fill:none;stroke:var(--subj);stroke-width:2"/>
+        <text x="395" y="137" text-anchor="middle" style="fill:var(--ink);font-size:13px">customer:225</text>
+      </g>
+      <g class="sqlv">
+        <text x="500" y="126" style="fill:var(--gotcha);font-size:12px;font-weight:700">SQL: FK violation,</text>
+        <text x="500" y="142" style="fill:var(--gotcha);font-size:12px;font-weight:700">insert rejected.</text>
+      </g>
+      <g class="rdfv">
+        <text x="500" y="170" style="fill:var(--try);font-size:12px;font-weight:700">RDFS: accepted, and a</text>
+        <text x="500" y="186" style="fill:var(--try);font-size:12px;font-weight:700">new "fact" is concluded.</text>
+      </g>
+      <g class="inf">
+        <path d="M 115 154 C 115 200, 150 214, 200 214" style="fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:6 4" marker-end="url(#a62c)"/>
+        <text x="206" y="218" style="fill:var(--accent);font-size:13px;font-weight:700">inferred: product:268 a :Order</text>
+        <text x="206" y="236" style="fill:var(--muted);font-size:11.5px">No error. "Wax Paper" is now also an order.</text>
+      </g>
+    </svg>
+    <p class="stepcap">Press Play to replay the riddle.</p>
+    <figcaption>Figure 6.2: <code>rdfs:domain</code> is not a check. With reasoning on, it turns a bad triple into a wrong type, silently; counting orders now counts a product.</figcaption>
+  </figure>
+
+  <p>It gets worse when a property is shared, like the kit's <code>:name</code>. Written with <code>rdfs:domain</code>:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>:name rdfs:domain :Category, :Customer, :Product, :Vendor .   # do NOT do this</pre></div>
+
+  <p>Several domains do not mean "one of these". Each is its own rule and each fires, so every named thing becomes a Category <em>and</em> a Customer <em>and</em> a Product <em>and</em> a Vendor; Carolyn would become a product. (The formal fix, an <code>owl:unionOf</code> class as the domain, is heavy and still an inference rule, not a check.)</p>
+  <aside class="box java">
+    <p>A Java developer reads <code>rdfs:domain :Order</code> as a parameter type the compiler enforces. What RDFS actually does is closer to the second method on the right.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">RDFS (reasoning on)</p><pre>:purchasedBy rdfs:domain :Order .
+
+# a buggy loader writes:
+product:268 :purchasedBy customer:225 .
+
+# the reasoner does not reject it.
+# It concludes:
+product:268 a :Order .</pre></div>
+      <div class="col"><p class="lbl">Java 21</p><pre>// What you expect "domain" to mean:
+void purchasedBy(Order o, Customer c) { /* ... */ }
+// purchasedBy(waxPaper, carolyn);  // compile error
+
+// What rdfs:domain really does:
+void assertTriple(Object s, String p, Object o) {
+    if (p.equals(":purchasedBy")) {
+        types.computeIfAbsent(s, k -&gt; new HashSet&lt;&gt;())
+             .add("Order");  // no check: s is now an Order
+    }
+    triples.add(List.of(s, p, o));
+}</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> Java would call this a bug: nothing in Java changes an object's type because of how it was used. <code>var</code> inference works from a declaration at compile time; <code>rdfs:domain</code> infers from the <em>data</em> at query time. The check you expected exists, but it is SHACL (Chapter 11), not RDFS.</p>
+  </aside>
+
+  <aside class="box gotcha">
+    <p>Remember: <strong><code>rdfs:domain</code> and <code>rdfs:range</code> add types; they never reject data.</strong> To enforce "orders must be purchased by a customer", write a SHACL shape (<a href="ch11.html">Chapter 11</a>).</p>
+  </aside>
+
+  <h2><span class="sn">6.3</span>so:domainIncludes and so:rangeIncludes: the kit's answer</h2>
+  <p>The c360 kit avoids the trap by not using <code>rdfs:domain</code> and <code>rdfs:range</code> at all. It uses two predicates from schema.org (prefix <code>so:</code> = <code>https://schema.org/</code>), the search engines' vocabulary for describing web content:</p>
+  <ul>
+    <li><dfn>so:domainIncludes</dfn>: "this property is expected on things of this class." Several values mean "any of these", which is what people mean.</li>
+    <li><dfn>so:rangeIncludes</dfn>: "values are expected to be of this class or datatype."</li>
+  </ul>
+  <p>The key word is <em>expected</em>. These predicates have no formal meaning in RDFS or OWL, so Stardog's reasoner draws no conclusions from them. <code>:name so:domainIncludes :Category, :Customer, :Product, :Vendor</code> says what the modeler meant, and reasoning in Chapter 10 will never make Carolyn a product.</p>
+  <p>They are <strong>documentation that machines can read</strong>. Stardog Designer writes them when you draw a property between two classes, and model views use them to show which properties belong to which class. Voicebox and your agent read them when writing SPARQL; <code>so:domainIncludes :Customer</code> is exactly the hint that <code>:email</code> belongs on a customer. (How each tool uses them internally is up to that tool; if a view looks empty, tell Claude.)</p>
+
+  <aside class="box model">
+    <p>In a federated semantic layer you do not own the data. Inference rules that re-type things based on whatever Aurora and Redshift return are a liability: one bad row upstream changes your model's meaning. Descriptive "includes" predicates leave enforcement to SHACL (Chapter 11) and inference to rules you write on purpose (Chapter 10).</p>
+  </aside>
+
+  <h2><span class="sn">6.4</span>owl:inverseOf, and a wrinkle in the kit</h2>
+  <p>Every relationship reads two ways: "order <em>purchased by</em> customer" is also "customer <em>placed</em> order". SPARQL can already walk an arrow backward (<code>?order :purchasedBy customer:225</code>), but sometimes you want a name for the reverse direction. <dfn>owl:inverseOf</dfn> says two properties are one relationship read in opposite directions: if <code>P owl:inverseOf Q</code>, then <code>x P y</code> holds exactly when <code>y Q x</code> does. A correct example (not in the kit): <code>:placedOrder owl:inverseOf :purchasedBy</code>.</p>
+  <aside class="box java">
+    <p><code>owl:inverseOf</code> is a bidirectional JPA relationship: <code>@ManyToOne</code> on one side, <code>@OneToMany(mappedBy = …)</code> on the other.</p>
+    <div class="sbs">
+      <div class="col"><p class="lbl">OWL (reasoning on)</p><pre>:placedOrder owl:inverseOf :purchasedBy .
+
+# store only one direction:
+order:1 :purchasedBy customer:225 .
+
+# the other is implied:
+SELECT ?o
+WHERE { customer:225 :placedOrder ?o }</pre></div>
+      <div class="col"><p class="lbl">Java 21 + JPA</p><pre>@Entity class Order {          // @Id omitted
+    @ManyToOne
+    Customer purchasedBy;      // owning side (the FK)
+}
+@Entity class Customer {
+    @OneToMany(mappedBy = "purchasedBy")
+    List&lt;Order&gt; placedOrders;  // inverse side
+}
+// in memory you keep both sides in sync yourself:
+order.purchasedBy = carolyn;
+carolyn.placedOrders.add(order);</pre></div>
+    </div>
+    <p class="breaks"><b>Where the analogy breaks:</b> JPA keeps the two directions consistent in the database but not in memory, hence every codebase's <code>addOrder()</code> helper. With <code>owl:inverseOf</code> there is nothing to sync: one triple is stored and the reverse derived at query time, only with reasoning on. The flip side: a wrong inverse, like the kit wrinkle below, produces wrong facts silently instead of failing at startup like a bad <code>mappedBy</code>.</p>
+  </aside>
+  <p>An inverse must swap the two ends. Now read what <code>schema.ttl</code> actually says:</p>
+
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>:rewardsAccountUsed a owl:ObjectProperty ;
+    owl:inverseOf :hasRewards ;
+    so:domainIncludes :Order ;
+    so:rangeIncludes :RewardsAccount ;
+    rdfs:label "rewards account used" .
+
+:hasRewards a owl:ObjectProperty ;
+    owl:inverseOf :rewardsAccount ;
+    so:domainIncludes :Customer ;
+    so:rangeIncludes :RewardsAccount ;
+    rdfs:label "has rewards account" .</pre></div>
+
+  <p>Both <code>owl:inverseOf</code> triples deserve a raised eyebrow. <code>:rewardsAccountUsed</code> goes Order → RewardsAccount and <code>:hasRewards</code> goes Customer → RewardsAccount: both point <em>at</em> the account, so they are not each other's reverse. Taken literally with reasoning on, "order O used account R" implies "R has rewards O". The second, <code>:hasRewards owl:inverseOf :rewardsAccount</code>, is sensible in intent (the account points back at its customer), but <code>:rewardsAccount</code> is declared nowhere and no mapping produces it; the open world allows that.</p>
+  <p>We load the kit exactly as shipped, because the rest of the book assumes that file, and with reasoning off (until <a href="ch10.html">Chapter 10</a>) inverse axioms have no effect. The practical risk is contained but real: 1,560 of the 2,500 purchases carry a rewards account (none of Carolyn's do), so with reasoning on under this schema each of them yields a bogus inferred triple, and a query that also requires <code>?c a :Customer</code> filters those rows out. <a href="ch10.html">Chapter 10</a> shows how to spot them. The lesson: an ontology is code, and code has bugs. If rewards accounts ever show up where customers should be in a reasoning query, look here first.</p>
+
+  <h2><span class="sn">6.5</span>The whole c360 ontology</h2>
+  <p>You can now read every line of <code>schema.ttl</code>: 10 classes, 11 object properties and 22 datatype properties. Figure 6.3 draws the classes and relationships.</p>
+
+  <figure class="fig anim" id="f63">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 680 520" role="img" aria-label="Class diagram of the c360 ontology: ten classes and eleven relationships. Customer, Address, CreditCard and RewardsAccount will be fed from Aurora; Order, Product, Category, UnitPrice, Vendor and Industry from Redshift">
+      <defs><marker id="a63" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--pred)"/></marker></defs>
+      <g class="ca">
+        <rect x="20" y="30" width="140" height="46" rx="6" style="fill:var(--paper);stroke:var(--accent2);stroke-width:2.5"/>
+        <text x="90" y="58" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700">Address</text>
+      </g>
+      <g class="ca">
+        <rect x="270" y="30" width="140" height="46" rx="6" style="fill:var(--paper);stroke:var(--accent2);stroke-width:2.5"/>
+        <text x="340" y="58" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700">Customer</text>
+      </g>
+      <g class="ca">
+        <rect x="520" y="30" width="140" height="46" rx="6" style="fill:var(--paper);stroke:var(--accent2);stroke-width:2.5"/>
+        <text x="590" y="58" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700">RewardsAccount</text>
+      </g>
+      <g class="ca">
+        <rect x="20" y="180" width="140" height="46" rx="6" style="fill:var(--paper);stroke:var(--accent2);stroke-width:2.5"/>
+        <text x="90" y="208" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700">CreditCard</text>
+      </g>
+      <g class="cr">
+        <rect x="270" y="180" width="140" height="46" rx="6" style="fill:var(--paper);stroke:var(--accent);stroke-width:2.5"/>
+        <text x="340" y="208" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700">Order</text>
+      </g>
+      <g class="cr">
+        <rect x="270" y="320" width="140" height="46" rx="6" style="fill:var(--paper);stroke:var(--accent);stroke-width:2.5"/>
+        <text x="340" y="348" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700">Product</text>
+      </g>
+      <g class="cr">
+        <rect x="20" y="320" width="140" height="46" rx="6" style="fill:var(--paper);stroke:var(--accent);stroke-width:2.5"/>
+        <text x="90" y="348" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700">Category</text>
+      </g>
+      <g class="cr">
+        <rect x="520" y="320" width="140" height="46" rx="6" style="fill:var(--paper);stroke:var(--accent);stroke-width:2.5"/>
+        <text x="590" y="348" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700">UnitPrice</text>
+      </g>
+      <g class="cr">
+        <rect x="270" y="440" width="140" height="46" rx="6" style="fill:var(--paper);stroke:var(--accent);stroke-width:2.5"/>
+        <text x="340" y="468" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700">Vendor</text>
+      </g>
+      <g class="cr">
+        <rect x="520" y="440" width="140" height="46" rx="6" style="fill:var(--paper);stroke:var(--accent);stroke-width:2.5"/>
+        <text x="590" y="468" text-anchor="middle" style="fill:var(--ink);font-size:14px;font-weight:700">Industry</text>
+      </g>
+      <g class="rel"><line x1="270" y1="53" x2="162" y2="53" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a63)"/><text x="216" y="45" text-anchor="middle" style="fill:var(--pred);font-size:12px">address</text></g>
+      <g class="rel"><line x1="410" y1="53" x2="518" y2="53" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a63)"/><text x="464" y="45" text-anchor="middle" style="fill:var(--pred);font-size:12px">hasRewards</text></g>
+      <g class="rel"><line x1="120" y1="180" x2="290" y2="78" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a63)"/><text x="150" y="128" style="fill:var(--pred);font-size:12px">cardHolder</text></g>
+      <g class="rel"><line x1="410" y1="186" x2="560" y2="78" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a63)"/><text x="492" y="150" style="fill:var(--pred);font-size:12px">rewardsAccountUsed</text></g>
+      <g class="rel"><line x1="270" y1="203" x2="162" y2="203" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a63)"/><text x="216" y="195" text-anchor="middle" style="fill:var(--pred);font-size:12px">cardUsed</text></g>
+      <g class="rel"><line x1="340" y1="226" x2="340" y2="318" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a63)"/><text x="346" y="276" style="fill:var(--pred);font-size:12px">itemPurchased</text></g>
+      <g class="rel"><line x1="270" y1="343" x2="162" y2="343" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a63)"/><text x="216" y="335" text-anchor="middle" style="fill:var(--pred);font-size:12px">inCategory</text></g>
+      <g class="rel"><line x1="410" y1="343" x2="518" y2="343" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a63)"/><text x="464" y="335" text-anchor="middle" style="fill:var(--pred);font-size:12px">msrp</text></g>
+      <g class="rel"><line x1="340" y1="366" x2="340" y2="438" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a63)"/><text x="346" y="408" style="fill:var(--pred);font-size:12px">vendor</text></g>
+      <g class="rel"><line x1="410" y1="463" x2="518" y2="463" style="stroke:var(--pred);stroke-width:2" marker-end="url(#a63)"/><text x="464" y="455" text-anchor="middle" style="fill:var(--pred);font-size:12px">industry</text></g>
+      <g class="bridge">
+        <rect x="262" y="84" width="156" height="92" rx="8" style="fill:var(--accent2);opacity:.12"/>
+        <line x1="340" y1="180" x2="340" y2="78" style="stroke:var(--pred);stroke-width:3" marker-end="url(#a63)"/>
+        <text x="346" y="140" style="fill:var(--pred);font-size:12px;font-weight:700">purchasedBy</text>
+      </g>
+      <g class="leg">
+        <rect x="20" y="496" width="16" height="12" style="fill:none;stroke:var(--accent2);stroke-width:2.5"/>
+        <text x="42" y="507" style="fill:var(--muted);font-size:12px">fed from Aurora (by the ch08 mappings)</text>
+        <rect x="300" y="496" width="16" height="12" style="fill:none;stroke:var(--accent);stroke-width:2.5"/>
+        <text x="322" y="507" style="fill:var(--muted);font-size:12px">fed from Redshift (ch09 mappings)</text>
+      </g>
+    </svg>
+    <p class="stepcap">Press Play to build the model class by class.</p>
+    <figcaption>Figure 6.3: The complete c360 ontology: 10 classes (boxes) and 11 object properties (arrows, drawn from <code>so:domainIncludes</code> to <code>so:rangeIncludes</code>). The colors are this book's annotation, not part of the ontology: the model itself has no idea where data lives (Section 6.6).</figcaption>
+  </figure>
+
+  <h3>The 11 relationships</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Property</th><th>Label</th><th>From</th><th>To</th><th>SQL equivalent</th></tr></thead>
+    <tbody>
+      <tr><td><code>:purchasedBy</code></td><td>purchased by</td><td>Order</td><td>Customer</td><td><code>purchase.cid</code></td></tr>
+      <tr><td><code>:itemPurchased</code></td><td>purchased</td><td>Order</td><td>Product</td><td><code>purchase.pid</code></td></tr>
+      <tr><td><code>:cardUsed</code></td><td>purchase card</td><td>Order</td><td>CreditCard</td><td><code>purchase.card</code></td></tr>
+      <tr><td><code>:rewardsAccountUsed</code></td><td>rewards account used</td><td>Order</td><td>RewardsAccount</td><td><code>purchase.reward_account</code></td></tr>
+      <tr><td><code>:address</code></td><td>has address</td><td>Customer</td><td>Address</td><td><code>customer.location</code></td></tr>
+      <tr><td><code>:hasRewards</code></td><td>has rewards account</td><td>Customer</td><td>RewardsAccount</td><td><code>rewards_account.cid</code>, reversed</td></tr>
+      <tr><td><code>:cardHolder</code></td><td>card holder</td><td>CreditCard</td><td>Customer</td><td><code>credit_card.cid</code></td></tr>
+      <tr><td><code>:inCategory</code></td><td>in category</td><td>Product</td><td>Category</td><td><code>product.dept</code></td></tr>
+      <tr><td><code>:vendor</code></td><td>has vendor</td><td>Product</td><td>Vendor</td><td><code>product.brand</code></td></tr>
+      <tr><td><code>:msrp</code></td><td>MSRP</td><td>Product</td><td>UnitPrice</td><td>a node built from <code>product.price</code></td></tr>
+      <tr><td><code>:industry</code></td><td>in industry</td><td>Vendor</td><td>Industry</td><td><code>vendor.industry</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Two graph habits hide in that table. <code>:hasRewards</code> points from customer to account, the opposite of the SQL foreign key: modelers choose the direction that reads best as a sentence. And <code>:msrp</code> points at a <code>UnitPrice</code> <em>node</em> carrying a price and a currency, not a bare number: a value turned into a thing so it can hold more facts.</p>
+
+  <h3>The 22 attributes</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Class</th><th>Datatype properties (value type)</th></tr></thead>
+    <tbody>
+      <tr><td>Customer</td><td><code>:firstName</code>, <code>:lastName</code>, <code>:email</code>, <code>:phone</code>, <code>:ssn</code>&nbsp;★ (all string); shared <code>:name</code>, <code>:thumbnail</code></td></tr>
+      <tr><td>Address</td><td><code>:streetAddress</code>, <code>:city</code>, <code>:state</code>, <code>:zipCode</code> (all string)</td></tr>
+      <tr><td>Order</td><td><code>:purchasePrice</code> (decimal), <code>:quantity</code> (integer), <code>:purchaseDate</code> (date), <code>:purchaseTime</code> (string)</td></tr>
+      <tr><td>Product</td><td><code>:description</code> (string); shared <code>:name</code>, <code>:thumbnail</code></td></tr>
+      <tr><td>CreditCard</td><td><code>:cardType</code>, <code>:cardNumber</code>&nbsp;★ (string)</td></tr>
+      <tr><td>RewardsAccount</td><td><code>:accountId</code> (string), <code>:openDate</code> (date)</td></tr>
+      <tr><td>UnitPrice</td><td><code>:hasCurrency</code> (string), <code>:hasPrice</code> (float)</td></tr>
+      <tr><td>Category, Vendor</td><td>shared <code>:name</code> (string)</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>★ Sensitive.</strong> <code>:ssn</code> and <code>:cardNumber</code> carry a second type, <code>m:SensitiveProperty</code> (prefix <code>m:</code> = <code>urn:stardog:modules:</code>): a "treat as sensitive" marker. <a href="ch12.html">Chapter 12</a> covers how Stardog can act on it, and why the book keeps PII in a separate, permissioned graph.</li>
+    <li><strong>Money.</strong> <code>:purchasePrice</code> is described as decimal, <code>:hasPrice</code> as float. <code>so:rangeIncludes</code> is only a description, so the mappings decide the real datatype; <a href="ch09.html">Chapter 9</a> explains why spend must come from the decimal.</li>
+  </ul>
+
+  <h2><span class="sn">6.6</span>What the ontology does not contain</h2>
+  <p>Notice what <code>schema.ttl</code> does <em>not</em> mention: Aurora, Redshift, table or column names, <code>cid</code>, connection strings, SQL. It does not know there are 2,500 orders, or contain a single customer. It is purely a description of <em>meaning</em>: these kinds of things exist, and this is how they relate.</p>
+  <p>That separation is the point. Connecting meaning to where the data lives is the job of the <strong>mappings</strong> (<a href="ch08.html">Chapter 8</a> for Aurora, <a href="ch09.html">Chapter 9</a> for Redshift): "each row of <code>c360.customer</code> is a <code>:Customer</code>, and its <code>first_name</code> column is <code>:firstName</code>". Swap Redshift for Snowflake tomorrow and not one triple of the ontology changes; only a mapping does.</p>
+  <p>The flip side: model and mappings can drift apart, and the open world will not warn you. The Redshift mapping writes a vendor <code>:homepage</code> the ontology never declares, and no mapping produces the declared customer <code>:thumbnail</code>. A declaration is a promise of meaning, not a guarantee of values.</p>
+
+  <aside class="box sql">
+    <p>Compare: eight tables across two databases, about 40 columns with storage-flavored names (<code>cid</code>, <code>dept</code>, <code>brand</code>). The ontology has 10 classes and 33 properties named for a reader: <code>:purchasedBy</code>, not <code>cid</code>. That is the semantic layer's "one definition" promise: one agreed name per concept, used by every query, tool and agent.</p>
+  </aside>
+
+  <h2><span class="sn">6.7</span>OWL versus RDFS on one page</h2>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>RDFS</th><th>OWL</th></tr></thead>
+    <tbody>
+      <tr><td>What it is</td><td>The minimal schema vocabulary</td><td>A richer ontology language built on RDFS</td></tr>
+      <tr><td>Classes</td><td><code>rdfs:Class</code>, <code>rdfs:subClassOf</code></td><td><code>owl:Class</code>, plus equivalent, disjoint and union classes, restrictions</td></tr>
+      <tr><td>Properties</td><td><code>rdf:Property</code>, <code>rdfs:subPropertyOf</code>, <code>rdfs:domain</code>, <code>rdfs:range</code></td><td><code>owl:ObjectProperty</code>, <code>owl:DatatypeProperty</code>, <code>owl:inverseOf</code>, functional, transitive, symmetric</td></tr>
+      <tr><td>Identity</td><td>(none)</td><td><code>owl:sameAs</code>, <code>owl:differentFrom</code></td></tr>
+      <tr><td>Annotations</td><td><code>rdfs:label</code>, <code>rdfs:comment</code></td><td>reuses RDFS's</td></tr>
+      <tr><td>Rejects data?</td><td>No (open world)</td><td>No (it can detect contradictions, which is different)</td></tr>
+      <tr><td>Used in c360</td><td>labels, comments; <code>subClassOf</code> in Chapter 10</td><td><code>owl:Class</code>, both property types, <code>owl:inverseOf</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Stardog's reasoner supports a practical subset of OWL (default level SL) plus its own rules, which express business logic such as "big spender" (<a href="ch10.html">Chapter 10</a>). In one line: RDFS names things and arranges them in hierarchies, OWL describes relationships precisely, and neither validates.</p>
+
+  <aside class="box blog">
+    <p>The blog's ontology section is exactly this model, drawn in Stardog Designer and shared by mappings, reasoning, Voicebox and the agent. Two later sections hang off it: the named-graph security demo protects the properties marked <code>m:SensitiveProperty</code>, and the agent's system prompt (Path A) carries "a compact ontology summary", essentially Section 6.5's two tables condensed, which you write in Chapter 14.</p>
+  </aside>
+
+  <h2><span class="sn">6.8</span>Real build step 2: the complete ontology</h2>
+  <p>Four parts: A adds three properties by hand, B loads the whole <code>schema.ttl</code> on top, C registers the model graph as a reasoning schema, D looks at the result in Studio. Everything goes into database <code>kit-c360</code>, graph <code>&lt;urn:stardog:training-c360:1.0:model&gt;</code>, the same graph as Chapter 5. Keep the reasoning toggle <strong>off</strong> throughout.</p>
+
+  <aside class="box try">
+    <p><strong>Part A: three properties by hand.</strong> One attribute, one relationship, and the relationship with the <code>owl:inverseOf</code> from Section 6.4, each copied exactly from <code>schema.ttl</code>. In the Workspace, database <code>kit-c360</code>, run:</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX :     &lt;tag:stardog:api:ecomm:&gt;
+PREFIX owl:  &lt;http://www.w3.org/2002/07/owl#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX xsd:  &lt;http://www.w3.org/2001/XMLSchema#&gt;
+PREFIX so:   &lt;https://schema.org/&gt;
+
+INSERT DATA {
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; {
+
+    # an attribute (a "plain column"): Customer.firstName is a string
+    :firstName a owl:DatatypeProperty ;
+        rdfs:label "first name" ;
+        so:domainIncludes :Customer ;
+        so:rangeIncludes xsd:string .
+
+    # a relationship (a "foreign key"): Order --purchasedBy--&gt; Customer
+    :purchasedBy a owl:ObjectProperty ;
+        rdfs:label "purchased by" ;
+        so:domainIncludes :Order ;
+        so:rangeIncludes :Customer .
+
+    # a relationship with an owl:inverseOf declaration
+    :rewardsAccountUsed a owl:ObjectProperty ;
+        owl:inverseOf :hasRewards ;
+        so:domainIncludes :Order ;
+        so:rangeIncludes :RewardsAccount ;
+        rdfs:label "rewards account used" .
+  }
+}</pre></div>
+    <p>Check with the count query from Chapter 5. Expect <strong>34</strong> (Chapter 5's 21, plus 4 + 4 + 5).</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT (COUNT(*) AS ?triples)
+WHERE {
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; { ?s ?p ?o }
+}</pre></div>
+  </aside>
+
+  <aside class="box try">
+    <p><strong>Part B: load the whole schema.ttl.</strong> Either option gives the same result.</p>
+    <p><strong>Option 1: Studio's Load Data dialog.</strong> The file is on your laptop at:</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>knowledge-kits/examples/c360/models/schema.ttl</pre></div>
+    <p>In Studio, open <strong>Databases</strong>, select <code>kit-c360</code>, and click <strong>Load Data</strong>. Browse to the file. In the <b>Load RDF</b> dialog, the <b>Load Data To</b> dropdown shows <code>stardog:context:default</code>. <b>Don't leave it there.</b> Click the dropdown, type <code>urn:stardog:training-c360:1.0:model</code> into its <b>"Search or create…"</b> box, and choose the option that creates it. The dropdown should now show <code>urn:stardog:training-c360:1.0:model</code>. <b>File Format</b> should say Turtle. Click <b>Load Data</b>. <i>Landed in the default graph by mistake?</i> Run <code>MOVE DEFAULT TO &lt;urn:stardog:training-c360:1.0:model&gt;</code>. MOVE replaces what's already in the target graph, so if Part A's hand-typed triples are there, use <code>ADD DEFAULT TO &lt;…&gt;</code> and then <code>CLEAR DEFAULT</code> instead.</p>
+    <p><strong>Option 2: paste an INSERT DATA.</strong> This is <code>schema.ttl</code> unchanged (tabs replaced by spaces), with its prefixes, wrapped in a <code>GRAPH</code> block. Paste it into a Workspace tab on <code>kit-c360</code> and run:</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX :     &lt;tag:stardog:api:ecomm:&gt;
+PREFIX owl:  &lt;http://www.w3.org/2002/07/owl#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX xsd:  &lt;http://www.w3.org/2001/XMLSchema#&gt;
+PREFIX so:   &lt;https://schema.org/&gt;
+PREFIX m:    &lt;urn:stardog:modules:&gt;
+
+INSERT DATA {
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; {
+
+    :Industry a owl:Class ;
+        rdfs:label "Industry" .
+
+    :Vendor a owl:Class ;
+        rdfs:label "Vendor" .
+
+    :Customer a owl:Class ;
+        rdfs:label "Customer" .
+
+    :Address a owl:Class ;
+        rdfs:label "Address" .
+
+    :Order a owl:Class ;
+        rdfs:label "Order" .
+
+    :Product a owl:Class ;
+        rdfs:label "Product" .
+
+    :Category a owl:Class ;
+        rdfs:label "Category" .
+
+    :CreditCard a owl:Class ;
+        rdfs:label "Credit Card" .
+
+    :UnitPrice a owl:Class ;
+        rdfs:label "Unit Price" .
+
+    :RewardsAccount a owl:Class ;
+        rdfs:comment "A concept representing a Customer's rewards account." ;
+        rdfs:label "Rewards Account" .
+
+    :rewardsAccountUsed a owl:ObjectProperty ;
+        owl:inverseOf :hasRewards ;
+        so:domainIncludes :Order ;
+        so:rangeIncludes :RewardsAccount ;
+        rdfs:label "rewards account used" .
+
+    :hasRewards a owl:ObjectProperty ;
+        owl:inverseOf :rewardsAccount ;
+        so:domainIncludes :Customer ;
+        so:rangeIncludes :RewardsAccount ;
+        rdfs:label "has rewards account" .
+
+    :accountId a owl:DatatypeProperty ;
+        so:domainIncludes :RewardsAccount ;
+        so:rangeIncludes xsd:string ;
+        rdfs:label "account id" .
+
+    :openDate a owl:DatatypeProperty ;
+        so:domainIncludes :RewardsAccount ;
+        so:rangeIncludes xsd:date ;
+        rdfs:label "opened date" .
+
+    :cardHolder a owl:ObjectProperty ;
+        so:domainIncludes :CreditCard ;
+        so:rangeIncludes :Customer ;
+        rdfs:label "card holder" .
+
+    :cardType a owl:DatatypeProperty ;
+        so:domainIncludes :CreditCard ;
+        so:rangeIncludes xsd:string ;
+        rdfs:label "card type" .
+
+    :cardNumber a owl:DatatypeProperty, m:SensitiveProperty ;
+        so:domainIncludes :CreditCard ;
+        so:rangeIncludes xsd:string ;
+        rdfs:label "card number".
+
+    :hasCurrency a owl:DatatypeProperty ;
+        rdfs:label "has currency" ;
+        so:domainIncludes :UnitPrice ;
+        so:rangeIncludes xsd:string .
+
+    :hasPrice a owl:DatatypeProperty ;
+        rdfs:label "has price" ;
+        so:domainIncludes :UnitPrice ;
+        so:rangeIncludes xsd:float .
+
+    :msrp a owl:ObjectProperty ;
+        rdfs:label "MSRP" ;
+        so:domainIncludes :Product ;
+        so:rangeIncludes :UnitPrice .
+
+    :description a owl:DatatypeProperty ;
+        rdfs:label "description" ;
+        so:domainIncludes :Product ;
+        so:rangeIncludes xsd:string .
+
+    :inCategory a owl:ObjectProperty ;
+        rdfs:label "in category" ;
+        so:domainIncludes :Product ;
+        so:rangeIncludes :Category .
+
+    :vendor a owl:ObjectProperty ;
+        rdfs:label "has vendor" ;
+        so:domainIncludes :Product ;
+        so:rangeIncludes :Vendor .
+
+    :purchasePrice a owl:DatatypeProperty ;
+        rdfs:label "price" ;
+        so:domainIncludes :Order ;
+        so:rangeIncludes xsd:decimal .
+
+    :quantity a owl:DatatypeProperty ;
+        rdfs:label "quantity" ;
+        so:domainIncludes :Order ;
+        so:rangeIncludes xsd:integer .
+
+    :purchaseDate a owl:DatatypeProperty ;
+        rdfs:label "date purchased" ;
+        so:domainIncludes :Order ;
+        so:rangeIncludes xsd:date .
+
+    :purchaseTime a owl:DatatypeProperty ;
+        rdfs:label "time purchased" ;
+        so:domainIncludes :Order ;
+        so:rangeIncludes xsd:string .
+
+    :purchasedBy a owl:ObjectProperty ;
+        rdfs:label "purchased by" ;
+        so:domainIncludes :Order ;
+        so:rangeIncludes :Customer .
+
+    :itemPurchased a owl:ObjectProperty ;
+        rdfs:label "purchased" ;
+        so:domainIncludes :Order ;
+        so:rangeIncludes :Product .
+
+    :cardUsed a owl:ObjectProperty ;
+        rdfs:label "purchase card" ;
+        so:domainIncludes :Order ;
+        so:rangeIncludes :CreditCard .
+
+    :firstName a owl:DatatypeProperty ;
+        rdfs:label "first name" ;
+        so:domainIncludes :Customer ;
+        so:rangeIncludes xsd:string .
+
+    :lastName a owl:DatatypeProperty ;
+        rdfs:label "last name" ;
+        so:domainIncludes :Customer ;
+        so:rangeIncludes xsd:string .
+
+    :ssn a owl:DatatypeProperty, m:SensitiveProperty ;
+        rdfs:label "ssn" ;
+        so:domainIncludes :Customer ;
+        so:rangeIncludes xsd:string.
+
+    :email a owl:DatatypeProperty ;
+        rdfs:label "email" ;
+        so:domainIncludes :Customer ;
+        so:rangeIncludes xsd:string .
+
+    :thumbnail a owl:DatatypeProperty ;
+        rdfs:label "thumbnail" ;
+        so:domainIncludes :Customer, :Product ;
+        so:rangeIncludes xsd:string .
+
+    :phone a owl:DatatypeProperty ;
+        rdfs:label "phone" ;
+        so:domainIncludes :Customer ;
+        so:rangeIncludes xsd:string .
+
+    :address a owl:ObjectProperty ;
+        rdfs:label "has address" ;
+        so:domainIncludes :Customer ;
+        so:rangeIncludes :Address .
+
+    :industry a owl:ObjectProperty ;
+        rdfs:label "in industry" ;
+        so:domainIncludes :Vendor ;
+        so:rangeIncludes :Industry .
+
+    :streetAddress a owl:DatatypeProperty ;
+        rdfs:label "street address" ;
+        so:domainIncludes :Address ;
+        so:rangeIncludes xsd:string .
+
+    :city a owl:DatatypeProperty ;
+        rdfs:label "city" ;
+        so:domainIncludes :Address ;
+        so:rangeIncludes xsd:string .
+
+    :state a owl:DatatypeProperty ;
+        rdfs:label "state" ;
+        so:domainIncludes :Address ;
+        so:rangeIncludes xsd:string .
+
+    :zipCode a owl:DatatypeProperty ;
+        rdfs:label "zip code" ;
+        so:domainIncludes :Address ;
+        so:rangeIncludes xsd:string .
+
+    :name a owl:DatatypeProperty ;
+        rdfs:label "name" ;
+        so:domainIncludes :Category, :Customer, :Product, :Vendor ;
+        so:rangeIncludes xsd:string .  }
+}</pre></div>
+    <p><strong>Why this does not clash with what you typed.</strong> The file repeats the 21 class triples from Chapter 5 and the 13 property triples from Part A word for word, and a graph is a set (Chapter 4), so the total is 161, not 195. The same holds if you run Option 2 after Option 1, or either one twice.</p>
+    <p><strong>Check 1: total.</strong> Run the count query again. Expect exactly <strong>161</strong>.</p>
+    <p><strong>Check 2: what kinds of things are in the model.</strong></p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT ?kind (COUNT(DISTINCT ?thing) AS ?how_many)
+WHERE {
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; { ?thing a ?kind }
+}
+GROUP BY ?kind
+ORDER BY DESC(?how_many)</pre></div>
+    <div class="tbl"><table>
+      <thead><tr><th>kind</th><th>how_many</th></tr></thead>
+      <tbody>
+        <tr><td>owl:DatatypeProperty</td><td>22</td></tr>
+        <tr><td>owl:ObjectProperty</td><td>11</td></tr>
+        <tr><td>owl:Class</td><td>10</td></tr>
+        <tr><td>urn:stardog:modules:SensitiveProperty</td><td>2</td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>Check 3: the relationships.</strong> Expect <strong>11 rows</strong>, matching the table in Section 6.5.</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX owl:  &lt;http://www.w3.org/2002/07/owl#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX so:   &lt;https://schema.org/&gt;
+
+SELECT ?property ?label ?domain ?range
+WHERE {
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; {
+    ?property a owl:ObjectProperty ;
+              rdfs:label ?label ;
+              so:domainIncludes ?domain ;
+              so:rangeIncludes  ?range .
+  }
+}
+ORDER BY ?domain ?property</pre></div>
+    <p><strong>Check 4: everything expected on a Customer.</strong> Expect <strong>9 rows</strong>: <code>:address</code> (to Address), <code>:email</code>, <code>:firstName</code>, <code>:hasRewards</code> (to RewardsAccount), <code>:lastName</code>, <code>:name</code>, <code>:phone</code>, <code>:ssn</code>, <code>:thumbnail</code> (the rest to <code>xsd:string</code>). <code>:purchasedBy</code> is not listed: it is expected on Orders and points <em>at</em> customers.</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX :     &lt;tag:stardog:api:ecomm:&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX so:   &lt;https://schema.org/&gt;
+
+SELECT ?property ?label ?range
+WHERE {
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; {
+    ?property so:domainIncludes :Customer ;
+              rdfs:label ?label ;
+              so:rangeIncludes ?range .
+  }
+}
+ORDER BY ?property</pre></div>
+  </aside>
+
+  <aside class="box gotcha">
+    <p>If the count is still 34 after Part B, the file most likely went into the default graph. Check with <code>SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }</code> (no <code>GRAPH</code>, so it reads the default graph); it should be <strong>0</strong>. If it is not, the triples landed there. Remove them with <code>CLEAR DEFAULT</code> (nothing else lives there), then repeat Part B with the named graph set. If the count is above 161, a Part A triple differs from the file; tell Claude and we will find it.</p>
+  </aside>
+
+  <aside class="box try">
+    <p><strong>Part C: register the model as a reasoning schema.</strong> A <dfn>reasoning schema</dfn> names one or more named graphs that Stardog treats as T-Box when reasoning. The database option <code>reasoning.schemas</code> holds a list of <code>name=graph</code> entries. Set it to exactly:</p>
+<div class="codewrap"><button class="copy" type="button">Copy</button><pre>c360_schema=urn:stardog:training-c360:1.0:model</pre></div>
+    <p>In Studio, open <strong>Databases</strong>, select <code>kit-c360</code>, and open its <strong>Properties</strong>. Find <code>reasoning.schemas</code> (in the reasoning group; the filter box helps), enter the value above as its single entry, and save. An earlier install of the c360 kit used this exact value on this database; Chapter 10 extends <code>c360_schema</code> with a second entry for the rules.</p>
+    <p>If Studio says the property can only be changed while the database is offline, do not take it offline yourself; stop and tell Claude the message.</p>
+    <p><strong>Check:</strong> reopen the Properties panel and confirm that <code>reasoning.schemas</code> shows <code>c360_schema=urn:stardog:training-c360:1.0:model</code>. Query results do not change yet, because reasoning is still off.</p>
+  </aside>
+
+  <aside class="box try">
+    <p><strong>Part D: look at it in Models.</strong> Open Studio's <strong>Models</strong> section, choose database <code>kit-c360</code>, and, if asked, the schema <code>c360_schema</code>. You should see the ten classes and, on each, the properties that point to or from it; compare with Figure 6.3. Models is also an editor: do not change anything, since an edit writes triples into the model graph and the count would no longer be 161. (The Models view differs between Studio versions; if yours is organized differently, for example as a class list, describe it to Claude (a screenshot helps).)</p>
+    <p><strong>Do not drop this graph.</strong> It is the finished model for the rest of the book.</p>
+  </aside>
+
+  
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>Is <code>:hasRewards</code> an object or a datatype property, and what is its SQL counterpart?</summary><p>An object property: its value is a RewardsAccount node. Its SQL counterpart is the foreign key <code>rewards_account.cid</code>, read the other way (customer to account).</p></details>
+    <details><summary>Hypothetically the model says <code>:quantity rdfs:range xsd:integer</code>, and someone loads <code>order :quantity "lots"</code>. What does Stardog do?</summary><p>It stores the triple: <code>rdfs:range</code> is an inference rule, not a check. To have the value reported, write a SHACL shape with <code>sh:datatype xsd:integer</code> (Chapter 11).</p></details>
+    <details><summary>Why would <code>:name rdfs:domain :Category, :Customer, :Product, :Vendor</code> be a bug, when the kit's <code>so:domainIncludes</code> version is fine?</summary><p>Each <code>rdfs:domain</code> triple is a separate rule, so with reasoning on every named thing would become all four classes. <code>so:domainIncludes</code> only documents "any of these"; the reasoner ignores it.</p></details>
+    <details><summary>Where in the ontology does it say that customers come from Aurora?</summary><p>Nowhere. The ontology describes meaning only; the mappings (Chapters 8 and 9) connect classes and properties to physical data.</p></details>
+    <details><summary>Why is <code>:rewardsAccountUsed owl:inverseOf :hasRewards</code> suspicious?</summary><p>An inverse must swap the ends. Both properties point at a RewardsAccount, so they are not each other's reverse; with reasoning on, rewards accounts would "have rewards" orders.</p></details>
+    <details><summary>You load <code>schema.ttl</code> on top of the 34 triples you typed. Why 161 and not 195?</summary><p>The 34 typed triples are identical to triples in the file, and a graph is a set, so re-inserting them adds nothing.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li>Object properties link things to things (foreign keys); datatype properties link things to literals (columns). Properties stand alone and can be shared.</li>
+    <li><code>rdfs:domain</code> and <code>rdfs:range</code> are inference rules that add types and never reject data; several domains mean all of them at once.</li>
+    <li>The kit uses <code>so:domainIncludes</code> / <code>so:rangeIncludes</code>: descriptive, "any of these", ignored by the reasoner, read by tools and AI.</li>
+    <li><code>owl:inverseOf</code> names a relationship's reverse. The kit's two inverse axioms are questionable, harmless with reasoning off.</li>
+    <li>The c360 ontology: 10 classes, 11 relationships, 22 attributes, 161 triples; <code>:ssn</code> and <code>:cardNumber</code> are marked sensitive.</li>
+    <li>The ontology knows nothing about Aurora or Redshift; mappings (Chapters 8 and 9) connect it to data.</li>
+    <li>Build step 2 is done: the full model (161 triples) in <code>&lt;urn:stardog:training-c360:1.0:model&gt;</code>, registered as <code>reasoning.schemas = c360_schema=urn:stardog:training-c360:1.0:model</code>.</li>
+  </ul></section>
+
+  <section class="done">
+    <p><button class="sendback" type="button" data-chapter="6" data-step="2">Copy "Build step 2 done" message</button> <span class="sbmsg"></span></p>
+    <p class="donehint">Paste it to Claude with what you saw (the counts or results), so we can confirm it matches before the next build step relies on it.</p>
+  </section>
+
+  <nav class="pn">
+    <a href="ch05.html"><small>← Previous</small>Chapter 5 · The T-Box, part 1: classes (RDFS)</a>
+    <a href="ch07.html" style="text-align:right"><small>Next →</small>Chapter 7 · Where the data lives: materialized vs virtual</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f62', (tl, cap) => {
+  tl.set(['#f62 .sqlv', '#f62 .rdfv', '#f62 .inf'], {opacity: 0});
+  cap(tl, 'Step 1: The model says: the subject of :purchasedBy is an Order; its object is a Customer.');
+  tl.from('#f62 .rule', {opacity: 0, y: -12, duration: 0.6});
+  cap(tl, 'Step 2: A loader bug writes one triple: product 268 (Wax Paper) was purchased by customer 225.', '+=1.4');
+  tl.from('#f62 .bad', {opacity: 0, x: -30, duration: 0.6});
+  cap(tl, 'Step 3: A database would stop here with a foreign-key error...', '+=1.4');
+  tl.to('#f62 .sqlv', {opacity: 1, duration: 0.4});
+  cap(tl, 'Step 4: ...but RDFS accepts it. The domain rule fires on the subject and derives a new type.', '+=1.6');
+  tl.to('#f62 .rdfv', {opacity: 1, duration: 0.4});
+  tl.fromTo('#f62 .inf', {opacity: 0, y: -10}, {opacity: 1, y: 0, duration: 0.7}, '+=0.4');
+  cap(tl, 'Result: Wax Paper is now an Order, with no error anywhere. Domain and range add types; they never reject.', '+=0.8');
+});
+bookAnim('f63', (tl, cap) => {
+  tl.set('#f63 .bridge rect', {opacity: 0});
+  cap(tl, 'Step 1: Four classes whose data will come from Aurora: Customer, Address, CreditCard, RewardsAccount.');
+  tl.from('#f63 .ca', {opacity: 0, scale: 0.85, transformOrigin: '50% 50%', duration: 0.4, stagger: 0.15});
+  cap(tl, 'Step 2: Six classes whose data will come from Redshift, with Order at the center.', '+=1.2');
+  tl.from('#f63 .cr', {opacity: 0, scale: 0.85, transformOrigin: '50% 50%', duration: 0.4, stagger: 0.15});
+  cap(tl, 'Step 3: Ten relationships, each an object property drawn from its domainIncludes to its rangeIncludes.', '+=1.2');
+  tl.from('#f63 .rel', {opacity: 0, duration: 0.35, stagger: 0.12});
+  cap(tl, 'Step 4: The eleventh, Order purchasedBy Customer, is the one that crosses from Redshift to Aurora. Chapter 9 makes it work.', '+=1');
+  tl.from('#f63 .bridge line, #f63 .bridge text', {opacity: 0, duration: 0.5});
+  tl.to('#f63 .bridge rect', {opacity: 0.12, duration: 0.5});
+  tl.from('#f63 .leg', {opacity: 0, duration: 0.4});
+});
+</script>
+</body>
+</html>

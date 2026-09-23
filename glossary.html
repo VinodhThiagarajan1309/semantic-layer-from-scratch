@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Appendix · Glossary</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <aside class="box java"><p>intro</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>…</pre></div><div class="col"><p class="lbl">Java</p><pre>…</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> …</p></aside>   side-by-side Java analogy
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Appendix</span></div>
+
+  <header class="opener">
+    <div class="num">Appendix</div>
+    <h1>Glossary</h1>
+    <p class="sub">Every term the book introduces, in plain English, with a link to the chapter where it first appears.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">Each entry is one or two sentences, written for someone who knows databases well, with a SQL or Java analogy where one helps. Chapter links point to where the term is properly introduced, which is not always its first mention.</p>
+
+  <p style="text-align:center">
+    <a href="#g-a">A</a> · <a href="#g-b">B</a> · <a href="#g-c">C</a> · <a href="#g-d">D</a> · <a href="#g-e">E</a> · <a href="#g-f">F</a> · <a href="#g-g">G</a> · <a href="#g-h">H</a> · <a href="#g-i">I</a> · <a href="#g-j">J</a> · <a href="#g-k">K</a> · <a href="#g-l">L</a> · <a href="#g-m">M</a> · <a href="#g-n">N</a> · <a href="#g-o">O</a> · <a href="#g-p">P</a> · <a href="#g-q">Q</a> · <a href="#g-r">R</a> · <a href="#g-s">S</a> · <a href="#g-t">T</a> · <a href="#g-u">U</a> · <a href="#g-v">V</a> · <a href="#g-x">X</a>
+  </p>
+
+  <h2 id="g-a">A</h2>
+  <p><strong>A-Box</strong> (<a href="ch05.html">Ch. 5</a>): the "assertion box": instance data, such as "customer 225 lives at this address". In SQL terms, the rows rather than the schema.</p>
+  <p><strong>Agent</strong> (<a href="ch14.html">Ch. 14</a>): an LLM plus tools plus a loop that calls them until it can answer. Ours has two tools, <code>run_sparql</code> and <code>get_ontology</code>.</p>
+  <p><strong>Agent loop</strong> (<a href="ch14.html">Ch. 14</a>): call the model, run the tool calls it requests, append the results, and repeat until it replies with text.</p>
+  <p><strong>AgentCore (Amazon Bedrock AgentCore)</strong> (<a href="ch14.html">Ch. 14</a>): AWS's managed service for running agents. <em>Runtime</em> hosts the agent, <em>Gateway</em> authenticates callers and routes tool calls, and <em>Identity</em> holds credentials so agent code never does.</p>
+  <p><strong>Answer contract</strong> (<a href="ch15.html#contract">Ch. 15</a>): a fixed JSON shape for an agent's answer, <code>{value, complete, expected, included, missing: [{source, reason}]}</code>, built by code. The agent must repeat its summary verbatim, so "partial" can't get lost in prose.</p>
+  <p><strong>Apache Calcite</strong> (<a href="ch14.html">Ch. 14</a>): an open-source framework for optimizing and generating SQL, which Stardog has described using to produce SQL in each database's dialect.</p>
+  <p><strong>ASK</strong> (<a href="ch04.html">Ch. 4</a>): a SPARQL query form that returns only true or false, like <code>SELECT EXISTS(…)</code>.</p>
+  <p><strong>Aurora Serverless v2</strong> (<a href="ch07.html">Ch. 7</a>): the PostgreSQL service holding the c360 customers, addresses, cards and rewards accounts. It pauses when idle, so the first query after a pause takes 15 to 20 seconds.</p>
+
+  <h2 id="g-b">B</h2>
+  <p><strong>Big_Spender</strong> (<a href="ch10.html">Ch. 10</a>): a derived class from the kit's rules: any customer with at least one <code>:Large_Order</code>. It exists only when reasoning is on.</p>
+  <p><strong>Bind join</strong> (<a href="ch14.html">Ch. 14</a>): a join that fetches one side first, then sends its keys to the other as a filter (<code>WHERE cid IN (28, 38, …)</code>).</p>
+
+  <h2 id="g-c">C</h2>
+  <p><strong>Class</strong> (<a href="ch05.html">Ch. 5</a>): a named kind of thing, such as <code>:Customer</code>. Closest to a table, except that one thing can belong to many classes, classes nest, and rules can add members later.</p>
+  <p><strong>Closed-world assumption</strong> (<a href="ch05.html">Ch. 5</a>): the database habit of treating anything unrecorded as false and rejecting data that doesn't fit the schema. RDF and OWL don't work this way; SHACL lets you check as if they did.</p>
+  <p><strong>Competency question</strong> (<a href="ch14.html">Ch. 14</a>): a real business question the semantic layer must answer, written down before you build. The book's five double as the agent's acceptance tests.</p>
+  <p><strong>Completeness check</strong> (<a href="ch15.html#completeness">Ch. 15</a>): code that compares the sources a metric should include (from the source registry) with the sources that actually contributed, and reports which are missing and why, instead of trusting the LLM to notice.</p>
+  <p><strong>CONSTRUCT</strong> (<a href="ch04.html">Ch. 4</a>): a SPARQL query form that returns new triples built from a template instead of rows.</p>
+  <p><strong>Cooperation without coordination</strong> (<a href="ch09.html">Ch. 9</a>): the blog's phrase for how federation scales: each team maps its own source, and as long as they mint the same IRIs, the graph joins them with no central integration project.</p>
+
+  <h2 id="g-d">D</h2>
+  <p><strong>Data contract</strong> (<a href="ch15.html#practice">Ch. 15</a>): an agreement between a dataset's producers and consumers about its schema, meaning, freshness and change process. A source registry entry is a small data contract.</p>
+  <p><strong>Data observability</strong> (<a href="ch15.html#practice">Ch. 15</a>): monitoring data continuously, like services: freshness, volume, schema, distribution and lineage checks (tools such as Monte Carlo and Great Expectations).</p>
+  <p><strong>Data source</strong> (<a href="ch07.html">Ch. 7</a>): Stardog's saved connection to an external database (JDBC URL, credentials, options), like a JDBC <code>DataSource</code>. Ours are <code>aurora_c360</code> and <code>redshift_c360</code>; virtual graphs sit on top of them.</p>
+  <p><strong>Datatype</strong> (<a href="ch03.html">Ch. 3</a>): the type attached to a literal, such as <code>xsd:integer</code> or <code>xsd:decimal</code>. It decides how values compare and add up; float instead of decimal cost us two cents in Chapter 9.</p>
+  <p><strong>Datatype property</strong> (<a href="ch06.html">Ch. 6</a>): a property whose value is a literal, like <code>:email</code> or <code>:quantity</code>: a plain column. Declared as <code>owl:DatatypeProperty</code>.</p>
+  <p><strong>Default graph</strong> (<a href="ch03.html">Ch. 3</a>): the triples in no named graph, and what a query without <code>GRAPH</code> reads. Stardog lets you configure what it includes.</p>
+  <p><strong>Derived class</strong> (<a href="ch10.html">Ch. 10</a>): a class whose members a rule computes at query time, such as <code>:Big_Spender</code>, <code>:Large_Order</code> or <code>:2022_Orderer</code>. Like a view that works as a type.</p>
+  <p><strong>Designer</strong> (<a href="ch13.html">Ch. 13</a>): Stardog's no-code visual tool for building and publishing ontologies and mappings.</p>
+  <p><strong>DISTINCT</strong> (<a href="ch04.html">Ch. 4</a>): removes duplicate result rows, exactly as in SQL.</p>
+  <p><strong>Domain and range</strong> (<a href="ch06.html">Ch. 6</a>): <code>rdfs:domain</code> and <code>rdfs:range</code> say what a property starts from and points to. They infer rather than constrain: using the property <em>makes</em> the subject a member of the domain class.</p>
+  <p><strong>domainIncludes / rangeIncludes</strong> (<a href="ch06.html">Ch. 6</a>): the schema.org way (<code>so:domainIncludes</code>, <code>so:rangeIncludes</code>) to document which classes a property connects, with no inference. The c360 kit uses them, and Voicebox reads them.</p>
+  <p><strong>DROP GRAPH</strong> (<a href="ch04.html">Ch. 4</a>): a SPARQL Update command that deletes a named graph and all its triples; the book uses it to clean up scratch graphs.</p>
+
+  <h2 id="g-e">E</h2>
+  <p><strong>Egress IP</strong> (<a href="ch07.html">Ch. 7</a>): the fixed public address Stardog Cloud connects from (44.238.183.206 for our endpoint). The AWS security groups allow only it and your laptop.</p>
+  <p><strong>Endpoint</strong> (<a href="ch13.html">Ch. 13</a>): the Stardog server itself, <code>https://&lt;your-endpoint&gt;.stardog.cloud:5820</code>, with its own HTTP API and users; not the Cloud portal.</p>
+  <p><strong>Explorer</strong> (<a href="ch13.html">Ch. 13</a>): Stardog's browsing app: search for an entity, view its properties, click through its links.</p>
+
+  <h2 id="g-f">F</h2>
+  <p><strong>Federation</strong> (<a href="ch09.html">Ch. 9</a>): answering one query from several sources at once. Stardog splits the SPARQL by source, runs SQL on each, and joins the results itself, copying nothing in advance.</p>
+  <p><strong>Few-shot examples</strong> (<a href="ch13.html">Ch. 13</a>, <a href="ch15.html#few-shot">Ch. 15</a>): worked question-and-query pairs shown to an LLM so it copies their patterns. Voicebox takes them from stored queries tagged <code>system:voiceboxQuestion</code>. At scale, the few most similar verified examples are retrieved per question.</p>
+  <p><strong>FILTER</strong> (<a href="ch04.html">Ch. 4</a>): a SPARQL condition that drops non-matching results, like a SQL <code>WHERE</code> predicate: <code>FILTER(?total &gt; 10000)</code>.</p>
+
+  <h2 id="g-g">G</h2>
+  <p><strong>Golden test</strong> (<a href="ch15.html">Ch. 15</a>): a question with an independently verified answer (for us, checked in SQL), rerun automatically against the agent; <code>eval.py</code>.</p>
+  <p><strong>GRAPH</strong> (<a href="ch04.html">Ch. 4</a>): the SPARQL keyword that restricts a pattern to one named graph, such as <code>GRAPH &lt;virtual://redshift_c360&gt; { … }</code>. With virtual graphs, it effectively picks the database.</p>
+  <p><strong>Grounded</strong> (<a href="ch13.html">Ch. 13</a>): describes an answer whose facts all come from a query against your data (shown alongside it), not from the model's memory.</p>
+  <p><strong>GROUP BY and aggregates</strong> (<a href="ch04.html">Ch. 4</a>): as in SQL (<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>), except aggregates must be named with <code>AS</code>: <code>(SUM(?price * ?qty) AS ?spend)</code>.</p>
+  <p><strong>Guardrail</strong> (<a href="ch14.html">Ch. 14</a>): a check your code applies to an LLM's request before acting on it, such as rejecting SPARQL Update or forcing a LIMIT. A second line of defense behind database permissions.</p>
+
+  <h2 id="g-h">H</h2>
+  <p><strong>Hash join</strong> (<a href="ch14.html">Ch. 14</a>): a join that loads one side into an in-memory hash table on the join key, then streams the other side past it. One way Stardog joins rows from two sources.</p>
+
+  <h2 id="g-i">I</h2>
+  <p><strong>Inference</strong>: see <em>Reasoning</em>.</p>
+  <p><strong>INSERT DATA</strong> (<a href="ch04.html">Ch. 4</a>): a SPARQL Update command that adds literal triples, optionally into a named graph; first used in Chapter 2's scratch exercise.</p>
+  <p><strong>inverseOf</strong> (<a href="ch06.html">Ch. 6</a>): <code>owl:inverseOf</code> declares two properties to be the same link read in opposite directions, like <code>:placedOrder</code> and <code>:purchasedBy</code>; with reasoning on, stating one lets you query the other (Java: a bidirectional JPA <code>mappedBy</code>). The kit's <code>schema.ttl</code> has two such axioms, and both are questionable (Chapters 6 and 10).</p>
+  <p><strong>IRI</strong> (<a href="ch03.html">Ch. 3</a>): Internationalized Resource Identifier, a globally unique name for a thing or property, such as <code>urn:stardog:demos:c360:customer:225</code>. Like a primary key unique across every database in the world.</p>
+  <p><strong>IRI template</strong> (<a href="ch08.html">Ch. 8</a>): a mapping pattern that builds an IRI from column values, such as <code>TEMPLATE("urn:stardog:demos:c360:customer:{cid}")</code>. Two sources using the same template join automatically (Chapter 9's IRI trick).</p>
+
+  <h2 id="g-j">J</h2>
+  <p><strong>JDBC</strong> (<a href="ch07.html">Ch. 7</a>): Java Database Connectivity, the standard driver interface Stardog uses to talk to PostgreSQL, Redshift and other SQL databases.</p>
+
+  <h2 id="g-k">K</h2>
+  <p><strong>Key-overlap probe (key alignment)</strong> (<a href="ch15.html#key-overlap">Ch. 15</a>): the share of a source's join keys (customer IRIs) that match known entities in the master graph. 0% means the source's IRI template doesn't match, a failure that raises no error.</p>
+  <p><strong>Knowledge graph</strong> (<a href="ch01.html">Ch. 1</a>): data as things and the relationships between them, with their meaning described in an ontology. In this book it is mostly virtual: a view over Aurora and Redshift.</p>
+  <p><strong>Knowledge kit</strong> (<a href="ch13.html">Ch. 13</a>): an installable package of ontology, rules, mappings, sample data, stored queries and settings, described by <code>kit.yaml</code>. The book started from the c360 training kit.</p>
+
+  <h2 id="g-l">L</h2>
+  <p><strong>Large_Order</strong> (<a href="ch10.html">Ch. 10</a>): a derived class from the kit's rules: orders whose unit <code>:purchasePrice</code> exceeds 250 (1,103 of the 2,500). The Big_Spender rule builds on it.</p>
+  <p><strong>LIMIT</strong> (<a href="ch04.html">Ch. 4</a>): caps the number of result rows, as in SQL. The Chapter 14 agent forces one on every SELECT.</p>
+  <p><strong>Literal</strong> (<a href="ch02.html">Ch. 2</a>): a plain value (string, number, date), as opposed to a thing with an IRI; like a <code>String</code> rather than an object reference. Literals can be objects of triples, never subjects.</p>
+  <p><strong>LLM</strong> (<a href="ch13.html">Ch. 13</a>): large language model, such as GPT or Claude. Here its only job is translating between English and SPARQL.</p>
+
+  <h2 id="g-m">M</h2>
+  <p><strong>Mapping</strong> (<a href="ch08.html">Ch. 8</a>): a declaration of how SQL rows become triples (which query, which IRIs, which properties), which Stardog runs in reverse to turn SPARQL into SQL. Like JPA annotations, but data rather than code, and each can target a different database.</p>
+  <p><strong>Materialized graph</strong> (<a href="ch07.html">Ch. 7</a>): triples copied into Stardog from a source: fast to query, but a copy that goes stale; the ETL-like option.</p>
+  <p><strong>MCP (Model Context Protocol)</strong> (<a href="ch13.html">Ch. 13</a>): an open standard for connecting AI hosts to tools: a server advertises tools and a host lets its model call them. Stardog's MCP server exposes Voicebox.</p>
+  <p><strong>Meaning layer</strong> (<a href="ch01.html">Ch. 1</a>): the blog's name for the semantic layer, the middle of its three layers (model, meaning, runtime).</p>
+  <p><strong>Metrics layer</strong> (<a href="ch15.html#practice">Ch. 15</a>): a place where each business metric is defined once, with its inputs, and reused by every tool: the dbt Semantic Layer (MetricFlow), Cube, Looker's LookML. <code>ops:total_spend ops:requires :Order</code> is the same idea in triples.</p>
+
+  <h2 id="g-n">N</h2>
+  <p><strong>Named graph</strong> (<a href="ch03.html">Ch. 3</a>): a set of triples with its own IRI, like a folder or schema. The model lives in <code>&lt;urn:stardog:training-c360:1.0:model&gt;</code>; each virtual graph is one, such as <code>&lt;virtual://aurora_c360_safe&gt;</code>.</p>
+  <p><strong>Named-graph security</strong> (<a href="ch12.html">Ch. 12</a>): Stardog's option (<code>security.named.graphs</code>) to grant read access per named graph, so one user sees <code>&lt;virtual://aurora_c360_pii&gt;</code> and another doesn't. Like per-schema grants, across every source.</p>
+  <p><strong>Native user</strong> (<a href="ch13.html">Ch. 13</a>): a user defined on the Stardog endpoint, such as <code>stardog_admin</code>. Programs must use one; the portal login doesn't work against the API.</p>
+
+  <h2 id="g-o">O</h2>
+  <p><strong>Object</strong> (<a href="ch02.html">Ch. 2</a>): the third part of a triple, the value or thing the arrow points to: an IRI or a literal.</p>
+  <p><strong>Object property</strong> (<a href="ch06.html">Ch. 6</a>): a property whose value is another thing (an IRI), like <code>:purchasedBy</code> from an order to a customer: a foreign key column, or a Java reference field. Declared as <code>owl:ObjectProperty</code>.</p>
+  <p><strong>Ontology</strong> (<a href="ch05.html">Ch. 5</a>): the formal description of a domain's classes, properties and rules, stored as triples. The c360 ontology has 10 classes, 11 object properties and 22 datatype properties.</p>
+  <p><strong>Ontology slice</strong> (<a href="ch15.html">Ch. 15</a>): the few ontology terms a question needs plus their one-hop neighbors, retrieved by search so a huge ontology never has to fit in the prompt.</p>
+  <p><strong>OpenRouter</strong> (<a href="ch14.html">Ch. 14</a>): an OpenAI-compatible API (<code>https://openrouter.ai/api/v1</code>) in front of many model providers, with model ids like <code>anthropic/claude-sonnet-4.6</code>.</p>
+  <p><strong>Open-world assumption</strong> (<a href="ch05.html">Ch. 5</a>): the RDF/OWL stance that a missing fact is unknown, not false, and that the schema describes rather than rejects.</p>
+  <p><strong>OPTIONAL</strong> (<a href="ch04.html">Ch. 4</a>): keeps a result even when part of the pattern has no match, leaving those variables unbound: SPARQL's LEFT OUTER JOIN.</p>
+  <p><strong>OWL</strong> (<a href="ch06.html">Ch. 6</a>): the Web Ontology Language, a richer vocabulary than RDFS (<code>owl:Class</code>, <code>owl:ObjectProperty</code>, <code>owl:inverseOf</code> and more) with well-defined reasoning.</p>
+
+  <h2 id="g-p">P</h2>
+  <p><strong>Path A / Path B</strong> (<a href="ch14.html">Ch. 14</a>): the blog's two agent designs. Path A gives the LLM a direct SPARQL tool (our <code>agent.py</code>); Path B gives it Voicebox through the Stardog Cloud MCP server.</p>
+  <p><strong>PII</strong> (<a href="ch08.html">Ch. 8</a>): personally identifiable information, such as SSNs and card numbers. The book maps it into its own virtual graph, <code>aurora_c360_pii</code>, to lock it down separately.</p>
+  <p><strong>Portal (Stardog Cloud)</strong> (<a href="ch13.html">Ch. 13</a>): the website at <code>cloud.stardog.com</code> where you sign in with your email, launch Studio, Designer, Explorer and Voicebox, and manage API keys.</p>
+  <p><strong>Predicate</strong> (<a href="ch02.html">Ch. 2</a>): the middle part of a triple, the relationship or attribute name, always an IRI. Roughly a column name.</p>
+  <p><strong>Prefix</strong> (<a href="ch03.html">Ch. 3</a>): a short alias for the start of an IRI, like a Java <code>import</code>: after <code>PREFIX : &lt;tag:stardog:api:ecomm:&gt;</code>, <code>:Customer</code> means <code>&lt;tag:stardog:api:ecomm:Customer&gt;</code>.</p>
+  <p><strong>Prompt caching</strong> (<a href="ch14.html">Ch. 14</a>): a provider feature that bills a repeated prompt prefix (system prompt, tool definitions) at a discount, as long as it is byte-identical between calls.</p>
+  <p><strong>Prompt injection</strong> (<a href="ch14.html">Ch. 14</a>): text in the data or input that tries to give the model instructions. Read-only access limits the damage to a wrong answer.</p>
+  <p><strong>Provenance / PROV-O</strong> (<a href="ch15.html#practice">Ch. 15</a>): a record of where a value came from. PROV-O is the W3C vocabulary for it (a Recommendation since 2013): <code>prov:Entity</code>, <code>prov:Activity</code>, <code>prov:Agent</code>, <code>prov:used</code>, <code>prov:wasDerivedFrom</code>.</p>
+  <p><strong>Pushdown</strong> (<a href="ch09.html">Ch. 9</a>): sending filters, joins and aggregates into the source SQL so the warehouse does the work and returns fewer rows.</p>
+  <p><strong>pystardog</strong> (<a href="ch14.html">Ch. 14</a>): Stardog's official Python client for its HTTP API. The blog's Path A uses it; <code>agent.py</code> calls the same API with <code>requests</code>.</p>
+
+  <h2 id="g-q">Q</h2>
+  <p><strong>Query planner</strong> (<a href="ch14.html">Ch. 14</a>): the part of Stardog that decides what goes to which source as SQL, what gets pushed down, and which join strategy to use. Like Hibernate turning JPQL into SQL, but across several databases.</p>
+  <p><strong>Query rewriting</strong> (<a href="ch09.html">Ch. 9</a>): Stardog's translation of SPARQL over virtual graphs into SQL for each source, using the mappings in reverse.</p>
+
+  <h2 id="g-r">R</h2>
+  <p><strong>R2RML</strong> (<a href="ch08.html">Ch. 8</a>): the W3C standard language for mapping relational tables to RDF. Stardog supports it; the book uses the more compact SMS2.</p>
+  <p><strong>RDF</strong> (<a href="ch02.html">Ch. 2</a>): Resource Description Framework, the W3C data model in which everything is a triple.</p>
+  <p><strong>RDFS</strong> (<a href="ch05.html">Ch. 5</a>): RDF Schema, the basic vocabulary for classes and properties: <code>rdfs:Class</code>, <code>rdfs:subClassOf</code>, <code>rdfs:domain</code>, <code>rdfs:range</code>, <code>rdfs:label</code>, <code>rdfs:comment</code>.</p>
+  <p><strong>rdfs:label / rdfs:comment</strong> (<a href="ch05.html">Ch. 5</a>): a human-readable name and description for anything. Studio, Explorer and Voicebox display them, and Voicebox uses them to understand questions.</p>
+  <p><strong>rdf:type (a)</strong> (<a href="ch05.html">Ch. 5</a>): the predicate saying what class a thing belongs to, abbreviated <code>a</code>: <code>?c a :Customer</code>. Like <code>instanceof</code>, except a thing can have many types and a type can be inferred.</p>
+  <p><strong>Reasoning (inference)</strong> (<a href="ch10.html">Ch. 10</a>): deriving facts that aren't stored (class membership, inverses, rule results) at query time. In Stardog it is off unless you turn it on for a query.</p>
+  <p><strong>reasoning.schemas</strong> (<a href="ch06.html">Ch. 6</a>): the database property naming the graphs that hold the model and rules for reasoning, for example <code>c360_schema=urn:stardog:training-c360:1.0:model</code>.</p>
+  <p><strong>Role</strong> (<a href="ch12.html">Ch. 12</a>): a named set of permissions assigned to users, as in SQL. The book creates roles for <code>hr_user</code> and <code>marketing_user</code>.</p>
+  <p><strong>Rule (Stardog rule)</strong> (<a href="ch10.html">Ch. 10</a>): an <code>IF { … } THEN { … }</code> statement: with reasoning on, whenever the IF pattern matches, the THEN triples count as true. The kit has five (for example, "big spenders").</p>
+
+  <h2 id="g-s">S</h2>
+  <p><strong>Schema linking</strong> (<a href="ch15.html#schema-linking">Ch. 15</a>): matching the words of a question to the right classes and properties (or tables and columns). The hard part of text-to-SQL and text-to-SPARQL on large schemas.</p>
+  <p><strong>Semantic layer</strong> (<a href="ch01.html">Ch. 1</a>): a shared, machine-readable model of what your data means, between the sources and the people and agents asking questions: one definition of "big spender" across every system. It is a job, not a technology: this book builds it with a knowledge graph; metrics layers (dbt, Cube), BI-tool models and data virtualization are other ways.</p>
+  <p><strong>Sensitive property</strong> (<a href="ch12.html">Ch. 12</a>): a property marked <code>m:SensitiveProperty</code> (the c360 kit marks <code>:ssn</code> and <code>:cardNumber</code>) so Stardog can hide or mask it from users without permission; an alternative to a separate PII graph.</p>
+  <p><strong>SHACL</strong> (<a href="ch11.html">Ch. 11</a>): the Shapes Constraint Language, a W3C standard for validating RDF data. It brings closed-world checks (NOT NULL, CHECK, FK-like) to an open-world graph.</p>
+  <p><strong>Shape</strong> (<a href="ch11.html">Ch. 11</a>): a SHACL definition of valid data for some target (such as every <code>:Customer</code>), with constraints like <code>sh:minCount</code> and <code>sh:datatype</code>.</p>
+  <p><strong>SL reasoning</strong> (<a href="ch10.html">Ch. 10</a>): Stardog's default reasoning level, covering RDFS, most of OWL 2 and user-defined rules, chosen to stay fast at query time.</p>
+  <p><strong>SMS2</strong> (<a href="ch08.html">Ch. 8</a>): Stardog Mapping Syntax 2, a compact SPARQL-like mapping language (<code>MAPPING … FROM SQL { … } TO { … } WHERE { … }</code>), selected with <code>mappings.syntax=SMS2</code>.</p>
+  <p><strong>Source registry</strong> (<a href="ch15.html#registry">Ch. 15</a>): triples in <code>&lt;urn:c360:registry&gt;</code> saying which sources provide which classes (<code>ops:provides</code>), how they join (<code>ops:joinsOn</code>), and which classes each metric requires (<code>ops:requires</code>).</p>
+  <p><strong>SPARQL</strong> (<a href="ch04.html">Ch. 4</a>): the W3C query language for RDF: you write triple patterns with variables, and Stardog finds every match.</p>
+  <p><strong>SPARQL Update</strong> (<a href="ch04.html">Ch. 4</a>): the write half of SPARQL: <code>INSERT</code>, <code>DELETE</code>, <code>DROP</code>, <code>CLEAR</code>, <code>LOAD</code>, <code>CREATE</code>, <code>ADD</code>, <code>MOVE</code>, <code>COPY</code>. The agent rejects all of them.</p>
+  <p><strong>sql.schemas</strong> (<a href="ch07.html">Ch. 7</a>): a data source option listing which SQL schemas Stardog may see. Without <code>sql.schemas=c360</code>, mappings fail with "Object 'customer' not found".</p>
+  <p><strong>Stardog Cloud</strong> (<a href="ch13.html">Ch. 13</a>): Stardog's hosted service. The book uses the Free tier, which allows up to three databases.</p>
+  <p><strong>Stored query</strong> (<a href="ch13.html">Ch. 13</a>): a named SPARQL query saved on the server with metadata; like a JPA <code>@NamedQuery</code>, but shared by every tool. Shared ones tagged <code>system:voiceboxQuestion</code> teach Voicebox.</p>
+  <p><strong>Strands Agents</strong> (<a href="ch14.html">Ch. 14</a>): AWS's open-source Python agent framework, which provides the tool loop for the blog's Path A.</p>
+  <p><strong>Studio</strong> (<a href="ch13.html">Ch. 13</a>): Stardog's web IDE for queries, data loading, models, virtual graphs and security, used from Chapter 2 on.</p>
+  <p><strong>subClassOf</strong> (<a href="ch05.html">Ch. 5</a>): <code>rdfs:subClassOf</code> says every member of one class is also in another (every <code>:Big_Spender</code> is a <code>:Customer</code>); with reasoning on, queries for the parent include the children.</p>
+  <p><strong>Subject</strong> (<a href="ch02.html">Ch. 2</a>): the first part of a triple, the thing the statement is about: an IRI (or a blank node), never a literal.</p>
+  <p><strong>System prompt</strong> (<a href="ch14.html">Ch. 14</a>): instructions sent to an LLM ahead of the user's message on every call. Ours holds a compact ontology summary, graph names, a worked example and rules.</p>
+
+  <h2 id="g-t">T</h2>
+  <p><strong>T-Box</strong> (<a href="ch05.html">Ch. 5</a>): the "terminology box": schema-level triples about classes and properties. The ontology is the T-Box; the data is the A-Box.</p>
+  <p><strong>Three layers</strong> (<a href="ch01.html">Ch. 1</a>): the blog's architecture: <em>model</em> (the LLM), <em>meaning</em> (the semantic layer) and <em>runtime</em> (AgentCore, or your laptop in Chapter 14).</p>
+  <p><strong>Tool call</strong> (<a href="ch14.html">Ch. 14</a>): one structured request from the model to run a tool: a name plus JSON arguments, such as <code>run_sparql</code> with <code>{"query": "SELECT …"}</code>. Your code returns the result as a <code>tool</code> message.</p>
+  <p><strong>Tool calling</strong> (<a href="ch14.html">Ch. 14</a>): the LLM feature (OpenAI's "function calling") that lets a model ask your code to run a named tool; in Java, LangChain4j's <code>@Tool</code>.</p>
+  <p><strong>Triple</strong> (<a href="ch02.html">Ch. 2</a>): the atom of RDF, one statement of subject, predicate, object: <span class="s">customer:225</span> <span class="p">:firstName</span> <span class="o">"Carolyn"</span>.</p>
+  <p><strong>Triple pattern</strong> (<a href="ch04.html">Ch. 4</a>): a triple with variables in some positions, such as <code>?c :address ?a</code>. A SPARQL query is a set of them to match.</p>
+  <p><strong>Turtle</strong> (<a href="ch03.html">Ch. 3</a>): the most readable text format for RDF (<code>.ttl</code>), with prefixes, <code>;</code> to repeat the subject, <code>,</code> to repeat the predicate, and <code>a</code> for <code>rdf:type</code>.</p>
+
+  <h2 id="g-u">U</h2>
+  <p><strong>URN</strong> (<a href="ch03.html">Ch. 3</a>): a Uniform Resource Name, an IRI that names something without implying a web address, like <code>urn:stardog:demos:c360:customer:225</code>. <code>tag:</code> IRIs (<code>tag:stardog:api:ecomm:</code>) serve the same purpose.</p>
+  <p><strong>User</strong> (<a href="ch12.html">Ch. 12</a>): an account on the Stardog endpoint with a password and roles. The agent should run as a read-only user without PII access.</p>
+
+  <h2 id="g-v">V</h2>
+  <p><strong>Validation report</strong> (<a href="ch11.html">Ch. 11</a>): a SHACL validation result: whether the data conforms and, for each violation, the offending node, property and constraint.</p>
+  <p><strong>Variable</strong> (<a href="ch04.html">Ch. 4</a>): a placeholder name starting with <code>?</code> for a value you don't know yet; Stardog fills it in from the matching triples, and it becomes a column in the results. In <code>customer:225 :address ?home . ?home :city ?city</code>, <code>?city</code> comes back as "Milwaukee". A variable shared by two lines works like a JOIN condition.</p>
+  <p><strong>Virtual graph</strong> (<a href="ch07.html">Ch. 7</a>): a named graph whose triples are computed on demand from an external database through a mapping, not stored. Ours are <code>aurora_c360_safe</code>, <code>aurora_c360_pii</code> and <code>redshift_c360</code>, queried as <code>&lt;virtual://name&gt;</code>.</p>
+  <p><strong>Virtual transparency</strong> (<a href="ch14.html">Ch. 14</a>): the database option <code>virtual.transparency</code> which, with <code>query.all.graphs</code>, lets a query omit <code>GRAPH &lt;virtual://…&gt;</code> and have Stardog route each pattern itself. Off by default.</p>
+  <p><strong>Voicebox</strong> (<a href="ch13.html">Ch. 13</a>): Stardog's natural-language interface: an LLM that writes SPARQL from your ontology, search index and stored-query examples, then answers with the query shown.</p>
+
+  <h2 id="g-x">X</h2>
+  <p><strong>xsd</strong> (<a href="ch03.html">Ch. 3</a>): the prefix for XML Schema datatypes (<code>http://www.w3.org/2001/XMLSchema#</code>) such as <code>xsd:string</code>, <code>xsd:integer</code>, <code>xsd:decimal</code>, <code>xsd:date</code>, <code>xsd:float</code>, also usable as casts: <code>xsd:decimal(?price)</code>.</p>
+
+
+  <nav class="pn">
+    <a href="ch15.html"><small>← Previous</small>Chapter 15 · At scale: huge ontologies and answers you can trust</a>
+    <a href="index.html" style="text-align:right"><small>Back to</small>Contents</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+</body>
+</html>

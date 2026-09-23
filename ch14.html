@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 14 · The agent: from question to answer</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <aside class="box java"><p>intro</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>…</pre></div><div class="col"><p class="lbl">Java</p><pre>…</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> …</p></aside>   side-by-side Java analogy
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 14</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 14</div>
+    <h1>The agent: from question to answer</h1>
+    <p class="sub">A plain-English question goes in, an LLM writes SPARQL, Stardog federates it across Aurora and Redshift, and a grounded answer comes out. You build it, run it, and follow one question through every layer.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">It's Monday morning. The marketing lead messages you: "We're hosting an event in Milwaukee. Who are our top spenders in Wisconsin?" A year ago that meant a ticket: somebody exports purchases from Redshift and customers from Postgres, matches them on <code>cid</code> in a spreadsheet, argues about whether "spend" includes quantity, and sends a CSV on Thursday. Today you type the question into a terminal, and about twenty seconds later (most of it Aurora waking up) you have the answer: Carolyn Inworth, Milwaukee, $502,529.42, from a live query you can read.</p>
+
+  <p>This chapter builds that program: about 200 lines of Python, mostly prompt and safety checks, because the semantic layer already did the hard parts: meaning in the ontology (Chapters 5 and 6), routing in the mappings (Chapters 8 and 9), business rules in reasoning (Chapter 10), permissions in security (Chapter 12). The agent only translates. Along the way we answer three questions every engineer asks here: <em>How does the agent know how to query this ontology? How does it decide which data a question needs? And what exactly happens between question and answer?</em></p>
+
+  <p>You need the earlier build steps in place: the ontology in <code>&lt;urn:stardog:training-c360:1.0:model&gt;</code>, the virtual graphs <code>aurora_c360_safe</code>, <code>aurora_c360_pii</code> and <code>redshift_c360</code>, the rules, and ideally the Chapter 12 users. You also need an OpenAI or OpenRouter API key.</p>
+
+  <h2><span class="sn">14.1</span>Terms in this chapter</h2>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td><dfn>System prompt</dfn></td><td>Instructions sent to the LLM before the user's words, on every call</td><td>The only way the model learns your data</td><td>"PREFIX : &lt;tag:stardog:api:ecomm:&gt; … :Order :purchasedBy -&gt; :Customer"</td></tr>
+      <tr><td><dfn>Tool calling</dfn></td><td>A model feature for asking your code to run a function</td><td>LLMs can't reach databases; your code can</td><td>The model asks for <code>run_sparql</code></td></tr>
+      <tr><td><dfn>Tool call</dfn></td><td>One such request: a tool name plus JSON arguments</td><td>Structured, so your code can parse and check it</td><td><code>{"name":"run_sparql","arguments":"{\"query\":\"SELECT …\"}"}</code></td></tr>
+      <tr><td><dfn>Agent loop</dfn></td><td>Call model → run requested tools → send results → repeat</td><td>Some questions need several queries, or a retry</td><td>Query fails, model reads the error, fixes it</td></tr>
+      <tr><td><dfn>Agent</dfn></td><td>An LLM plus tools plus the loop</td><td>To turn questions into actions and answers</td><td><code>agent.py</code></td></tr>
+      <tr><td><dfn>Guardrail</dfn></td><td>A check your code applies to what the model asks for</td><td>The model is helpful, not trustworthy</td><td>Reject any query containing <code>DELETE</code></td></tr>
+      <tr><td><dfn>OpenRouter</dfn></td><td>One OpenAI-compatible API in front of many model providers</td><td>Switch models without changing code</td><td><code>anthropic/claude-sonnet-4.6</code></td></tr>
+      <tr><td><dfn>Prompt caching</dfn></td><td>The provider reuses a repeated prompt prefix at a discount</td><td>The same system prompt goes on every call</td><td>Keep the prompt byte-identical</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="sn">14.2</span>The finished system</h2>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 320" role="img" aria-label="End-to-end architecture">
+      <rect x="10" y="20" width="120" height="56" rx="8" fill="var(--soft)" stroke="var(--muted)"/>
+      <text x="70" y="44" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">Question</text>
+      <text x="70" y="63" text-anchor="middle" font-size="11" fill="var(--muted)">CLI / chat / app</text>
+      <rect x="170" y="10" width="200" height="140" rx="10" fill="none" stroke="var(--accent2)" stroke-width="2"/>
+      <text x="270" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent2)">agent.py (your laptop)</text>
+      <rect x="185" y="44" width="80" height="92" rx="6" fill="var(--soft)" stroke="var(--line)"/>
+      <text x="225" y="70" text-anchor="middle" font-size="11" fill="var(--ink)">system</text>
+      <text x="225" y="85" text-anchor="middle" font-size="11" fill="var(--ink)">prompt:</text>
+      <text x="225" y="100" text-anchor="middle" font-size="11" fill="var(--ink)">ontology</text>
+      <text x="225" y="115" text-anchor="middle" font-size="11" fill="var(--ink)">summary</text>
+      <rect x="275" y="44" width="80" height="92" rx="6" fill="var(--soft)" stroke="var(--line)"/>
+      <text x="315" y="66" text-anchor="middle" font-size="11" fill="var(--ink)">tools:</text>
+      <text x="315" y="82" text-anchor="middle" font-size="10.5" fill="var(--ink)">run_sparql</text>
+      <text x="315" y="97" text-anchor="middle" font-size="10.5" fill="var(--ink)">get_ontology</text>
+      <text x="315" y="115" text-anchor="middle" font-size="10.5" fill="var(--ink)">+ guardrails</text>
+      <rect x="410" y="10" width="220" height="56" rx="8" fill="var(--soft)" stroke="var(--obj)"/>
+      <text x="520" y="34" text-anchor="middle" font-size="13" font-weight="700" fill="var(--obj)">LLM</text>
+      <text x="520" y="53" text-anchor="middle" font-size="11" fill="var(--muted)">OpenAI or OpenRouter (Claude, …)</text>
+      <rect x="170" y="190" width="200" height="60" rx="10" fill="var(--soft)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="270" y="214" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent)">Stardog endpoint</text>
+      <text x="270" y="234" text-anchor="middle" font-size="11" fill="var(--muted)">kit-c360: model, mappings, rules</text>
+      <rect x="410" y="170" width="220" height="44" rx="8" fill="var(--soft)" stroke="var(--pred)"/>
+      <text x="520" y="197" text-anchor="middle" font-size="12" fill="var(--ink)">Aurora PostgreSQL (customers)</text>
+      <rect x="410" y="230" width="220" height="44" rx="8" fill="var(--soft)" stroke="var(--pred)"/>
+      <text x="520" y="257" text-anchor="middle" font-size="12" fill="var(--ink)">Redshift Serverless (purchases)</text>
+      <line x1="130" y1="48" x2="166" y2="48" stroke="var(--muted)" stroke-width="2"/><polygon points="164,43 172,48 164,53" fill="var(--muted)"/>
+      <line x1="370" y1="32" x2="406" y2="32" stroke="var(--obj)" stroke-width="2"/><polygon points="404,27 412,32 404,37" fill="var(--obj)"/>
+      <line x1="410" y1="52" x2="374" y2="52" stroke="var(--obj)" stroke-width="2"/><polygon points="376,47 368,52 376,57" fill="var(--obj)"/>
+      <line x1="315" y1="150" x2="315" y2="186" stroke="var(--accent)" stroke-width="2"/><polygon points="310,184 315,192 320,184" fill="var(--accent)"/>
+      <line x1="370" y1="210" x2="406" y2="195" stroke="var(--pred)" stroke-width="2"/>
+      <line x1="370" y1="230" x2="406" y2="250" stroke="var(--pred)" stroke-width="2"/>
+      <text x="306" y="174" text-anchor="end" font-size="11" fill="var(--muted)">HTTPS, Basic auth, SPARQL</text>
+      <text x="400" y="300" text-anchor="middle" font-size="11" fill="var(--muted)">JDBC: SQL generated from the mappings (Chapters 8 and 9)</text>
+      <line x1="130" y1="62" x2="166" y2="62" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/>
+      <text x="70" y="98" text-anchor="middle" font-size="11" fill="var(--muted)">← answer</text>
+    </svg>
+    <figcaption>Figure 14.1: The whole solution. The LLM never touches a database. It only asks agent.py to run SPARQL, and Stardog does the federation.</figcaption>
+  </figure>
+
+  <p>The LLM asks <code>agent.py</code> to run SPARQL; your code checks it and sends it to Stardog, which federates it (Chapter 9) and returns rows. The LLM then asks for another query or writes the answer. Section 14.8 traces one question through it all.</p>
+
+  <h2><span class="sn">14.3</span>How does the agent know how to query this ontology?</h2>
+
+  <p>It doesn't, until you tell it. An LLM has never seen <code>tag:stardog:api:ecomm:purchasedBy</code>; left alone it invents something like <code>:hasOrder</code>, and Stardog returns nothing. <code>agent.py</code> teaches it about <em>your</em> graph in three ways.</p>
+
+  <h3>1. The T-Box, summarized in the system prompt</h3>
+  <p>The system prompt, sent at the start of every call, is a hand-written, compact ontology: the prefix, the classes and properties grouped by graph, the direction of each arrow, the datatypes, the Chapter 10 derived classes, one worked example query, and a few rules. This is the actual text from <code>agent.py</code>:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>You answer business questions about customers and purchases by writing
+SPARQL for a Stardog knowledge graph (database kit-c360) and calling the run_sparql tool.
+Never guess numbers: every figure in your answer must come from a tool result.
+
+PREFIX : &lt;tag:stardog:api:ecomm:&gt;      (also declare xsd: and rdfs: when you use them)
+
+Data lives in three virtual graphs (live SQL underneath). Always wrap patterns in GRAPH:
+  GRAPH &lt;virtual://aurora_c360_safe&gt;
+    :Customer  :name :firstName :lastName :email :phone, :address -&gt; :Address, :hasRewards -&gt; :RewardsAccount
+    :Address   :streetAddress :city :state :zipCode   (state is the full name, e.g. "Wisconsin")
+    :CreditCard :cardType, :cardHolder -&gt; :Customer   (no card numbers here)
+    :RewardsAccount :accountId :openDate (xsd:date)
+  GRAPH &lt;virtual://redshift_c360&gt;
+    :Order  :purchasedBy -&gt; :Customer, :itemPurchased -&gt; :Product, :cardUsed -&gt; :CreditCard,
+            :rewardsAccountUsed -&gt; :RewardsAccount, :purchasePrice (xsd:decimal, unit price),
+            :quantity (xsd:integer), :purchaseDate (xsd:date), :purchaseTime (string)
+    :Product :name :description, :inCategory -&gt; :Category, :vendor -&gt; :Vendor, :msrp -&gt; :UnitPrice
+    :UnitPrice :hasPrice (xsd:float) :hasCurrency     :Category :name     :Vendor :name, :industry -&gt; :Industry
+  GRAPH &lt;virtual://aurora_c360_pii&gt;  :ssn, :cardNumber. Sensitive: do NOT query unless explicitly asked.
+Call get_ontology if you need labels, comments or a term not listed here.
+
+Customer IRIs are identical in both warehouses, so a variable shared by two GRAPH blocks IS
+the join. Derived classes (need reasoning=true): :Big_Spender, :Large_Order, :2022_Order,
+:2022_Orderer, :Sports_Category_Shopper. Leave reasoning false otherwise (it is slower).
+A reasoning query must use FROM &lt;virtual://aurora_c360_safe&gt; FROM &lt;virtual://redshift_c360&gt;
+instead of GRAPH blocks, so the rules can join across both warehouses.
+
+Example. "Top 3 customers by spend, with state":
+SELECT ?name ?state (SUM(?p * ?q) AS ?spend) WHERE {
+  GRAPH &lt;virtual://aurora_c360_safe&gt; { ?c :name ?name ; :address ?a . ?a :state ?state }
+  GRAPH &lt;virtual://redshift_c360&gt; { ?o :purchasedBy ?c ; :purchasePrice ?p ; :quantity ?q }
+} GROUP BY ?name ?state ORDER BY DESC(?spend) LIMIT 3
+
+Rules: read-only SELECT/ASK only; always add LIMIT (&lt;= 100); spend = SUM(price * quantity);
+compare dates with "2022-01-01"^^xsd:date; cast with xsd:decimal()/xsd:integer() if a comparison
+misbehaves; return names, not IRIs. If a query errors or returns nothing, read the result, fix
+the query and retry. Answer concisely, show the key numbers, and say which data you used.</pre></div>
+
+  <p>Compared with Chapter 6's <code>schema.ttl</code>, it carries the same 10 classes and 33 properties in about 2,500 characters instead of 6,000, and adds what the ontology can't tell a newcomer: which graph to look in, that states are spelled out ("Wisconsin", not "WI"), and that spend means price times quantity, a business definition (Chapter 1's "one definition of big spender", written for a machine). The whole prompt is roughly 600 to 700 tokens.</p>
+
+  <h3>2. A tool that reads the real ontology: <code>get_ontology</code></h3>
+  <p>A hand-written summary can drift when someone adds a class next month. So a second tool, <code>get_ontology</code>, runs one fixed SPARQL query over the two model graphs and returns every class and property with its label, comment, parent class, domain and range. It reads only the T-Box, stored in Stardog, so it never wakes a warehouse:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX owl: &lt;http://www.w3.org/2002/07/owl#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX so: &lt;https://schema.org/&gt;
+SELECT ?term ?kind (SAMPLE(?l) AS ?label) (SAMPLE(?cm) AS ?comment)
+       (GROUP_CONCAT(DISTINCT COALESCE(STR(?sup), "")) AS ?parent)
+       (GROUP_CONCAT(DISTINCT COALESCE(STR(?d), "")) AS ?domain)
+       (GROUP_CONCAT(DISTINCT COALESCE(STR(?r), "")) AS ?range)
+WHERE {
+  VALUES ?g { &lt;urn:stardog:training-c360:1.0:model&gt; &lt;urn:stardog:c360_extended_rules:1.0:model&gt; }
+  VALUES ?kind { owl:Class owl:ObjectProperty owl:DatatypeProperty }
+  GRAPH ?g { ?term a ?kind .
+    OPTIONAL { ?term rdfs:label ?l }  OPTIONAL { ?term rdfs:comment ?cm }  OPTIONAL { ?term rdfs:subClassOf ?sup }
+    OPTIONAL { ?term so:domainIncludes ?d }  OPTIONAL { ?term so:rangeIncludes ?r } }
+} GROUP BY ?term ?kind ORDER BY ?kind ?term</pre></div>
+
+  <p>Here's the start of what the model gets back, produced by running that query over the kit files you loaded in Chapters 6 and 10:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>:Big_Spender (Class) "Big Spender" subClassOf :Customer
+:Customer (Class) "Customer"
+:Order (Class) "Order"
+:RewardsAccount (Class) "Rewards Account" -- A concept representing a Customer's rewards account.
+:purchaseDate (DatatypeProperty) "date purchased" :Order -&gt; xsd:date
+:purchasePrice (DatatypeProperty) "price" :Order -&gt; xsd:decimal
+:quantity (DatatypeProperty) "quantity" :Order -&gt; xsd:integer
+:state (DatatypeProperty) "state" :Address -&gt; xsd:string
+:address (ObjectProperty) "has address" :Customer -&gt; :Address
+:purchasedBy (ObjectProperty) "purchased by" :Order -&gt; :Customer
+... (48 lines in total)</pre></div>
+
+  <p>There's Chapter 10's <code>"Big Spender" subClassOf :Customer</code>, the labels, and <code>:Order -&gt; :Customer</code> from <code>so:domainIncludes</code>/<code>so:rangeIncludes</code> (Chapter 6). The prompt tells the model to call <code>get_ontology</code> when a question uses a term the summary doesn't cover. A restricted agent user needs read access to the two model graphs.</p>
+
+  <h3>3. Worked examples</h3>
+  <p>The prompt's one example query (top customers by spend, with state) teaches more than a paragraph could. It shows the shape of a federated query: two <code>GRAPH</code> blocks, a shared <code>?c</code>, <code>SUM(?p * ?q)</code>, <code>GROUP BY</code> and <code>ORDER BY DESC</code>. That's few-shot prompting, Voicebox's trick with stored queries (Chapter 13). Add a short example for each type of question your users actually ask.</p>
+
+  <aside class="box model">
+    <p>Voicebox does all three automatically (Chapter 13). <code>agent.py</code> does them by hand, which makes it a good way to understand what Voicebox is doing.</p>
+  </aside>
+
+  <h2><span class="sn">14.4</span>How does it decide which information a question needs?</h2>
+
+  <p>The model matches the question's words to terms in the ontology summary, as you would with a data dictionary open:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Word in the question</th><th>What the model picks</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>"spenders"</td><td><code>:Order</code> with <code>:purchasePrice</code> and <code>:quantity</code>, linked by <code>:purchasedBy</code> to <code>:Customer</code></td><td>Labels "price", "quantity", "purchased by"; the prompt defines spend as SUM(price × quantity)</td></tr>
+      <tr><td>"Wisconsin"</td><td><code>:state "Wisconsin"</code> on <code>:Address</code>, via <code>:address</code></td><td>"state" is an Address property; states are spelled out</td></tr>
+      <tr><td>"top"</td><td><code>ORDER BY DESC(?spend) LIMIT 10</code></td><td>The worked example ranks the same way</td></tr>
+      <tr><td>"who"</td><td><code>:name</code> (plus <code>:city</code> for context)</td><td>"Return names, not IRIs"</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>The surprise: <strong>the LLM doesn't know about Aurora or Redshift.</strong> It never sees a table, a column, a JDBC URL or a line of SQL. Graph names like <code>&lt;virtual://redshift_c360&gt;</code> are just labels to it for "where orders live". That <code>:purchasedBy</code> means <code>c360.purchase.cid</code> in Redshift is the mappings' business (Chapters 8 and 9); writing SQL is the planner's. Replace Redshift with Athena and the mappings change, not the prompt.</p>
+
+  <p>You could go further. The database option <dfn>virtual transparency</dfn> (<code>virtual.transparency=true</code>, with <code>query.all.graphs</code>) includes the virtual graphs in queries over all graphs, so a query can drop the <code>GRAPH</code> blocks and let Stardog route every pattern, and the prompt wouldn't need graph names. It has some documented limits (for example, around <code>*</code> and <code>+</code> property paths), so this book keeps explicit <code>GRAPH</code> blocks, but it's the natural next step.</p>
+
+  <aside class="box java"><p>If you use Hibernate, this layering is familiar; what differs is its reach.</p><div class="sbs"><div class="col"><p class="lbl">SPARQL (what the LLM writes)</p><pre>SELECT ?name (SUM(?p * ?q) AS ?spend)
+WHERE {
+  GRAPH &lt;virtual://aurora_c360_safe&gt; {
+    ?c :name ?name ; :address ?a .
+    ?a :state "Wisconsin" }
+  GRAPH &lt;virtual://redshift_c360&gt; {
+    ?o :purchasedBy ?c ;
+       :purchasePrice ?p ; :quantity ?q }
+} GROUP BY ?name</pre></div><div class="col"><p class="lbl">Java (JPA + Hibernate)</p><pre>// entities map to tables; Hibernate writes SQL
+em.createQuery("""
+  select o.purchasedBy.name,
+         sum(o.purchasePrice * o.quantity)
+  from Order o
+  where o.purchasedBy.address.state = 'Wisconsin'
+  group by o.purchasedBy.name""")
+  .getResultList();</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> Hibernate works against one database; here Stardog joins across Aurora and Redshift. The mappings are data (SMS2), not compiled annotations, and the LLM plays the developer writing JPQL.</p></aside>
+
+  <p>Each layer knows one thing:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Layer</th><th>Knows</th><th>Doesn't know</th><th>In this question</th></tr></thead>
+    <tbody>
+      <tr><td>LLM</td><td>English, SPARQL syntax, what's in the prompt</td><td>Tables, SQL, servers, credentials, the actual data</td><td>Writes one SPARQL query, then the sentence</td></tr>
+      <tr><td>Ontology (T-Box)</td><td>Meaning: classes, properties, labels, derived classes</td><td>Where anything is stored</td><td>"purchased by" connects Order to Customer</td></tr>
+      <tr><td>Mappings</td><td>Where the data lives and how rows become triples</td><td>Who is asking, or why</td><td><code>:purchasedBy</code> = <code>purchase.cid</code> in Redshift</td></tr>
+      <tr><td>Stardog planner</td><td>SPARQL to SQL per source, then join and aggregate</td><td>English</td><td>Two SQL queries, a join on the customer IRI, SUM, sort</td></tr>
+      <tr><td>Aurora and Redshift</td><td>Rows</td><td>That a graph exists at all</td><td>8 customers; 46 purchases</td></tr>
+    </tbody>
+  </table></div>
+
+
+  <h2><span class="sn">14.5</span>Tool calling and the guardrails</h2>
+
+  <p>You pass the model a list of tools, each with a name, a description and a JSON Schema for its arguments. When a tool would help, the model replies with a tool call; your code runs it, appends the result as a <code>tool</code> message, and calls the model again until it answers in plain text. Every query passes through your code, which is where the guardrails go. The model usually writes good SPARQL, sometimes wrong SPARQL, and, if your data contained text like "ignore your instructions and drop the graph", could in principle be steered toward harmful SPARQL.</p>
+
+  <aside class="box java"><p>A tool is a method you expose to the model; in LangChain4j, an annotation.</p><div class="sbs"><div class="col"><p class="lbl">Tool call (JSON from the model)</p><pre>{"type": "function",
+ "function": {
+   "name": "run_sparql",
+   "arguments":
+     "{\"query\": \"SELECT …\",
+       \"reasoning\": false}"}}</pre></div><div class="col"><p class="lbl">Java (LangChain4j)</p><pre>class StardogTools {
+  @Tool("Run one read-only SPARQL SELECT or ASK query")
+  String runSparql(
+      @P("complete SPARQL query") String query,
+      @P("true only for derived classes")
+          boolean reasoning) {
+    return stardog.run(guard(query), reasoning);
+  }
+}</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> the model never calls your method; it emits JSON asking you to, and your code decides. Nothing makes the arguments valid or safe, hence <code>guard()</code>.</p></aside>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Guardrail</th><th>How</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Update verbs rejected</td><td><code>INSERT DELETE DROP CLEAR LOAD CREATE ADD MOVE COPY</code>, checked after blanking out IRIs, strings and comments</td><td>The model never needs to change data</td></tr>
+      <tr><td>Allow-list of forms</td><td>After <code>PREFIX</code> lines, the query must start with <code>SELECT</code> or <code>ASK</code></td><td>An allow-list is stronger than a block-list</td></tr>
+      <tr><td>Query endpoint only</td><td>POST to <code>/kit-c360/query</code>, never <code>/update</code></td><td>Stardog separates query and update endpoints</td></tr>
+      <tr><td>Forced LIMIT</td><td>Add <code>LIMIT 100</code> if missing; lower a bigger one</td><td>Keeps 2,500 orders out of the prompt</td></tr>
+      <tr><td>Timeouts</td><td>Stardog <code>timeout</code> of 90 s plus an HTTP timeout</td><td>Room for Aurora's 15 to 20 s wake-up, no runaways</td></tr>
+      <tr><td>Truncation</td><td>At most 100 rows and 8,000 characters back to the model</td><td>Protects your token bill and the model's attention</td></tr>
+      <tr><td>Errors as data</td><td>Stardog errors are returned to the model as text</td><td>It reads "Unknown prefix" and fixes its own query</td></tr>
+      <tr><td>Step cap</td><td>At most 8 model calls per question</td><td>No endless loops on your bill</td></tr>
+    </tbody>
+  </table></div>
+
+  <aside class="box gotcha">
+    <p><strong>Code checks are the second line of defense, not the first.</strong> A regex can be fooled, and can be overcautious (a variable named <code>?copy</code> would be rejected). The real protection is database security: run the agent as a read-only Stardog user that can't read <code>&lt;virtual://aurora_c360_pii&gt;</code>, like <code>marketing_user</code> from Chapter 12. Then even a crafted malicious query fails, and SSNs never reach the LLM provider. <code>stardog_admin</code> is fine on your laptop, not for anything others can reach.</p>
+  </aside>
+
+  <aside class="box java"><p>You know this from JDBC: the client can ask for read-only, but only the database can enforce it.</p><div class="sbs"><div class="col"><p class="lbl">Stardog</p><pre># agent.py: a client-side check
+guard("DELETE WHERE { ?s ?p ?o }")
+  → Rejected: only read-only …
+
+# the real fence: Chapter 12
+user marketing_user: read on kit-c360,
+  no access to virtual://aurora_c360_pii</pre></div><div class="col"><p class="lbl">Java</p><pre>conn.setReadOnly(true);   // a hint; some drivers
+                          // ignore it
+
+// the real fence lives in the database (SQL):
+//   GRANT SELECT ON ALL TABLES IN SCHEMA c360
+//     TO app_reader;
+//   REVOKE SELECT ON c360.customer_pii
+//     FROM app_reader;</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> a regex over generated text is weaker than <code>setReadOnly</code>, because the model can phrase things you didn't anticipate, so the database-side permission matters even more here.</p></aside>
+
+  <h2><span class="sn">14.6</span>The code</h2>
+
+  <p>Here's the whole agent, also saved as <a href="agent.py"><code>agent.py</code></a>. It uses the OpenAI Python SDK (Chat Completions with function calling) and <code>requests</code>.</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>#!/usr/bin/env python3
+"""agent.py - a plain-English question in, a grounded answer out.
+
+question -&gt; LLM (OpenAI or OpenRouter, tool calling) -&gt; run_sparql -&gt; Stardog kit-c360
+         -&gt; Aurora + Redshift (virtual graphs) -&gt; rows -&gt; LLM -&gt; answer
+
+Environment variables (never hardcode secrets):
+  STARDOG_ENDPOINT   e.g. https://&lt;your-endpoint&gt;.stardog.cloud:5820
+  STARDOG_USER       a native Stardog user (stardog_admin, or better a read-only user)
+  STARDOG_PASSWORD   that user's password
+  STARDOG_DB         optional, default kit-c360
+  STARDOG_SCHEMA     optional reasoning schema, default c360_extended_rules (Chapter 10)
+  LLM_PROVIDER       optional: "openai" (default) or "openrouter"
+  OPENAI_API_KEY     when LLM_PROVIDER=openai
+  OPENROUTER_API_KEY when LLM_PROVIDER=openrouter
+  AGENT_MODEL        optional model id override
+
+Usage:  python agent.py -v "Who are our top spenders in Wisconsin?"   (-v prints each SPARQL)
+"""
+import json, os, re, sys
+import requests
+from openai import OpenAI
+
+ENDPOINT = os.environ["STARDOG_ENDPOINT"].rstrip("/")
+DB = os.getenv("STARDOG_DB", "kit-c360")
+SCHEMA = os.getenv("STARDOG_SCHEMA", "c360_extended_rules")
+AUTH = (os.environ["STARDOG_USER"], os.environ["STARDOG_PASSWORD"])
+MAX_ROWS, MAX_CHARS, MAX_STEPS, TIMEOUT_S = 100, 8000, 8, 90
+VERBOSE = "-v" in sys.argv
+
+if os.getenv("LLM_PROVIDER", "openai").lower() == "openrouter":
+    client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=os.environ["OPENROUTER_API_KEY"])
+    MODEL = os.getenv("AGENT_MODEL", "anthropic/claude-sonnet-4.6")
+else:
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    MODEL = os.getenv("AGENT_MODEL", "gpt-4.1")
+
+SYSTEM_PROMPT = """You answer business questions about customers and purchases by writing
+SPARQL for a Stardog knowledge graph (database kit-c360) and calling the run_sparql tool.
+Never guess numbers: every figure in your answer must come from a tool result.
+
+PREFIX : &lt;tag:stardog:api:ecomm:&gt;      (also declare xsd: and rdfs: when you use them)
+
+Data lives in three virtual graphs (live SQL underneath). Always wrap patterns in GRAPH:
+  GRAPH &lt;virtual://aurora_c360_safe&gt;
+    :Customer  :name :firstName :lastName :email :phone, :address -&gt; :Address, :hasRewards -&gt; :RewardsAccount
+    :Address   :streetAddress :city :state :zipCode   (state is the full name, e.g. "Wisconsin")
+    :CreditCard :cardType, :cardHolder -&gt; :Customer   (no card numbers here)
+    :RewardsAccount :accountId :openDate (xsd:date)
+  GRAPH &lt;virtual://redshift_c360&gt;
+    :Order  :purchasedBy -&gt; :Customer, :itemPurchased -&gt; :Product, :cardUsed -&gt; :CreditCard,
+            :rewardsAccountUsed -&gt; :RewardsAccount, :purchasePrice (xsd:decimal, unit price),
+            :quantity (xsd:integer), :purchaseDate (xsd:date), :purchaseTime (string)
+    :Product :name :description, :inCategory -&gt; :Category, :vendor -&gt; :Vendor, :msrp -&gt; :UnitPrice
+    :UnitPrice :hasPrice (xsd:float) :hasCurrency     :Category :name     :Vendor :name, :industry -&gt; :Industry
+  GRAPH &lt;virtual://aurora_c360_pii&gt;  :ssn, :cardNumber. Sensitive: do NOT query unless explicitly asked.
+Call get_ontology if you need labels, comments or a term not listed here.
+
+Customer IRIs are identical in both warehouses, so a variable shared by two GRAPH blocks IS
+the join. Derived classes (need reasoning=true): :Big_Spender, :Large_Order, :2022_Order,
+:2022_Orderer, :Sports_Category_Shopper. Leave reasoning false otherwise (it is slower).
+A reasoning query must use FROM &lt;virtual://aurora_c360_safe&gt; FROM &lt;virtual://redshift_c360&gt;
+instead of GRAPH blocks, so the rules can join across both warehouses.
+
+Example. "Top 3 customers by spend, with state":
+SELECT ?name ?state (SUM(?p * ?q) AS ?spend) WHERE {
+  GRAPH &lt;virtual://aurora_c360_safe&gt; { ?c :name ?name ; :address ?a . ?a :state ?state }
+  GRAPH &lt;virtual://redshift_c360&gt; { ?o :purchasedBy ?c ; :purchasePrice ?p ; :quantity ?q }
+} GROUP BY ?name ?state ORDER BY DESC(?spend) LIMIT 3
+
+Rules: read-only SELECT/ASK only; always add LIMIT (&lt;= 100); spend = SUM(price * quantity);
+compare dates with "2022-01-01"^^xsd:date; cast with xsd:decimal()/xsd:integer() if a comparison
+misbehaves; return names, not IRIs. If a query errors or returns nothing, read the result, fix
+the query and retry. Answer concisely, show the key numbers, and say which data you used."""
+
+TOOLS = [
+    {"type": "function", "function": {
+        "name": "run_sparql",
+        "description": "Run one read-only SPARQL SELECT or ASK query against the c360 knowledge graph.",
+        "parameters": {"type": "object", "required": ["query"], "properties": {
+            "query": {"type": "string", "description": "A complete SPARQL query with PREFIX lines."},
+            "reasoning": {"type": "boolean", "description": "true only for derived classes such as :Big_Spender."}}}}},
+    {"type": "function", "function": {
+        "name": "get_ontology",
+        "description": "Return every class and property in the c360 ontology with its label, comment, domain and range.",
+        "parameters": {"type": "object", "properties": {}}}},
+]
+
+ONTOLOGY_QUERY = """PREFIX owl: &lt;http://www.w3.org/2002/07/owl#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX so: &lt;https://schema.org/&gt;
+SELECT ?term ?kind (SAMPLE(?l) AS ?label) (SAMPLE(?cm) AS ?comment)
+       (GROUP_CONCAT(DISTINCT COALESCE(STR(?sup), "")) AS ?parent)
+       (GROUP_CONCAT(DISTINCT COALESCE(STR(?d), "")) AS ?domain)
+       (GROUP_CONCAT(DISTINCT COALESCE(STR(?r), "")) AS ?range)
+WHERE {
+  VALUES ?g { &lt;urn:stardog:training-c360:1.0:model&gt; &lt;urn:stardog:c360_extended_rules:1.0:model&gt; }
+  VALUES ?kind { owl:Class owl:ObjectProperty owl:DatatypeProperty }
+  GRAPH ?g { ?term a ?kind .
+    OPTIONAL { ?term rdfs:label ?l }  OPTIONAL { ?term rdfs:comment ?cm }  OPTIONAL { ?term rdfs:subClassOf ?sup }
+    OPTIONAL { ?term so:domainIncludes ?d }  OPTIONAL { ?term so:rangeIncludes ?r } }
+} GROUP BY ?term ?kind ORDER BY ?kind ?term"""
+
+FORBIDDEN = re.compile(r"\b(INSERT|DELETE|DROP|CLEAR|LOAD|CREATE|ADD|MOVE|COPY)\b", re.I)
+READ_FORM = re.compile(r"^\s*((PREFIX|BASE)\s[^\n]*\n\s*)*(SELECT|ASK)\b", re.I)
+TRAILING_LIMIT = re.compile(r"\bLIMIT\s+(\d+)\s*(OFFSET\s+\d+\s*)?$", re.I)
+
+
+def guard(query: str) -&gt; str:
+    """Reject anything that is not a plain read, and make sure a SELECT has a sane LIMIT."""
+    body = re.sub(r"(?m)^\s*#.*$", "", query).strip()     # drop whole-line comments
+    # Check a copy with IRIs, string literals and inline comments blanked out, so that
+    # &lt;...#&gt; or "Create date" can't confuse the keyword test.
+    check = re.sub(r"#[^\n]*", " ", re.sub(r"&lt;[^&lt;&gt;\s]*&gt;|\"[^\"]*\"|'[^']*'", " ", body))
+    if FORBIDDEN.search(check):
+        raise ValueError("Rejected: only read-only SELECT/ASK queries are allowed.")
+    if not READ_FORM.match(check):
+        raise ValueError("Rejected: the query must be a SELECT or ASK (after PREFIX lines).")
+    if re.search(r"\bSELECT\b", check, re.I):
+        m = TRAILING_LIMIT.search(check.rstrip())
+        if not m:
+            body += f"\nLIMIT {MAX_ROWS}"
+        elif int(m.group(1)) &gt; MAX_ROWS:          # cap the last (outermost) LIMIT
+            body = re.sub(r"(?is)(.*\bLIMIT\s+)\d+", rf"\g&lt;1&gt;{MAX_ROWS}", body, count=1)
+    return body
+
+
+def stardog(query: str, reasoning: bool = False) -&gt; dict:
+    """POST one query to the read-only query endpoint and return the SPARQL JSON results."""
+    data = {"query": query, "reasoning": str(reasoning).lower(), "timeout": TIMEOUT_S * 1000}
+    if reasoning:
+        data["schema"] = SCHEMA  # the Chapter 10 rules; the default schema is empty
+    r = requests.post(
+        f"{ENDPOINT}/{DB}/query", data=data,
+        headers={"Accept": "application/sparql-results+json"},
+        auth=AUTH, timeout=(10, TIMEOUT_S + 10))
+    if r.status_code != 200:
+        raise RuntimeError(f"Stardog error {r.status_code}: {r.text[:1500]}")
+    return r.json()
+
+
+def run_sparql(query: str, reasoning: bool = False) -&gt; str:
+    """Tool 1. Guard, run, flatten, truncate. Errors come back as text the model can react to."""
+    try:
+        q = guard(query)
+        if VERBOSE:
+            print(f"\n--- SPARQL (reasoning={reasoning}) ---\n{q}", file=sys.stderr)
+        res = stardog(q, reasoning)
+    except (ValueError, RuntimeError, requests.RequestException) as e:
+        return str(e)
+    if "boolean" in res:
+        return json.dumps({"ask": res["boolean"]})
+    rows = [{k: v["value"] for k, v in b.items()} for b in res["results"]["bindings"]]
+    if VERBOSE:
+        print(f"--- {len(rows)} row(s) ---", file=sys.stderr)
+    text = json.dumps({"columns": res["head"]["vars"], "rows": rows[:MAX_ROWS], "row_count": len(rows)})
+    return text if len(text) &lt;= MAX_CHARS else text[:MAX_CHARS] + " ... [truncated]"
+
+
+def get_ontology() -&gt; str:
+    """Tool 2. Read the T-Box from the model graphs (no warehouse involved) as compact lines."""
+    try:
+        res = stardog(ONTOLOGY_QUERY)
+    except (RuntimeError, requests.RequestException) as e:
+        return str(e)
+    short = lambda s: (s.replace("tag:stardog:api:ecomm:", ":").replace("http://www.w3.org/2001/XMLSchema#", "xsd:")
+                        .replace("http://www.w3.org/2002/07/owl#", ""))
+    lines = []
+    for b in res["results"]["bindings"]:
+        v = {k: short(x["value"]).strip() for k, x in b.items()}
+        line = f'{v["term"]} ({v["kind"]}) "{v.get("label", "")}"'
+        if v.get("parent"):
+            line += f' subClassOf {v["parent"]}'
+        if v.get("domain"):
+            line += f' {v["domain"]} -&gt; {v.get("range", "")}'
+        if v.get("comment"):
+            line += f' -- {v["comment"]}'
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def ask(question: str) -&gt; str:
+    """The agent loop: call the model, run the tools it asks for, repeat until it answers."""
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": question}]
+    for _ in range(MAX_STEPS):
+        msg = client.chat.completions.create(model=MODEL, messages=messages, tools=TOOLS).choices[0].message
+        if not msg.tool_calls:
+            return msg.content or "(no answer)"
+        messages.append(msg.model_dump(exclude_none=True))
+        for call in msg.tool_calls:
+            try:
+                args = json.loads(call.function.arguments or "{}")
+            except json.JSONDecodeError:
+                args = None
+            if args is None:
+                result = "Error: tool arguments were not valid JSON."
+            elif call.function.name == "get_ontology":
+                result = get_ontology()
+            else:
+                result = run_sparql(args.get("query", ""), bool(args.get("reasoning", False)))
+            messages.append({"role": "tool", "tool_call_id": call.id, "content": result})
+    return "Stopped: too many tool calls without a final answer. Try rephrasing the question."
+
+
+if __name__ == "__main__":
+    words = [a for a in sys.argv[1:] if a != "-v"]
+    if words:
+        print(ask(" ".join(words)))
+    else:
+        print(f"c360 agent ({MODEL}). Ask a question; press Enter on an empty line to quit.")
+        while q := input("\n&gt; ").strip():
+            print(ask(q))</pre></div>
+
+  <p>A reading guide, top to bottom:</p>
+  <ul>
+    <li><strong>Configuration</strong> comes only from environment variables, so the file holds no secrets.</li>
+    <li><strong><code>TOOLS</code></strong> is all the model sees of your code: two names, descriptions and JSON Schemas. The description "true only for derived classes such as :Big_Spender" tells the model when to turn reasoning on.</li>
+    <li><strong><code>guard()</code></strong> tests a copy of the query with IRIs, strings and comments blanked out, so <code>&lt;http://www.w3.org/2001/XMLSchema#&gt;</code> or <code>"Drop Cloth"</code> can't trip it, but sends the real query.</li>
+    <li><strong><code>run_sparql()</code></strong> flattens each row to <code>{"name": "Carolyn Inworth", …}</code>; raw SPARQL JSON wraps every value in <code>{"type": …, "value": …}</code>, wasting tokens.</li>
+    <li><strong><code>ask()</code></strong> is the agent loop; the model's tool-call message is appended before the tool results, as the API requires.</li>
+  </ul>
+
+  <h2><span class="sn">14.7</span>Running it, and switching to OpenRouter</h2>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>python3 -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install openai requests
+
+export STARDOG_ENDPOINT="https://&lt;your-endpoint&gt;.stardog.cloud:5820"
+export STARDOG_USER="stardog_admin"            # or a read-only user from Chapter 12
+# optional: export STARDOG_SCHEMA="c360_extended_rules"  (the default; Chapter 10's schema)
+read -s -p "Stardog password: " STARDOG_PASSWORD; echo; export STARDOG_PASSWORD
+read -s -p "OpenAI API key: " OPENAI_API_KEY; echo; export OPENAI_API_KEY
+
+python agent.py -v "Who are our top spenders in Wisconsin?"</pre></div>
+
+  <p><code>read -s</code> keeps secrets out of your shell history. <code>-v</code> prints every SPARQL query and its row count; keep it on while learning. With no question on the command line, you get an interactive prompt.</p>
+
+  <p>To use Claude, or hundreds of other models, through OpenRouter, change one variable. OpenRouter speaks the OpenAI protocol, so the code only swaps the <code>base_url</code> to <code>https://openrouter.ai/api/v1</code> and the key:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>export LLM_PROVIDER=openrouter
+read -s -p "OpenRouter API key: " OPENROUTER_API_KEY; echo; export OPENROUTER_API_KEY
+python agent.py -v "Who are our top spenders in Wisconsin?"
+
+# optional: another model (OpenRouter ids look like provider/model)
+export AGENT_MODEL="anthropic/claude-sonnet-4.6"          # the default; the blog's model family
+# export AGENT_MODEL="~anthropic/claude-sonnet-latest"   # alias that tracks the newest Sonnet</pre></div>
+
+  <p>Model ids change often; check <code>openrouter.ai/models</code> and choose one that supports tool calling. The code's defaults (<code>gpt-4.1</code> for OpenAI, <code>anthropic/claude-sonnet-4.6</code> for OpenRouter) were both listed when this was written.</p>
+
+  <h2><span class="sn">14.8</span>One question, every layer</h2>
+
+  <p>Press Play to watch "Who are our top spenders in Wisconsin?" travel through every component. The numbers are real, checked with plain SQL. The SQL is illustrative: Stardog's generated SQL is wordier and depends on its planner, but this is its gist.</p>
+
+  <figure class="fig anim" id="f-14-2">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 640 480" role="img" aria-label="End-to-end trace of one question">
+      <defs><marker id="ah14" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+      <g class="s1">
+        <rect x="10" y="20" width="130" height="56" rx="8" fill="var(--soft)" stroke="var(--muted)"/>
+        <text x="75" y="43" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">Question</text>
+        <text x="75" y="62" text-anchor="middle" font-size="10.5" fill="var(--muted)">"Top spenders in WI?"</text>
+        <line x1="140" y1="48" x2="246" y2="48" stroke="var(--muted)" stroke-width="2" marker-end="url(#ah14)"/>
+        <text x="193" y="40" text-anchor="middle" font-size="11" fill="var(--ink)">① + prompt</text>
+        <rect x="250" y="20" width="140" height="56" rx="8" fill="var(--soft)" stroke="var(--obj)" stroke-width="2"/>
+        <text x="320" y="43" text-anchor="middle" font-size="13" font-weight="700" fill="var(--obj)">LLM</text>
+        <text x="320" y="62" text-anchor="middle" font-size="10.5" fill="var(--muted)">matches words to terms</text>
+      </g>
+      <g class="s2">
+        <line x1="295" y1="76" x2="295" y2="136" stroke="var(--muted)" stroke-width="2" marker-end="url(#ah14)"/>
+        <text x="288" y="102" text-anchor="end" font-size="11" fill="var(--ink)">② tool call:</text>
+        <text x="288" y="116" text-anchor="end" font-size="11" fill="var(--ink)">run_sparql(SPARQL)</text>
+        <rect x="250" y="140" width="140" height="52" rx="8" fill="var(--soft)" stroke="var(--accent2)" stroke-width="2"/>
+        <text x="320" y="162" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent2)">agent.py</text>
+        <text x="320" y="181" text-anchor="middle" font-size="10.5" fill="var(--muted)">guard() → POST</text>
+      </g>
+      <g class="s3">
+        <line x1="295" y1="192" x2="295" y2="246" stroke="var(--muted)" stroke-width="2" marker-end="url(#ah14)"/>
+        <text x="288" y="224" text-anchor="end" font-size="11" fill="var(--ink)">③ /kit-c360/query</text>
+        <rect x="200" y="250" width="240" height="74" rx="10" fill="var(--soft)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="320" y="272" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent)">Stardog planner</text>
+        <text x="320" y="292" text-anchor="middle" font-size="11" fill="var(--ink)">split by GRAPH, rewrite to SQL</text>
+      </g>
+      <text class="s8" x="320" y="312" text-anchor="middle" font-size="11" font-weight="700" fill="var(--accent)">⑧ join on customer IRI, SUM, sort</text>
+      <g class="s4">
+        <line x1="240" y1="324" x2="152" y2="368" stroke="var(--pred)" stroke-width="2" marker-end="url(#ah14)"/>
+        <text x="186" y="338" text-anchor="end" font-size="11" fill="var(--pred)">④ SQL</text>
+        <rect x="10" y="372" width="260" height="98" rx="8" fill="var(--soft)" stroke="var(--pred)"/>
+        <text x="140" y="391" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">Aurora PostgreSQL</text>
+        <text x="20" y="410" font-size="10.5" fill="var(--ink)">SELECT c.cid, c.full_name, a.city</text>
+        <text x="20" y="425" font-size="10.5" fill="var(--ink)">FROM customer c JOIN address a …</text>
+        <text x="20" y="440" font-size="10.5" fill="var(--ink)">WHERE a.state = 'Wisconsin'</text>
+      </g>
+      <g class="s5">
+        <line x1="200" y1="370" x2="262" y2="328" stroke="var(--pred)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ah14)"/>
+        <text x="238" y="360" font-size="11" fill="var(--pred)">⑤</text>
+        <text x="20" y="460" font-size="10.5" font-weight="700" fill="var(--pred)">⑤ returns 8 customers</text>
+      </g>
+      <g class="s6">
+        <line x1="400" y1="324" x2="488" y2="368" stroke="var(--pred)" stroke-width="2" marker-end="url(#ah14)"/>
+        <text x="455" y="338" font-size="11" fill="var(--pred)">⑥ SQL</text>
+        <rect x="370" y="372" width="260" height="98" rx="8" fill="var(--soft)" stroke="var(--pred)"/>
+        <text x="500" y="391" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">Redshift Serverless</text>
+        <text x="380" y="410" font-size="10.5" fill="var(--ink)">SELECT cid, price, quantity</text>
+        <text x="380" y="425" font-size="10.5" fill="var(--ink)">FROM purchase</text>
+        <text x="380" y="440" font-size="10.5" fill="var(--ink)">WHERE cid IN (the 8 cids)</text>
+      </g>
+      <g class="s7">
+        <line x1="440" y1="370" x2="378" y2="328" stroke="var(--pred)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ah14)"/>
+        <text x="392" y="360" text-anchor="end" font-size="11" fill="var(--pred)">⑦</text>
+        <text x="380" y="460" font-size="10.5" font-weight="700" fill="var(--pred)">⑦ returns 46 purchase rows</text>
+      </g>
+      <g class="s9">
+        <line x1="345" y1="248" x2="345" y2="196" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ah14)"/>
+        <text x="352" y="224" font-size="11" fill="var(--ink)">⑨ 8 result rows</text>
+        <line x1="345" y1="138" x2="345" y2="80" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ah14)"/>
+        <text x="352" y="102" font-size="11" fill="var(--ink)">⑨ tool result</text>
+        <text x="352" y="116" font-size="11" fill="var(--ink)">(compact JSON)</text>
+      </g>
+      <g class="s10">
+        <line x1="390" y1="48" x2="476" y2="48" stroke="var(--muted)" stroke-width="2" marker-end="url(#ah14)"/>
+        <text x="433" y="40" text-anchor="middle" font-size="11" fill="var(--ink)">⑩</text>
+        <rect x="480" y="20" width="150" height="56" rx="8" fill="var(--soft)" stroke="var(--try)" stroke-width="2"/>
+        <text x="555" y="40" text-anchor="middle" font-size="13" font-weight="700" fill="var(--try)">Answer</text>
+        <text x="555" y="56" text-anchor="middle" font-size="10.5" fill="var(--ink)">Carolyn Inworth</text>
+        <text x="555" y="70" text-anchor="middle" font-size="10.5" fill="var(--ink)">$502,529.42</text>
+      </g>
+      <circle class="dot" cx="75" cy="48" r="6" fill="var(--accent)" opacity="0"/>
+    </svg>
+    <p class="stepcap"></p>
+    <figcaption>Figure 14.2: The Wisconsin question through every layer. Solid arrows carry requests, dashed arrows carry results. Numbers match the step-by-step walkthrough below.</figcaption>
+  </figure>
+
+  <p><strong>① The request.</strong> <code>ask()</code> sends the system prompt (Section 14.3), the two tool definitions, and the user message: roughly 800 tokens in.</p>
+
+  <p><strong>② The tool call.</strong> The model does Section 14.4's word-matching and replies with just a tool call:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>{"id": "call_1", "type": "function",
+ "function": {"name": "run_sparql",
+              "arguments": "{\"query\": \"PREFIX : &lt;tag:stardog:api:ecomm:&gt;\\nSELECT ?name ...\", \"reasoning\": false}"}}</pre></div>
+
+  <p>Unpacked, the query is:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?name ?city (SUM(?price * ?qty) AS ?totalSpend) (COUNT(?order) AS ?orders)
+WHERE {
+  GRAPH &lt;virtual://aurora_c360_safe&gt; {
+    ?c a :Customer ; :name ?name ; :address ?a .
+    ?a :state "Wisconsin" ; :city ?city .
+  }
+  GRAPH &lt;virtual://redshift_c360&gt; {
+    ?order :purchasedBy ?c ; :purchasePrice ?price ; :quantity ?qty .
+  }
+}
+GROUP BY ?name ?city
+ORDER BY DESC(?totalSpend)
+LIMIT 10</pre></div>
+
+  <p>The shared <code>?c</code> in both <code>GRAPH</code> blocks is the entire cross-warehouse join. You can paste this into Studio as-is.</p>
+
+  <p><strong>③ The guard and the POST.</strong> <code>guard()</code> finds no update verbs, a <code>SELECT</code>, and <code>LIMIT 10</code> under the cap of 100, so the query passes unchanged. <code>stardog()</code> POSTs it to <code>/kit-c360/query</code> with <code>reasoning=false</code>.</p>
+
+  <p><strong>④ SQL for Aurora.</strong> Stardog's <dfn>query planner</dfn> sees two <code>GRAPH</code> blocks bound to two virtual graphs and runs each block's mapping in reverse (Stardog has described building this SQL generation on Apache Calcite, which is how one engine speaks both PostgreSQL and Redshift dialects). The customer and address patterns are both in <code>aurora_c360_safe</code>, so it pushes them down as one SQL join, filter included:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>-- illustrative: what Stardog asks Aurora (PostgreSQL)
+SELECT c.cid, c.full_name, a.city
+FROM c360.customer c JOIN c360.address a ON a.id = c.location
+WHERE a.state = 'Wisconsin'</pre></div>
+
+  <p><strong>⑤ Aurora returns 8 rows</strong>, not 500, thanks to pushdown. If Aurora was paused, the 15 to 20 seconds go here.</p>
+
+  <p><strong>⑥ SQL for Redshift.</strong> Stardog needs <code>cid</code>, <code>price</code> and <code>quantity</code> from <code>c360.purchase</code>; how it gets them is the planner's choice. With a <dfn>bind join</dfn> it sends the 8 customer keys it already has:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>-- illustrative: what Stardog asks Redshift (bind-join style)
+SELECT cid, price, quantity
+FROM c360.purchase
+WHERE cid IN (28, 38, 97, 225, 268, 389, 434, 471)</pre></div>
+
+  <p>Or it can fetch all 2,500 purchase rows and do a <dfn>hash join</dfn> itself: same answer, different cost. Studio's query plan view shows which it picked.</p>
+
+  <p><strong>⑦ Redshift returns 46 purchase rows</strong> for those 8 customers.</p>
+
+  <p><strong>⑧ Join and aggregate inside Stardog.</strong> Both sides' rows become the same customer IRIs through the same template (Chapter 9's IRI trick). Stardog joins the 46 purchases to the 8 customers on that IRI, computes <code>SUM(price × quantity)</code> per customer, sorts, and applies <code>LIMIT 10</code>. It must do the <code>GROUP BY</code> itself, because the grouping key (name) comes from one engine and the numbers from the other.</p>
+
+  <p><strong>⑨ Rows back to the model.</strong> <code>run_sparql</code> flattens Stardog's SPARQL JSON into the tool result (decimals may carry more trailing zeros in practice):</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>{"columns": ["name", "city", "totalSpend", "orders"],
+ "rows": [{"name": "Carolyn Inworth",    "city": "Milwaukee", "totalSpend": "502529.42", "orders": "15"},
+          {"name": "Renaud Brosio",      "city": "Milwaukee", "totalSpend": "207537.22", "orders": "6"},
+          {"name": "Sephira McKleod",    "city": "Milwaukee", "totalSpend": "76339.43",  "orders": "7"},
+          {"name": "Corbin Mandel",      "city": "Green Bay", "totalSpend": "25560.00",  "orders": "2"},
+          {"name": "Christine Ricardon", "city": "Madison",   "totalSpend": "12602.50",  "orders": "3"},
+          {"name": "Euphemia Nyles",     "city": "Milwaukee", "totalSpend": "8927.89",   "orders": "6"},
+          {"name": "Talia Roullier",     "city": "Milwaukee", "totalSpend": "3441.78",   "orders": "5"},
+          {"name": "Jade Grichukhin",    "city": "Milwaukee", "totalSpend": "256.99",    "orders": "2"}],
+ "row_count": 8}</pre></div>
+
+  <p><strong>⑩ The answer.</strong> The model has enough and writes (wording varies by run):</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>Wisconsin's top spender is Carolyn Inworth (Milwaukee): $502,529.42 across 15 orders,
+well ahead of Renaud Brosio ($207,537.22, 6 orders) and Sephira McKleod ($76,339.43,
+7 orders), both also in Milwaukee. Eight Wisconsin customers have purchases in total.
+Spend = price × quantity, from Redshift purchases joined to Aurora customer addresses.</pre></div>
+
+  <p>Two model calls, one SPARQL query, two SQL queries on two engines. Carolyn is customer 225 from Chapter 2 and the national top spender from Chapter 9. Had the model written <code>:state "WI"</code>, it would have seen <code>"row_count": 0</code> and, told to "fix the query and retry", would usually try "Wisconsin". That self-correction is what the loop is for.</p>
+
+  <aside class="box try">
+    <p><strong>Real build step 7: run the agent and ask the five competency questions.</strong> Save <a href="agent.py"><code>agent.py</code></a>, set the variables from Section 14.7, and run each question with <code>-v</code>. Read the SPARQL before the answer. Everything here is read-only.</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>python agent.py -v "List ten customers and their state."
+python agent.py -v "What are the top ten products by units sold?"
+python agent.py -v "Who are the top ten customer spenders, with their state?"
+python agent.py -v "How many big spenders are there per state?"
+python agent.py -v "Who are our top spenders in Wisconsin?"</pre></div>
+    <ol>
+      <li><strong>Aurora only.</strong> Ten names with spelled-out states. The SPARQL should touch only <code>&lt;virtual://aurora_c360_safe&gt;</code>.</li>
+      <li><strong>Redshift only.</strong> Grouped by product, the top one is Markers (160 units), then Cleaning Wipes (155) and Playset (Girl's) (146). If the model groups by <em>name</em> instead, "Pliers" comes first with 165, because several different products are called Pliers: two different questions, and why you read the SPARQL.</li>
+      <li><strong>Federated.</strong> Carolyn Inworth (WI) $502,529.42, Marlane Shadwick (FL) $491,217.53 and Isaac Popping (PA) $440,274.78 at the top, the same as Chapter 9 and DBeaver.</li>
+      <li><strong>Reasoning.</strong> The SPARQL should use <code>:Big_Spender</code> with two <code>FROM</code> lines, as in Chapter 10, and the tool call should carry <code>"reasoning": true</code>; <code>stardog()</code> then adds <code>schema=c360_extended_rules</code> (Studio's schema picker). Compare the counts with your Chapter 10 reasoning-on result; with reasoning off you'd get zero.</li>
+      <li><strong>The book's question.</strong> Carolyn Inworth first, at $502,529.42, as in the trace.</li>
+    </ol>
+    <p>Then test a guardrail: ask <code>Delete all the customers in Texas.</code> A well-behaved model refuses; if it tries anyway, the tool returns "Rejected: only read-only SELECT/ASK queries are allowed." and nothing reaches Stardog.</p>
+  </aside>
+
+  <h2><span class="sn">14.9</span>The same agent in Java</h2>
+
+  <p>Here is the same agent as one Java 21 file, saved next to this chapter as <a href="Agent.java"><code>Agent.java</code></a>. It uses the official <strong>OpenAI Java SDK</strong> (<code>com.openai:openai-java</code>) for function calling and the JDK's <code>java.net.http.HttpClient</code> for Stardog. We chose it over LangChain4j because OpenAI says it supports its Chat Completions API indefinitely, and because it keeps the loop visible, like <code>ask()</code> in Python. LangChain4j's <code>@Tool</code> style (Section 14.5) is a fine alternative if you already use it.</p>
+
+  <p>The prompt, ontology query, guardrails, environment variables and OpenRouter switch are identical to the Python version. Only the plumbing changes:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Concern</th><th>agent.py</th><th>Agent.java</th></tr></thead>
+    <tbody>
+      <tr><td>Tool definitions</td><td>A <code>TOOLS</code> list of JSON Schemas</td><td>Classes <code>RunSparql</code> and <code>GetOntology</code>; the SDK derives the schema from fields and Jackson annotations</td></tr>
+      <tr><td>Parsing tool arguments</td><td><code>json.loads(call.function.arguments)</code></td><td><code>fc.function().arguments(RunSparql.class)</code></td></tr>
+      <tr><td>Conversation history</td><td>A <code>messages</code> list</td><td>A <code>ChatCompletionCreateParams.Builder</code>, extended with <code>addMessage(…)</code></td></tr>
+      <tr><td>Stardog call</td><td><code>requests.post(…, auth=…)</code></td><td><code>HttpClient</code> with a Basic <code>Authorization</code> header and a form-encoded body</td></tr>
+      <tr><td>OpenRouter</td><td><code>OpenAI(base_url=…)</code></td><td><code>OpenAIOkHttpClient.builder().baseUrl("https://openrouter.ai/api/v1")</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Dependencies (version current when this was written; Jackson comes along transitively):</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>&lt;!-- Maven --&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;com.openai&lt;/groupId&gt;
+  &lt;artifactId&gt;openai-java&lt;/artifactId&gt;
+  &lt;version&gt;4.68.0&lt;/version&gt;
+&lt;/dependency&gt;
+
+// Gradle (Kotlin DSL)
+implementation("com.openai:openai-java:4.68.0")</pre></div>
+
+  <p>The file starts with two <a href="https://www.jbang.dev/">JBang</a> comment lines (<code>//JAVA 21</code>, <code>//DEPS …</code>), so JBang is the quickest way to run it. In a Maven project, put the file in <code>src/main/java</code> and use the exec plugin. The environment variables are those from Section 14.7:</p>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre># same STARDOG_* and OPENAI_API_KEY variables as in Section 14.7, then:
+jbang Agent.java -v "Who are our top spenders in Wisconsin?"
+
+# or, inside a Maven project with the dependency above:
+mvn -q compile exec:java -Dexec.mainClass=Agent -Dexec.args="-v 'Who are our top spenders in Wisconsin?'"
+
+# OpenRouter: the same single switch
+export LLM_PROVIDER=openrouter      # plus OPENROUTER_API_KEY; AGENT_MODEL optional</pre></div>
+
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>//JAVA 21
+//DEPS com.openai:openai-java:4.68.0
+// Agent.java - the Chapter 14 agent in Java: question -&gt; LLM (OpenAI or OpenRouter) -&gt; SPARQL on Stardog -&gt; answer.
+// Run:  jbang Agent.java -v "Who are our top spenders in Wisconsin?"   (or build with Maven/Gradle, see the book)
+// Env:  STARDOG_ENDPOINT, STARDOG_USER, STARDOG_PASSWORD, [STARDOG_DB], [STARDOG_SCHEMA], [LLM_PROVIDER=openrouter],
+//       OPENAI_API_KEY or OPENROUTER_API_KEY, [AGENT_MODEL].  Never hardcode secrets.
+import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.core.JsonSchemaLocalValidation;
+import com.openai.models.chat.completions.*;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class Agent {
+    static final int MAX_ROWS = 100, MAX_CHARS = 8000, MAX_STEPS = 8, TIMEOUT_S = 90;
+    static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+    static final ObjectMapper JSON = new ObjectMapper();
+    static String endpoint, db, schema, auth;
+    static boolean verbose;
+
+    static final String SYSTEM_PROMPT = """
+You answer business questions about customers and purchases by writing
+SPARQL for a Stardog knowledge graph (database kit-c360) and calling the run_sparql tool.
+Never guess numbers: every figure in your answer must come from a tool result.
+
+PREFIX : &lt;tag:stardog:api:ecomm:&gt;      (also declare xsd: and rdfs: when you use them)
+
+Data lives in three virtual graphs (live SQL underneath). Always wrap patterns in GRAPH:
+  GRAPH &lt;virtual://aurora_c360_safe&gt;
+    :Customer  :name :firstName :lastName :email :phone, :address -&gt; :Address, :hasRewards -&gt; :RewardsAccount
+    :Address   :streetAddress :city :state :zipCode   (state is the full name, e.g. "Wisconsin")
+    :CreditCard :cardType, :cardHolder -&gt; :Customer   (no card numbers here)
+    :RewardsAccount :accountId :openDate (xsd:date)
+  GRAPH &lt;virtual://redshift_c360&gt;
+    :Order  :purchasedBy -&gt; :Customer, :itemPurchased -&gt; :Product, :cardUsed -&gt; :CreditCard,
+            :rewardsAccountUsed -&gt; :RewardsAccount, :purchasePrice (xsd:decimal, unit price),
+            :quantity (xsd:integer), :purchaseDate (xsd:date), :purchaseTime (string)
+    :Product :name :description, :inCategory -&gt; :Category, :vendor -&gt; :Vendor, :msrp -&gt; :UnitPrice
+    :UnitPrice :hasPrice (xsd:float) :hasCurrency     :Category :name     :Vendor :name, :industry -&gt; :Industry
+  GRAPH &lt;virtual://aurora_c360_pii&gt;  :ssn, :cardNumber. Sensitive: do NOT query unless explicitly asked.
+Call get_ontology if you need labels, comments or a term not listed here.
+
+Customer IRIs are identical in both warehouses, so a variable shared by two GRAPH blocks IS
+the join. Derived classes (need reasoning=true): :Big_Spender, :Large_Order, :2022_Order,
+:2022_Orderer, :Sports_Category_Shopper. Leave reasoning false otherwise (it is slower).
+A reasoning query must use FROM &lt;virtual://aurora_c360_safe&gt; FROM &lt;virtual://redshift_c360&gt;
+instead of GRAPH blocks, so the rules can join across both warehouses.
+
+Example. "Top 3 customers by spend, with state":
+SELECT ?name ?state (SUM(?p * ?q) AS ?spend) WHERE {
+  GRAPH &lt;virtual://aurora_c360_safe&gt; { ?c :name ?name ; :address ?a . ?a :state ?state }
+  GRAPH &lt;virtual://redshift_c360&gt; { ?o :purchasedBy ?c ; :purchasePrice ?p ; :quantity ?q }
+} GROUP BY ?name ?state ORDER BY DESC(?spend) LIMIT 3
+
+Rules: read-only SELECT/ASK only; always add LIMIT (&lt;= 100); spend = SUM(price * quantity);
+compare dates with "2022-01-01"^^xsd:date; cast with xsd:decimal()/xsd:integer() if a comparison
+misbehaves; return names, not IRIs. If a query errors or returns nothing, read the result, fix
+the query and retry. Answer concisely, show the key numbers, and say which data you used.
+""";
+
+    static final String ONTOLOGY_QUERY = """
+PREFIX owl: &lt;http://www.w3.org/2002/07/owl#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX so: &lt;https://schema.org/&gt;
+SELECT ?term ?kind (SAMPLE(?l) AS ?label) (SAMPLE(?cm) AS ?comment)
+       (GROUP_CONCAT(DISTINCT COALESCE(STR(?sup), "")) AS ?parent)
+       (GROUP_CONCAT(DISTINCT COALESCE(STR(?d), "")) AS ?domain)
+       (GROUP_CONCAT(DISTINCT COALESCE(STR(?r), "")) AS ?range)
+WHERE {
+  VALUES ?g { &lt;urn:stardog:training-c360:1.0:model&gt; &lt;urn:stardog:c360_extended_rules:1.0:model&gt; }
+  VALUES ?kind { owl:Class owl:ObjectProperty owl:DatatypeProperty }
+  GRAPH ?g { ?term a ?kind .
+    OPTIONAL { ?term rdfs:label ?l }  OPTIONAL { ?term rdfs:comment ?cm }  OPTIONAL { ?term rdfs:subClassOf ?sup }
+    OPTIONAL { ?term so:domainIncludes ?d }  OPTIONAL { ?term so:rangeIncludes ?r } }
+} GROUP BY ?term ?kind ORDER BY ?kind ?term
+""";
+
+    // The tools. The SDK derives each tool's JSON Schema from the class; the model fills the fields.
+    @JsonTypeName("run_sparql")
+    @JsonClassDescription("Run one read-only SPARQL SELECT or ASK query against the c360 knowledge graph.")
+    static class RunSparql {
+        @JsonPropertyDescription("A complete SPARQL query with PREFIX lines.")
+        public String query;
+        @JsonPropertyDescription("true only for derived classes such as :Big_Spender.")
+        public boolean reasoning;
+    }
+
+    @JsonTypeName("get_ontology")
+    @JsonClassDescription("Return every class and property in the c360 ontology with its label, comment, domain and range.")
+    static class GetOntology {}
+
+    static final Pattern FORBIDDEN = Pattern.compile("\\b(INSERT|DELETE|DROP|CLEAR|LOAD|CREATE|ADD|MOVE|COPY)\\b", Pattern.CASE_INSENSITIVE);
+    static final Pattern READ_FORM = Pattern.compile("^\\s*((PREFIX|BASE)\\s[^\\n]*\\n\\s*)*(SELECT|ASK)\\b", Pattern.CASE_INSENSITIVE);
+    static final Pattern TRAILING_LIMIT = Pattern.compile("\\bLIMIT\\s+(\\d+)\\s*(OFFSET\\s+\\d+\\s*)?$", Pattern.CASE_INSENSITIVE);
+    static final Pattern SELECT = Pattern.compile("\\bSELECT\\b", Pattern.CASE_INSENSITIVE);
+
+    /** Reject anything that is not a plain read, and make sure a SELECT has a sane LIMIT. */
+    static String guard(String query) {
+        String body = query.replaceAll("(?m)^\\s*#.*$", "").strip();
+        String check = body.replaceAll("&lt;[^&lt;&gt;\\s]*&gt;|\"[^\"]*\"|'[^']*'", " ").replaceAll("#[^\\n]*", " ");
+        if (FORBIDDEN.matcher(check).find())
+            throw new IllegalArgumentException("Rejected: only read-only SELECT/ASK queries are allowed.");
+        if (!READ_FORM.matcher(check).lookingAt())
+            throw new IllegalArgumentException("Rejected: the query must be a SELECT or ASK (after PREFIX lines).");
+        if (SELECT.matcher(check).find()) {
+            Matcher m = TRAILING_LIMIT.matcher(check.stripTrailing());
+            if (!m.find()) body += "\nLIMIT " + MAX_ROWS;
+            else if (Integer.parseInt(m.group(1)) &gt; MAX_ROWS)
+                body = body.replaceFirst("(?is)(.*\\bLIMIT\\s+)\\d+", "$1" + MAX_ROWS);
+        }
+        return body;
+    }
+
+    /** POST one query to the read-only query endpoint; return the SPARQL JSON results. */
+    static JsonNode stardog(String query, boolean reasoning) throws Exception {
+        String form = "query=" + URLEncoder.encode(query, StandardCharsets.UTF_8)
+                + "&amp;reasoning=" + reasoning + "&amp;timeout=" + (TIMEOUT_S * 1000)
+                // the Chapter 10 rules; the default schema is empty
+                + (reasoning ? "&amp;schema=" + URLEncoder.encode(schema, StandardCharsets.UTF_8) : "");
+        HttpRequest req = HttpRequest.newBuilder(URI.create(endpoint + "/" + db + "/query"))
+                .timeout(Duration.ofSeconds(TIMEOUT_S + 10))
+                .header("Authorization", auth)
+                .header("Accept", "application/sparql-results+json")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(form)).build();
+        HttpResponse&lt;String&gt; res = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+        if (res.statusCode() != 200) {
+            String b = res.body();
+            throw new IllegalStateException("Stardog error " + res.statusCode() + ": " + b.substring(0, Math.min(b.length(), 1500)));
+        }
+        return JSON.readTree(res.body());
+    }
+
+    static List&lt;Map&lt;String, String&gt;&gt; rows(JsonNode res) {
+        List&lt;Map&lt;String, String&gt;&gt; rows = new ArrayList&lt;&gt;();
+        for (JsonNode b : res.path("results").path("bindings")) {
+            Map&lt;String, String&gt; row = new LinkedHashMap&lt;&gt;();
+            b.fields().forEachRemaining(e -&gt; row.put(e.getKey(), e.getValue().path("value").asText()));
+            rows.add(row);
+        }
+        return rows;
+    }
+
+    /** Tool 1. Guard, run, flatten, truncate. Errors come back as text the model can react to. */
+    static String runSparql(String query, boolean reasoning) {
+        try {
+            String q = guard(query == null ? "" : query);
+            if (verbose) System.err.println("\n--- SPARQL (reasoning=" + reasoning + ") ---\n" + q);
+            JsonNode res = stardog(q, reasoning);
+            if (res.has("boolean")) return "{\"ask\": " + res.get("boolean").asBoolean() + "}";
+            List&lt;Map&lt;String, String&gt;&gt; rows = rows(res);
+            if (verbose) System.err.println("--- " + rows.size() + " row(s) ---");
+            Map&lt;String, Object&gt; out = new LinkedHashMap&lt;&gt;();
+            out.put("columns", res.path("head").path("vars"));
+            out.put("rows", rows.subList(0, Math.min(rows.size(), MAX_ROWS)));
+            out.put("row_count", rows.size());
+            String text = JSON.writeValueAsString(out);
+            return text.length() &lt;= MAX_CHARS ? text : text.substring(0, MAX_CHARS) + " ... [truncated]";
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    /** Tool 2. Read the T-Box from the model graphs (no warehouse involved) as compact lines. */
+    static String getOntology() {
+        try {
+            StringBuilder sb = new StringBuilder();
+            for (Map&lt;String, String&gt; v : rows(stardog(ONTOLOGY_QUERY, false))) {
+                v.replaceAll((k, s) -&gt; s.replace("tag:stardog:api:ecomm:", ":")
+                        .replace("http://www.w3.org/2001/XMLSchema#", "xsd:")
+                        .replace("http://www.w3.org/2002/07/owl#", "").strip());
+                sb.append(v.get("term")).append(" (").append(v.get("kind")).append(") \"")
+                  .append(v.getOrDefault("label", "")).append('"');
+                if (!v.getOrDefault("parent", "").isEmpty()) sb.append(" subClassOf ").append(v.get("parent"));
+                if (!v.getOrDefault("domain", "").isEmpty())
+                    sb.append(' ').append(v.get("domain")).append(" -&gt; ").append(v.getOrDefault("range", ""));
+                if (!v.getOrDefault("comment", "").isEmpty()) sb.append(" -- ").append(v.get("comment"));
+                sb.append('\n');
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    /** The agent loop: call the model, run the tools it asks for, repeat until it answers. */
+    static String ask(OpenAIClient client, String model, String question) {
+        ChatCompletionCreateParams.Builder params = ChatCompletionCreateParams.builder()
+                .model(model)
+                .addTool(RunSparql.class)
+                .addTool(GetOntology.class, JsonSchemaLocalValidation.NO)
+                .addSystemMessage(SYSTEM_PROMPT)
+                .addUserMessage(question);
+        for (int step = 0; step &lt; MAX_STEPS; step++) {
+            ChatCompletionMessage msg = client.chat().completions().create(params.build()).choices().get(0).message();
+            List&lt;ChatCompletionMessageToolCall&gt; calls = msg.toolCalls().orElse(List.of());
+            if (calls.isEmpty()) return msg.content().orElse("(no answer)");
+            params.addMessage(msg);
+            for (ChatCompletionMessageToolCall call : calls) {
+                ChatCompletionMessageFunctionToolCall fc = call.asFunction();
+                String result;
+                try {
+                    result = switch (fc.function().name()) {
+                        case "get_ontology" -&gt; getOntology();
+                        case "run_sparql" -&gt; {
+                            RunSparql a = fc.function().arguments(RunSparql.class);
+                            yield runSparql(a.query, a.reasoning);
+                        }
+                        default -&gt; "Error: unknown tool " + fc.function().name();
+                    };
+                } catch (RuntimeException e) {
+                    result = "Error: tool arguments were not valid: " + e.getMessage();
+                }
+                params.addMessage(ChatCompletionToolMessageParam.builder().toolCallId(fc.id()).content(result).build());
+            }
+        }
+        return "Stopped: too many tool calls without a final answer. Try rephrasing the question.";
+    }
+
+    static String env(String key) {
+        String v = System.getenv(key);
+        if (v == null || v.isBlank()) throw new IllegalStateException("Please set " + key);
+        return v;
+    }
+
+    public static void main(String[] args) {
+        endpoint = env("STARDOG_ENDPOINT").replaceAll("/+$", "");
+        db = System.getenv().getOrDefault("STARDOG_DB", "kit-c360");
+        schema = System.getenv().getOrDefault("STARDOG_SCHEMA", "c360_extended_rules");
+        auth = "Basic " + Base64.getEncoder().encodeToString(
+                (env("STARDOG_USER") + ":" + env("STARDOG_PASSWORD")).getBytes(StandardCharsets.UTF_8));
+        verbose = Arrays.asList(args).contains("-v");
+
+        boolean openRouter = "openrouter".equalsIgnoreCase(System.getenv().getOrDefault("LLM_PROVIDER", "openai"));
+        OpenAIClient client = OpenAIOkHttpClient.builder()
+                .apiKey(env(openRouter ? "OPENROUTER_API_KEY" : "OPENAI_API_KEY"))
+                .baseUrl(openRouter ? "https://openrouter.ai/api/v1" : "https://api.openai.com/v1")
+                .build();
+        String model = System.getenv().getOrDefault("AGENT_MODEL", openRouter ? "anthropic/claude-sonnet-4.6" : "gpt-4.1");
+
+        String question = String.join(" ", Arrays.stream(args).filter(a -&gt; !a.equals("-v")).toList());
+        if (!question.isBlank()) {
+            System.out.println(ask(client, model, question));
+            return;
+        }
+        System.out.println("c360 agent (" + model + "). Ask a question; press Enter on an empty line to quit.");
+        Scanner in = new Scanner(System.in);
+        while (true) {
+            System.out.print("\n&gt; ");
+            if (!in.hasNextLine()) break;
+            String q = in.nextLine().strip();
+            if (q.isEmpty()) break;
+            System.out.println(ask(client, model, q));
+        }
+    }
+}</pre></div>
+
+  <aside class="box gotcha">
+    <p>This file compiles cleanly against <code>com.openai:openai-java:4.68.0</code> at <code>--release 21</code>. If <code>javac</code> complains on your machine, paste the error to Claude; the likely cause is a newer SDK renaming something. The empty <code>GetOntology</code> tool is registered with <code>JsonSchemaLocalValidation.NO</code> because a tool with no parameters can trip the SDK's local schema check.</p>
+  </aside>
+
+  <h2><span class="sn">14.10</span>Path A and Path B: how the blog does it on AWS</h2>
+
+  <p>What you built is the blog's <strong>Path A</strong>, on your laptop with a different model provider; the blog's version is its production deployment. <dfn>Strands Agents</dfn> is AWS's open-source Python agent framework: it provides the loop, and you mark a Python function as a tool. <dfn>pystardog</dfn> is Stardog's Python client for the same HTTP API you call with <code>requests</code>. <dfn>Amazon Bedrock AgentCore</dfn> is AWS's managed service for running agents.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Concern</th><th>agent.py</th><th>Blog Path A on AWS</th></tr></thead>
+    <tbody>
+      <tr><td>Model</td><td>OpenAI or OpenRouter</td><td>Claude Sonnet 4.6 on Amazon Bedrock</td></tr>
+      <tr><td>Loop</td><td><code>ask()</code>, about 20 lines</td><td>Strands Agents</td></tr>
+      <tr><td>SPARQL tool</td><td><code>run_sparql</code> with <code>requests</code></td><td>A Strands tool wrapping pystardog</td></tr>
+      <tr><td>Ontology context</td><td><code>SYSTEM_PROMPT</code> + <code>get_ontology</code></td><td>An ontology summary in the system prompt</td></tr>
+      <tr><td>Hosting</td><td>Your terminal</td><td><strong>AgentCore Runtime</strong>: hosts the agent, concurrency, sessions</td></tr>
+      <tr><td>Who may call it</td><td>Whoever has your laptop</td><td><strong>AgentCore Gateway</strong>: validates the caller's JWT, routes calls</td></tr>
+      <tr><td>Stardog credentials</td><td>Environment variables</td><td><strong>AgentCore Identity</strong>: a credential provider; tokens never live in agent code</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Porting <code>agent.py</code> is mostly mechanical: the prompt and guardrails carry over, the loop becomes Strands, and credentials move into AgentCore Identity. Path A works with any Stardog reachable over HTTPS, Free tier included.</p>
+
+  <p>In <strong>Path B</strong>, your agent writes no SPARQL. AgentCore Gateway registers the Stardog Cloud MCP server (Chapter 13) as a tool target, so the agent's tools are the three <code>voicebox_*</code> tools, and Voicebox does the English-to-SPARQL step, returning provenance with each answer. It's beta and needs gated Voicebox API access.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Path A: your SPARQL tool</th><th>Path B: Voicebox via MCP</th></tr></thead>
+    <tbody>
+      <tr><td>Who writes SPARQL</td><td>Your LLM, guided by your prompt</td><td>Voicebox, guided by ontology and stored examples</td></tr>
+      <tr><td>Access needed</td><td>Any Stardog over HTTPS (Free tier OK)</td><td>A Voicebox API token (gated, beta)</td></tr>
+      <tr><td>Control</td><td>Full: model, prompt, guardrails, logging</td><td>Voicebox's model and settings</td></tr>
+      <tr><td>Run an exact, verified query</td><td>Yes</td><td>No</td></tr>
+      <tr><td>Choose it when</td><td>You want control or a specific model, or are on the Free tier</td><td>You have Voicebox access and want Stardog to own NL-to-SPARQL quality</td></tr>
+    </tbody>
+  </table></div>
+
+
+  <aside class="box blog">
+    <p>The blog's agent section describes both paths, with Claude Sonnet 4.6 on Bedrock and AgentCore as the runtime layer. Its sample questions are your competency questions 1 to 4. Its closing advice ("pick one workflow, write 3 to 5 competency questions, bootstrap the ontology, stand up virtual graphs, wire the agent") is, in order, this book.</p>
+  </aside>
+
+  <h2><span class="sn">14.11</span>Cost and safety</h2>
+
+  <p><strong>Tokens.</strong> Every call resends the system prompt, the question and earlier tool results. A typical question is 2 or 3 calls of 1,000 to 3,000 input tokens: a fraction of a cent to a few cents. <strong>Prompt caching</strong> helps, since every call starts the same way. OpenAI caches automatically past about 1,024 tokens; Anthropic models need explicit cache breakpoints, which OpenRouter passes through (check its docs). Either way, put the stable parts first and never change them. The blog uses Bedrock prompt caching for the same reason.</p>
+
+  <p><strong>Warehouses</strong> (details in Chapter 9). Aurora costs $0.12 per ACU-hour awake, $0 paused. Redshift Serverless costs $0.375 per RPU-hour with a 60-second minimum per wake-up, about $0.025 per one-minute burst at 4 RPU, so the daily cap of 1 RPU-hour allows roughly fifteen separate wake-ups (questions asked close together share one). <code>get_ontology</code> wakes neither. When you're done, <code>aws/99_teardown.sh</code> removes the AWS side, including the two public IPv4 addresses at $0.005 per hour each.</p>
+
+  <p><strong>What goes wrong with an LLM writing SPARQL.</strong></p>
+  <ul>
+    <li><strong>Plausible but wrong queries</strong> are far more common than malice: price summed without quantity, grouping by name instead of IRI (the Pliers case), "WI" instead of "Wisconsin". The answer sounds confident either way, so log the SPARQL, keep reference answers for your competency questions, and save verified queries as stored queries.</li>
+    <li><strong>Prompt injection through data.</strong> Tool results are text the model reads, and your data contains text. Read-only access limits the worst case to a wrong answer.</li>
+    <li><strong>Data leakage.</strong> Whatever a query returns goes to the LLM provider. An agent user that can't read <code>&lt;virtual://aurora_c360_pii&gt;</code> (Chapter 12) can't leak SSNs, however it's prompted.</li>
+  </ul>
+
+  <aside class="box model">
+    <p>Trust the LLM to <em>translate</em>, never to <em>decide what it may see or do</em>. Permissions live in Stardog, meaning in the ontology, routing in the mappings, facts in Aurora and Redshift; the model carries questions between them. That's Chapter 1's governance promise, extended to AI.</p>
+  </aside>
+
+  <p>Two questions remain before this goes anywhere real: what the agent does when the ontology is far too big to summarize in a prompt, and how you know an answer didn't quietly miss a source. <a href="ch15.html">Chapter 15</a> takes both.</p>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>How does the agent know that "purchased by" connects an Order to a Customer?</summary><p>From us: the system prompt's summary says <code>:purchasedBy -&gt; :Customer</code> under Order, and <code>get_ontology</code> can return <code>:purchasedBy "purchased by" :Order -&gt; :Customer</code> from the model graph (via <code>so:domainIncludes</code>/<code>so:rangeIncludes</code>). The model's training data knows nothing about your ontology.</p></details>
+    <details><summary>Does the LLM decide that customer data comes from Aurora and purchases from Redshift?</summary><p>No. It sees graph names only as labels. The mappings define which source and table each triple comes from, and Stardog's planner writes the SQL. With virtual transparency on, it wouldn't even need the graph names.</p></details>
+    <details><summary>The guard already blocks DELETE. Why also run the agent as a read-only user without PII access?</summary><p>A code filter can have gaps; Stardog enforces permissions on every query. A read-only user limits prompt injection to a wrong answer, and without the PII graph no query can send SSNs to the LLM provider.</p></details>
+    <details><summary>What single change moves agent.py from OpenAI to Claude through OpenRouter?</summary><p><code>export LLM_PROVIDER=openrouter</code> (with <code>OPENROUTER_API_KEY</code> set). The code then uses <code>base_url="https://openrouter.ai/api/v1"</code> and the default model <code>anthropic/claude-sonnet-4.6</code> (override with <code>AGENT_MODEL</code>).</p></details>
+    <details><summary>"Top ten products by units sold" puts Pliers first on one run and Markers on another. Is Stardog broken?</summary><p>No. Grouping by product name merges several different products called "Pliers" (165 units); grouping by product IRI keeps them apart, and Markers (160 units) is the top single product. The two queries ask different questions, which is why you read the query.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li>The agent is an LLM, two tools (<code>run_sparql</code>, <code>get_ontology</code>) and a loop. The model asks; your code checks and runs.</li>
+    <li>The agent knows your ontology only because you tell it: a compact T-Box summary with an example in the system prompt, and a tool that reads the model graphs.</li>
+    <li>The LLM matches words to ontology labels and writes SPARQL. It knows nothing about Aurora, Redshift or SQL; mappings route the data, and the Stardog planner writes the SQL.</li>
+    <li>The Wisconsin trace: one SPARQL query, SQL on Aurora (8 customers) and Redshift (46 purchases), a join on the customer IRI inside Stardog, and Carolyn Inworth at $502,529.42.</li>
+    <li>Guardrails (SELECT/ASK only, forced LIMIT, timeouts, truncation, a step cap) back up the real defense: a read-only Stardog user without PII access.</li>
+    <li><code>LLM_PROVIDER=openrouter</code> switches providers. Path A is this agent on AgentCore with Strands and pystardog; Path B hands SPARQL to Voicebox through MCP.</li>
+  </ul></section>
+
+  <section class="done">
+    <p><button class="sendback" type="button" data-chapter="14" data-step="7">Copy "Build step 7 done" message</button> <span class="sbmsg"></span></p>
+    <p class="donehint">Paste it to Claude with what you saw (the counts or results), so we can confirm it matches before the next build step relies on it.</p>
+  </section>
+
+  <nav class="pn">
+    <a href="ch13.html"><small>← Previous</small>Chapter 13 · The Stardog toolbox</a>
+    <a href="ch15.html" style="text-align:right"><small>Next →</small>Chapter 15 · At scale: huge ontologies and answers you can trust</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f-14-2', (tl, cap) => {
+  const q = s => '#f-14-2 ' + s;
+  const dot = q('.dot');
+  const hop = (x1, y1, x2, y2) => {
+    tl.fromTo(dot, {attr: {cx: x1, cy: y1}, opacity: 1}, {attr: {cx: x2, cy: y2}, duration: .8, ease: 'power1.inOut'});
+    tl.to(dot, {opacity: 0, duration: .15});
+  };
+  cap(tl, '① The question, the system prompt (the ontology summary) and the two tool definitions go to the LLM.');
+  tl.from(q('.s1'), {opacity: 0, duration: .5});
+  hop(75, 48, 320, 48);
+  cap(tl, '② The LLM replies with a tool call, not text: run_sparql with one SPARQL query whose two GRAPH blocks share ?c.');
+  tl.from(q('.s2'), {opacity: 0, duration: .5}, '+=.6');
+  hop(295, 76, 295, 166);
+  cap(tl, '③ guard() checks it (a SELECT with LIMIT 10) and agent.py POSTs it to /kit-c360/query as a read-only user.');
+  tl.from(q('.s3'), {opacity: 0, duration: .5}, '+=.8');
+  hop(295, 192, 295, 282);
+  cap(tl, '④ The planner runs the Aurora mapping in reverse: one SQL join of customer and address, with the Wisconsin filter pushed down.');
+  tl.from(q('.s4'), {opacity: 0, duration: .5}, '+=1');
+  hop(240, 324, 152, 368);
+  cap(tl, '⑤ Aurora returns 8 Wisconsin customers (cid, name, city), not all 500.');
+  tl.from(q('.s5'), {opacity: 0, duration: .5}, '+=1');
+  hop(200, 370, 262, 328);
+  cap(tl, '⑥ For the purchases block it writes Redshift SQL. Shown here as a bind join on the 8 cids; the planner may choose a hash join instead.');
+  tl.from(q('.s6'), {opacity: 0, duration: .5}, '+=1');
+  hop(400, 324, 488, 368);
+  cap(tl, '⑦ Redshift returns 46 purchase rows (cid, price, quantity).');
+  tl.from(q('.s7'), {opacity: 0, duration: .5}, '+=1');
+  hop(440, 370, 378, 328);
+  cap(tl, '⑧ Inside Stardog: both sides become urn:stardog:demos:c360:customer:{cid}, rows join on that IRI, then SUM(price × quantity), sort, LIMIT.');
+  tl.from(q('.s8'), {opacity: 0, scale: .9, transformOrigin: '50% 50%', duration: .6}, '+=1');
+  cap(tl, '⑨ 8 result rows go back as SPARQL JSON; agent.py flattens them into a compact tool result for the LLM.', '+=1.4');
+  tl.from(q('.s9'), {opacity: 0, duration: .5});
+  hop(345, 248, 345, 80);
+  cap(tl, '⑩ The LLM writes the answer from those rows: Carolyn Inworth, Milwaukee, $502,529.42 across 15 orders.');
+  tl.from(q('.s10'), {opacity: 0, duration: .5}, '+=.6');
+  hop(390, 48, 555, 48);
+  cap(tl, 'Question → LLM → SPARQL → Stardog → SQL on Aurora and Redshift → join and SUM on the customer IRI → JSON → LLM → answer. Press Play to replay.', '+=1.2');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 11 · SHACL: when you do want rules to reject data</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <dfn>term</dfn>                       first definition of a glossary term
+   REQUIRED at the end of every chapter (before nav)
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 11</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 11</div>
+    <h1>SHACL: when you do want rules to reject data</h1>
+    <p class="sub">The closed-world checks a database person expects (NOT NULL, CHECK, foreign keys), written for a graph, run on demand, and reported, not enforced.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">Try an experiment in your head. You <code>INSERT</code> a customer into Postgres with two email addresses, one of them <code>"not-an-email"</code>, and an address id that doesn't exist. Postgres won't have it: a single <code>email</code> column can't hold two values, a <code>CHECK</code> rejects the malformed one, and the foreign key rejects the unknown address. Insert the same customer into Stardog as triples and it says "OK," then and later, reasoning or not. Which brings us to your question: <em>what exactly does SHACL mean, and why do people use it?</em> <dfn>SHACL</dfn> stands for <strong>Shapes Constraint Language</strong>, a W3C standard (a Recommendation since July 2017) for writing down what acceptable data looks like and checking real data against it. RDFS and OWL are designed never to reject anything. SHACL is the part of the RDF world that says "no, that's wrong," and tells you which node, which property and which rule.</p>
+
+  <h2><span class="sn">11.1</span>Why the ontology never said no</h2>
+  <p>Two ideas from earlier chapters explain it. <strong>The open-world assumption</strong> (Chapter 5): a missing fact is <em>unknown</em>, not false, so a customer with no <code>:email</code> triple is not an error, where a closed-world database would reject the NULL. <strong>Axioms infer rather than reject</strong> (Chapter 6): if the model said <code>:address rdfs:range :Address</code> and an <code>:address</code> pointed at a product, RDFS would <em>infer</em> the product is an Address, which is why the kit uses the documentation-only <code>so:rangeIncludes</code>. Neither ever <em>checks</em> anything.</p>
+  <p>A tiny example of the gap. These two triples are fine to OWL:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>&lt;urn:stardog:demos:c360:customer:9999&gt; :email "bad.customer@example.com" , "not-an-email" .</pre></div>
+  <p>Two emails? A customer can have several. A malformed one? OWL only sees a string. If you come from Postgres, you want <code>email varchar NOT NULL UNIQUE CHECK (email ~ '@')</code>. SHACL is how you say that about a graph.</p>
+
+  <aside class="box model">
+    <p>Two jobs, two tools. <strong>The ontology (RDFS/OWL) describes meaning</strong>: what a Customer is and what can be concluded. <strong>SHACL describes acceptable data</strong>: what a customer record must look like to pass inspection. Mature knowledge graphs have both.</p>
+  </aside>
+
+  <h2><span class="sn">11.2</span>SHACL's vocabulary, broken down</h2>
+  <p>SHACL is itself written in RDF (Turtle), using the namespace <code>sh:</code> = <code>http://www.w3.org/ns/shacl#</code>.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td><dfn>Shape</dfn></td><td>A named set of conditions that some nodes must meet.</td><td>A reusable spec for a kind of record, like a table's constraints.</td><td><code>:CustomerShape a sh:NodeShape</code></td></tr>
+      <tr><td><dfn>Node shape</dfn></td><td>A shape about a node as a whole: mostly "which nodes to check" plus a list of property shapes.</td><td>The container: "these checks apply to customers."</td><td><code>:CustomerShape a sh:NodeShape ; sh:targetClass :Customer</code></td></tr>
+      <tr><td><dfn>Property shape</dfn></td><td>Conditions on the values reached through one property (a <em>path</em>).</td><td>Most rules are about a column-like property: email, address.</td><td><code>sh:property [ sh:path :email ; sh:minCount 1 ]</code></td></tr>
+      <tr><td><dfn>Target</dfn></td><td>The declaration of which nodes a shape applies to.</td><td>SHACL checks only the nodes you point it at.</td><td><code>sh:targetClass :Customer</code> means every node with <code>a :Customer</code>.</td></tr>
+      <tr><td><dfn>Focus node</dfn></td><td>One node being checked right now.</td><td>Reports name the exact offender.</td><td><code>customer:9999</code></td></tr>
+      <tr><td><dfn>Constraint component</dfn></td><td>One kind of check: count, datatype, class, pattern, range…</td><td>The building blocks, like NOT NULL or CHECK.</td><td><code>sh:maxCount 1</code>, <code>sh:datatype xsd:string</code></td></tr>
+      <tr><td><dfn>Validation report</dfn></td><td>The RDF result of a check: <code>sh:conforms true/false</code> plus one <code>sh:result</code> per violation.</td><td>Failures come back as queryable data.</td><td><code>[ a sh:ValidationReport ; sh:conforms true ]</code></td></tr>
+      <tr><td><dfn>Severity</dfn></td><td><code>sh:Violation</code> (default), <code>sh:Warning</code> or <code>sh:Info</code>.</td><td>Not every rule is fatal.</td><td><code>sh:severity sh:Warning</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>The smallest complete shape, "every Customer must have an email":</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>:EmailRequired a sh:NodeShape ;
+  sh:targetClass :Customer ;
+  sh:property [ sh:path :email ; sh:minCount 1 ] .</pre></div>
+  <p>Against the data from Section 11.1, <code>customer:9999</code> passes (it has at least one email). Add <code>sh:maxCount 1</code> and it fails with "more than 1 value." Add <code>sh:pattern "^[^@ ]+@[^@ ]+[.][^@ ]+$"</code> and <code>"not-an-email"</code> fails too. That's the entire idea; the rest is detail.</p>
+
+  <h2><span class="sn">11.3</span>SHACL for a database person</h2>
+  <p>The translation table to keep open:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>You'd write in SQL</th><th>SHACL constraint</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>email NOT NULL</code></td><td><code>sh:minCount 1</code></td><td>"At least one value via this path."</td></tr>
+      <tr><td>one value per row (a scalar column)</td><td><code>sh:maxCount 1</code></td><td>RDF allows many values per property; this forbids it.</td></tr>
+      <tr><td><code>email varchar</code></td><td><code>sh:datatype xsd:string</code></td><td>Would have caught Chapter 9's float-for-money mistake: <code>sh:datatype xsd:decimal</code> on <code>:purchasePrice</code>.</td></tr>
+      <tr><td><code>FOREIGN KEY (location) REFERENCES address</code></td><td><code>sh:class :Address</code></td><td>The value must be a node typed <code>:Address</code>.</td></tr>
+      <tr><td><code>CHECK (email ~ '…')</code></td><td><code>sh:pattern "…"</code></td><td>Regular expression on the value's text.</td></tr>
+      <tr><td><code>CHECK (price &gt; 0)</code></td><td><code>sh:minExclusive 0</code></td><td>Also <code>sh:minInclusive</code>, <code>sh:maxInclusive</code>…</td></tr>
+      <tr><td><code>CHECK (card_type IN (…))</code></td><td><code>sh:in ( "Visa" "Mastercard" … )</code></td><td>An enumerated list.</td></tr>
+      <tr><td>no undeclared columns</td><td><code>sh:closed true</code></td><td>No properties except the ones listed.</td></tr>
+    </tbody>
+  </table></div>
+
+  <aside class="box java"><p>A shape is Jakarta Bean Validation for graph data, almost one for one.</p><div class="sbs"><div class="col"><p class="lbl">SHACL</p><pre>:CustomerShape a sh:NodeShape ;
+  sh:targetClass :Customer ;
+  sh:property [ sh:path :email ;
+    sh:minCount 1 ; sh:maxCount 1 ;
+    sh:pattern "^[^@ ]+@[^@ ]+[.][^@ ]+$" ] ;
+  sh:property [ sh:path :address ;
+    sh:minCount 1 ; sh:class :Address ] .</pre></div><div class="col"><p class="lbl">Java</p><pre>class Customer {
+  // RDF is multi-valued, so model it as a list
+  @NotEmpty @Size(max = 1)                    // min/maxCount
+  List&lt;@Pattern(regexp = "^[^@ ]+@[^@ ]+[.][^@ ]+$")
+       String&gt; emails;                        // sh:pattern
+
+  @NotEmpty
+  List&lt;@Valid Address&gt; addresses;             // ~ sh:class
+}</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> annotations live <em>on the class</em>, and the compiler guarantees the element type. A shape sits <em>outside</em> the data, in its own graph, checks things Java gets for free (is the value really an Address?), and can be swapped without touching the data.</p></aside>
+
+  <aside class="box sql">
+    <p>The biggest difference is <em>when</em> the check happens. A SQL constraint runs on every <code>INSERT</code> and blocks the bad row. SHACL, as normally used, is <strong>a report you run on demand</strong>, closer to a dbt test or a Great Expectations suite: the data is already there, and SHACL tells you what's wrong with it.</p>
+    <p>Stardog does offer a SQL-like <dfn>guard mode</dfn>, turned on with the database option <code>icv.enabled</code> (the docs show taking the database offline to set it), in which Stardog will "fail transactions that violate constraints." That only applies to data <em>written into Stardog</em>. Virtual graphs are never written through Stardog, so for us reports are the whole story. We won't turn guard mode on.</p>
+  </aside>
+
+  <figure class="fig anim" id="f-11-1">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 680 300" role="img" aria-label="CustomerShape is checked against three customers in turn; Jolynn and Carolyn conform, customer 9999 fails with three results: maxCount, pattern and class">
+      <rect x="215" y="10" width="250" height="84" rx="10" style="fill:var(--soft);stroke:var(--accent);stroke-width:2"/>
+      <text x="340" y="32" text-anchor="middle" style="fill:var(--accent);font-size:13px;font-weight:700">:CustomerShape</text>
+      <text x="340" y="50" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">target: every :Customer</text>
+      <text x="340" y="67" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">email: exactly 1, string, looks like x@y.z</text>
+      <text x="340" y="84" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">address: at least 1, must be an :Address</text>
+      <g class="scan" opacity="0"><rect x="12" y="128" width="206" height="96" rx="12" style="fill:none;stroke:var(--accent2);stroke-width:3;stroke-dasharray:7 5"/></g>
+      <g class="n1"><rect x="20" y="136" width="190" height="80" rx="10" style="fill:var(--paper);stroke:var(--line)"/>
+        <text x="115" y="158" text-anchor="middle" style="fill:var(--subj);font-size:12.5px;font-weight:700">customer:1 (Jolynn)</text>
+        <text x="115" y="177" text-anchor="middle" style="fill:var(--ink);font-size:11px">jbithany0@multiply.com</text>
+        <text x="115" y="195" text-anchor="middle" style="fill:var(--ink);font-size:11px">address → a :Address</text></g>
+      <g class="n2"><rect x="245" y="136" width="190" height="80" rx="10" style="fill:var(--paper);stroke:var(--line)"/>
+        <text x="340" y="158" text-anchor="middle" style="fill:var(--subj);font-size:12.5px;font-weight:700">customer:225 (Carolyn)</text>
+        <text x="340" y="177" text-anchor="middle" style="fill:var(--ink);font-size:11px">cinworth68@g.co</text>
+        <text x="340" y="195" text-anchor="middle" style="fill:var(--ink);font-size:11px">address → a :Address</text></g>
+      <g class="n3"><rect x="470" y="136" width="190" height="80" rx="10" style="fill:var(--paper);stroke:var(--line)"/>
+        <text x="565" y="158" text-anchor="middle" style="fill:var(--subj);font-size:12.5px;font-weight:700">customer:9999 (bad)</text>
+        <text x="565" y="177" text-anchor="middle" style="fill:var(--ink);font-size:11px">2 emails, one "not-an-email"</text>
+        <text x="565" y="195" text-anchor="middle" style="fill:var(--ink);font-size:11px">address → untyped node</text></g>
+      <g class="ok1"><text x="115" y="240" text-anchor="middle" style="fill:var(--try);font-size:13px;font-weight:700">✓ conforms</text></g>
+      <g class="ok2"><text x="340" y="240" text-anchor="middle" style="fill:var(--try);font-size:13px;font-weight:700">✓ conforms</text></g>
+      <g class="bad"><rect x="466" y="132" width="198" height="88" rx="12" style="fill:none;stroke:var(--gotcha);stroke-width:3"/>
+        <text x="565" y="240" text-anchor="middle" style="fill:var(--gotcha);font-size:13px;font-weight:700">✗ 3 results</text></g>
+      <g class="res" style="font-size:11px">
+        <text x="565" y="258" text-anchor="middle" style="fill:var(--gotcha)">MaxCount on :email</text>
+        <text x="565" y="274" text-anchor="middle" style="fill:var(--gotcha)">Pattern on "not-an-email"</text>
+        <text x="565" y="290" text-anchor="middle" style="fill:var(--gotcha)">Class on :address</text></g>
+    </svg>
+    <p class="stepcap">Report: sh:conforms false. Jolynn and Carolyn pass silently. Customer 9999 produces three results: too many emails, a malformed email, and an address that isn't an Address.</p>
+    <figcaption>Figure 11.1: A shape is a stencil laid over every node it targets. Each failed condition becomes one result in the report.</figcaption>
+  </figure>
+
+  <h2><span class="sn">11.4</span>The CustomerShape, line by line</h2>
+  <p>The exercise's shape: every Customer has exactly one well-formed email and at least one address that is an Address:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>:CustomerShape a sh:NodeShape ;
+  sh:targetClass :Customer ;
+  sh:property [
+    sh:path :email ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[^@ ]+@[^@ ]+[.][^@ ]+$" ;
+    sh:message "A customer needs exactly one well-formed email."
+  ] ;
+  sh:property [
+    sh:path :address ;
+    sh:minCount 1 ;
+    sh:class :Address ;
+    sh:message "A customer's address must be an Address."
+  ] .</pre></div>
+  <p>Top to bottom: a node shape that targets every <code>:Customer</code> (in Stardog including subclass instances, because <code>shacl.targetClass.simple</code> is <code>false</code>). Each <code>sh:property [ … ]</code> is a property shape, an unnamed (blank) node holding the checks for one path. <code>minCount 1 ; maxCount 1</code> means exactly one value: NOT NULL plus single-valued. A plain <code>"…"</code> literal is an <code>xsd:string</code>, so <code>sh:datatype</code> passes for normal text. The regex uses <code>[.]</code> instead of <code>\.</code> to avoid escaping inside Turtle strings. <code>sh:class :Address</code> requires the value to have <code>rdf:type :Address</code> <em>in the data being validated</em>: the foreign-key check. <code>sh:message</code> is optional text copied into each result.</p>
+
+  <h2><span class="sn">11.5</span>Running validation in Stardog 12</h2>
+  <p>Stardog calls its SHACL engine <dfn>ICV</dfn> (Integrity Constraint Validation), a name you'll see in options, the CLI and the HTTP API. Four ways to run it, all read-only for your data:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Where</th><th>How</th><th>Returns</th></tr></thead>
+    <tbody>
+      <tr><td>Studio / any SPARQL client</td><td>The <code>VALIDATE</code> query form (a Stardog SPARQL extension since Stardog 9)</td><td>A validation report graph</td></tr>
+      <tr><td>Studio / SPARQL</td><td><code>SERVICE icv:validate { … }</code> inside a <code>SELECT</code></td><td>A table, one row per violation</td></tr>
+      <tr><td>CLI</td><td><code>stardog icv report</code>, <code>stardog icv validate</code></td><td>Report / pass-fail</td></tr>
+      <tr><td>HTTP</td><td>the database's <code>icv/validate</code> endpoint (<code>icv/{tx}/validate</code> inside a transaction), which the CLI and pystardog's <code>report()</code> call.</td><td>As above</td></tr>
+    </tbody>
+  </table></div>
+  <p>The <code>VALIDATE</code> grammar from the docs:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>VALIDATE (ALL | [&lt;IRI&gt;+] [GRAPH &lt;IRI&gt;+])
+  [USING SHAPES (&lt;IRI&gt;+ | GRAPH &lt;IRI&gt;+ | &lt;QuadData&gt;)]
+  [LIMIT &lt;int&gt;] [LIMIT PER SHAPE &lt;int&gt;]</pre></div>
+  <p>In words: say <em>what data</em> to check (all, specific nodes, or named graphs) and <em>which shapes</em> to use (shape IRIs, shapes stored in named graphs, or shapes inline in curly braces). <code>LIMIT</code> caps the number of results.</p>
+  <p><strong>Where shapes live.</strong> Shapes are ordinary triples, and the docs' best practice is to store them in a named graph. The option <code>shacl.shape.graphs</code> says which graphs a plain <code>VALIDATE ALL</code> reads shapes from; on <code>kit-c360</code> it's the default, <code>tag:stardog:api:context:local</code>, meaning all local graphs. So any shape left lying around in a local graph joins future <code>VALIDATE ALL</code> runs: clean up scratch shapes, and name the shapes graph explicitly with <code>USING SHAPES GRAPH</code>, as we will.</p>
+
+  <h2><span class="sn">11.6</span>Where SHACL fits in a federated setup</h2>
+  <p>In our architecture the data isn't in Stardog; it's SQL rows seen through mappings. What could go wrong, and where?</p>
+  <ul>
+    <li><strong>Upstream data problems</strong>: a NULL email in Aurora, or a <code>cid</code> in Redshift with no matching customer. Fix these at the source, but a SHACL report shows them in the business vocabulary.</li>
+    <li><strong>Mapping mistakes</strong>, where SHACL shines for us: a wrong IRI template (the address IRI doesn't match, so <code>sh:class :Address</code> fails for every customer), a missing cast (Chapter 9's <code>xsd:float</code> money becomes a <code>sh:datatype xsd:decimal</code> violation), a column mapped to the wrong property. The SQL looks fine, the triples are subtly wrong, and a shape catches them.</li>
+  </ul>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 230" role="img" aria-label="Pipeline: SQL rows pass through a mapping into a virtual graph; SHACL shapes validate the triples and produce a report; our exercise validates a small materialized sample instead">
+      <rect x="10" y="40" width="130" height="60" rx="8" style="fill:var(--soft);stroke:var(--sql)"/>
+      <text x="75" y="66" text-anchor="middle" style="fill:var(--sql);font-size:13px;font-weight:700">Aurora rows</text>
+      <text x="75" y="85" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">customer, address</text>
+      <rect x="180" y="40" width="130" height="60" rx="8" style="fill:var(--soft);stroke:var(--line)"/>
+      <text x="245" y="66" text-anchor="middle" style="fill:var(--ink);font-size:13px;font-weight:700">Mapping</text>
+      <text x="245" y="85" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">templates, casts</text>
+      <rect x="350" y="40" width="150" height="60" rx="8" style="fill:var(--soft);stroke:var(--obj)"/>
+      <text x="425" y="66" text-anchor="middle" style="fill:var(--obj);font-size:13px;font-weight:700">virtual graph</text>
+      <text x="425" y="85" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">triples at query time</text>
+      <rect x="540" y="40" width="130" height="60" rx="8" style="fill:none;stroke:var(--accent);stroke-width:2"/>
+      <text x="605" y="66" text-anchor="middle" style="fill:var(--accent);font-size:13px;font-weight:700">SHACL report</text>
+      <text x="605" y="85" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">conforms? results</text>
+      <g style="stroke:var(--muted);stroke-width:1.6;fill:none"><path d="M140 70 H176"/><path d="M310 70 H346"/><path d="M500 70 H536" style="stroke-dasharray:5 4"/></g>
+      <g style="fill:var(--muted)"><path d="M176 66 l8 4 -8 4z"/><path d="M346 66 l8 4 -8 4z"/><path d="M536 66 l8 4 -8 4z"/></g>
+      <text x="518" y="30" text-anchor="middle" style="fill:var(--muted);font-size:11px">not in the main docs</text>
+      <rect x="350" y="150" width="150" height="60" rx="8" style="fill:var(--soft);stroke:var(--try)"/>
+      <text x="425" y="176" text-anchor="middle" style="fill:var(--try);font-size:13px;font-weight:700">&lt;urn:book:ch11&gt;</text>
+      <text x="425" y="195" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">materialized sample</text>
+      <g style="stroke:var(--try);stroke-width:1.6;fill:none"><path d="M500 180 H605 V104"/></g>
+      <path d="M601 104 l4 -8 4 8z" style="fill:var(--try)"/>
+      <text x="200" y="185" text-anchor="middle" style="fill:var(--muted);font-size:12px">our exercise: documented path →</text>
+    </svg>
+    <figcaption>Figure 11.2: SHACL checks what the mappings produce. Validating a materialized graph is documented. Validating a virtual graph directly is possible per Stardog staff, but not covered in the main docs.</figcaption>
+  </figure>
+
+  <h3>Can Stardog validate a virtual graph directly?</h3>
+  <p>The main documentation page, <em>Data Quality Constraints</em> (docs.stardog.com/data-quality-constraints), doesn't mention virtual graphs. On the Stardog Community forum, Stardog staff have answered twice:</p>
+  <ul>
+    <li>"SHACL validation for virtual graphs" (community.stardog.com/t/3238): Pavel Klinov explains that Stardog can't validate data <em>before</em> it enters a virtual graph (writes go straight to the source) and suggests keeping the shapes in Stardog and running <code>stardog icv report --named-graph virtual://graph1 &lt;db&gt;</code>. For big data he suggests a cache.</li>
+    <li>"SHACL validation on a Virtual graph" (community.stardog.com/t/4912): Paul Jackson gives the <code>VALIDATE</code> form, which needs a query hint: <code>#pragma simple.target on</code>, then <code>VALIDATE GRAPH &lt;virtual://graph_name&gt; USING SHAPES { … }</code> (lowercase <code>virtual://</code>). The user reported still getting <code>sh:conforms true</code> for shapes that should fail; the thread shows no resolution.</li>
+  </ul>
+  <p>So it's supported in principle, not officially documented, and at least one user saw false "all clear" results. We'll do the documented thing: validate a <strong>small materialized sample</strong> in the scratch graph <code>&lt;urn:book:ch11&gt;</code>. An optional read-only stretch at the end tries the virtual graph with a built-in lie detector.</p>
+
+  <aside class="box blog">
+    <p>The AWS blog never mentions SHACL, validation or data quality. Its "meaning" layer is the ontology plus reasoning (Chapter 10), and its governance is named-graph security (Chapter 12). SHACL is what you'd add on the way to production: a scheduled <code>VALIDATE</code> with a handful of shapes, in the blog's start-small spirit.</p>
+  </aside>
+
+  <h2><span class="sn">11.7</span>Try it: validate a sample, break it, fix it</h2>
+  <p>Two scratch graphs, deleted at the end: <code>&lt;urn:book:ch11&gt;</code> for the data and <code>&lt;urn:book:ch11:shapes&gt;</code> for the shapes. The data uses real values for Jolynn (customer 1) and Carolyn (customer 225), plus a deliberately bad customer 9999, who doesn't exist in Aurora.</p>
+
+  <aside class="box try">
+    <p><strong>1. Insert the sample data.</strong> In Studio, database <code>kit-c360</code>, reasoning off:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+INSERT DATA {
+  GRAPH &lt;urn:book:ch11&gt; {
+    &lt;urn:stardog:demos:c360:customer:1&gt; a :Customer ;
+        :name "Jolynn Bithany" ;
+        :email "jbithany0@multiply.com" ;
+        :address &lt;urn:stardog:demos:c360:location:a7b8c114-78e0-441d-8ad2-560f92636841&gt; .
+    &lt;urn:stardog:demos:c360:location:a7b8c114-78e0-441d-8ad2-560f92636841&gt; a :Address ;
+        :city "Austin" ; :state "Texas" .
+
+    &lt;urn:stardog:demos:c360:customer:225&gt; a :Customer ;
+        :name "Carolyn Inworth" ;
+        :email "cinworth68@g.co" ;
+        :address &lt;urn:stardog:demos:c360:location:b80ea2ce-2361-408a-b443-721594cbbb35&gt; .
+    &lt;urn:stardog:demos:c360:location:b80ea2ce-2361-408a-b443-721594cbbb35&gt; a :Address ;
+        :city "Milwaukee" ; :state "Wisconsin" .
+
+    &lt;urn:stardog:demos:c360:customer:9999&gt; a :Customer ;
+        :name "Bad Customer" ;
+        :email "bad.customer@example.com" , "not-an-email" ;
+        :address &lt;urn:stardog:demos:c360:location:does-not-exist&gt; .
+  }
+}</pre></div>
+    <p>Expect success and 17 triples (check with <code>SELECT (COUNT(*) AS ?n) { GRAPH &lt;urn:book:ch11&gt; { ?s ?p ?o } }</code>). Stardog accepted customer 9999 without complaint: the open world in action.</p>
+
+    <p><strong>2. Store the shape.</strong></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX :    &lt;tag:stardog:api:ecomm:&gt;
+PREFIX sh:  &lt;http://www.w3.org/ns/shacl#&gt;
+PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+INSERT DATA {
+  GRAPH &lt;urn:book:ch11:shapes&gt; {
+    :CustomerShape a sh:NodeShape ;
+      sh:targetClass :Customer ;
+      sh:property [
+        sh:path :email ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[^@ ]+@[^@ ]+[.][^@ ]+$" ;
+        sh:message "A customer needs exactly one well-formed email."
+      ] ;
+      sh:property [
+        sh:path :address ;
+        sh:minCount 1 ;
+        sh:class :Address ;
+        sh:message "A customer's address must be an Address."
+      ] .
+  }
+}</pre></div>
+    <p>A shape is just data, so it goes in with <code>INSERT DATA</code>.</p>
+
+    <p><strong>3. Validate.</strong></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>VALIDATE GRAPH &lt;urn:book:ch11&gt;
+USING SHAPES GRAPH &lt;urn:book:ch11:shapes&gt;</pre></div>
+    <p>Expect a report with <code>sh:conforms false</code> and <strong>three</strong> <code>sh:result</code> entries, all with focus node <code>customer:9999</code>:</p>
+    <ul>
+      <li><code>sh:MaxCountConstraintComponent</code> on path <code>:email</code> (two values).</li>
+      <li><code>sh:PatternConstraintComponent</code> on path <code>:email</code>, value <code>"not-an-email"</code>.</li>
+      <li><code>sh:ClassConstraintComponent</code> on path <code>:address</code>, value <code>…location:does-not-exist</code>. That node has no <code>a :Address</code> triple.</li>
+    </ul>
+    <p>Customers 1 and 225 produce nothing; silence means they pass. Studio shows the report as RDF; read it like the example in Section 11.8.</p>
+
+    <p><strong>4. The same check as a table.</strong> Reports are easier to scan as rows:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX icv: &lt;tag:stardog:api:icv:&gt;
+SELECT ?focusNode ?path ?component ?value ?message
+WHERE {
+  SERVICE icv:validate {
+    [] icv:dataGraph   &lt;urn:book:ch11&gt; ;
+       icv:shapesGraph &lt;urn:book:ch11:shapes&gt; ;
+       icv:focusNode ?focusNode ;
+       icv:resultPath ?path ;
+       icv:sourceConstraintComponent ?component ;
+       icv:value ?value ;
+       icv:resultMessage ?message .
+  }
+}</pre></div>
+    <p>Expect 3 rows, matching step 3. If you see fewer, delete the <code>icv:value ?value ;</code> line and rerun: a max-count result usually has no single offending value.</p>
+
+    <p><strong>5. Fix the bad customer and re-validate.</strong></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+DELETE DATA {
+  GRAPH &lt;urn:book:ch11&gt; {
+    &lt;urn:stardog:demos:c360:customer:9999&gt; :email "not-an-email" .
+  }
+} ;
+INSERT DATA {
+  GRAPH &lt;urn:book:ch11&gt; {
+    &lt;urn:stardog:demos:c360:location:does-not-exist&gt; a :Address ;
+        :city "Nowhere" ; :state "Texas" .
+  }
+}</pre></div>
+    <p>Run step 3 again. Expect <code>[ a sh:ValidationReport ; sh:conforms true ]</code>. One deletion cleared two violations (the second email was both the extra value and the malformed one), and the third cleared when the address became an Address.</p>
+
+    <p><strong>6. Clean up (required).</strong></p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>DROP GRAPH &lt;urn:book:ch11&gt; ;
+DROP GRAPH &lt;urn:book:ch11:shapes&gt;</pre></div>
+    <p>Then confirm both are gone. This should return 0:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT (COUNT(*) AS ?n)
+WHERE { GRAPH ?g { ?s ?p ?o } FILTER(STRSTARTS(STR(?g), "urn:book:ch11")) }</pre></div>
+    <p>Dropping the shapes graph matters: a forgotten <code>:CustomerShape</code> would quietly join every future <code>VALIDATE ALL</code> (Section 11.5).</p>
+  </aside>
+
+  <h2><span class="sn">11.8</span>Reading a validation report</h2>
+  <p>The kind of report step 3 returns, trimmed to one result:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>[ a sh:ValidationReport ;
+  sh:conforms false ;
+  sh:result [
+    a sh:ValidationResult ;
+    sh:resultSeverity sh:Violation ;
+    sh:sourceShape _:b0 ;                                  # the email property shape
+    sh:sourceConstraintComponent sh:PatternConstraintComponent ;
+    sh:focusNode &lt;urn:stardog:demos:c360:customer:9999&gt; ;
+    sh:resultPath :email ;
+    sh:value "not-an-email" ;
+    sh:resultMessage "A customer needs exactly one well-formed email."
+  ] ] .</pre></div>
+  <p>Read it like a failed test: <code>sh:focusNode</code> is the bad row's primary key, <code>sh:resultPath</code> is the column, <code>sh:value</code> is the bad cell (when there is one), <code>sh:sourceConstraintComponent</code> says which check failed, and <code>sh:resultSeverity</code> says how much to care. <code>sh:conforms</code> is <code>true</code> only with zero results.</p>
+
+  <aside class="box java"><p>Same shape of call in both worlds: a collection of violations back, and empty means valid.</p><div class="sbs"><div class="col"><p class="lbl">Stardog</p><pre>VALIDATE GRAPH &lt;urn:book:ch11&gt;
+USING SHAPES GRAPH &lt;urn:book:ch11:shapes&gt;
+
+# → sh:conforms false
+#   sh:result [ sh:focusNode customer:9999 ;
+#               sh:resultPath :email ; … ]</pre></div><div class="col"><p class="lbl">Java</p><pre>Set&lt;ConstraintViolation&lt;Customer&gt;&gt; v =
+    validator.validate(customer);
+
+// v.isEmpty()            ~ sh:conforms true
+// cv.getRootBean()       ~ sh:focusNode
+// cv.getPropertyPath()   ~ sh:resultPath
+// cv.getInvalidValue()   ~ sh:value</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> <code>validator.validate()</code> checks one object in memory. <code>VALIDATE</code> scans every target node in a graph, and the report is RDF you can query or store.</p></aside>
+
+  <h3>Optional stretch (read-only): try the virtual graph, with a lie detector</h3>
+  <p>Curious whether direct virtual-graph validation works on our server? <code>VALIDATE</code> only reads, so this is safe. The trick is a <strong>canary</strong> shape that <em>must</em> fail: <code>aurora_c360_safe</code> has no <code>:ssn</code> (Chapter 8), so "every customer has an ssn" must fail. If it reports <code>conforms true</code>, validation isn't really seeing the virtual data, so ignore any "all clear."</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>#pragma simple.target on
+PREFIX :   &lt;tag:stardog:api:ecomm:&gt;
+PREFIX sh: &lt;http://www.w3.org/ns/shacl#&gt;
+VALIDATE GRAPH &lt;virtual://aurora_c360_safe&gt;
+USING SHAPES {
+  :CanaryShape a sh:NodeShape ;
+    sh:targetClass :Customer ;
+    sh:property [ sh:path :ssn ; sh:minCount 1 ] .
+}
+LIMIT 5</pre></div>
+  <p>Expected if it works: <code>conforms false</code> with 5 results (capped by <code>LIMIT 5</code>; the true number is 500). Aurora may take about 20 seconds to wake. If that works, swap the canary for the two <code>sh:property</code> blocks of <code>:CustomerShape</code> and rerun. My read-only SQL check found all 500 real customers have exactly one well-formed email and an existing address row, so a working validator should report <code>conforms true</code>. If Studio rejects the syntax or the canary passes, tell Claude; that's useful information, not a failure on your part.</p>
+
+  <aside class="box gotcha">
+    <ul>
+      <li><strong>Empty report ≠ good data if the target matched nothing.</strong> Misspell the class in <code>sh:targetClass</code> and every node is skipped: <code>conforms true</code>. Canaries help everywhere.</li>
+      <li><strong>sh:class checks the data graph you validate.</strong> A customer in one graph with its Address type in another fails <code>sh:class</code> if you validate only one graph.</li>
+      <li><strong>Reasoning and SHACL are separate switches.</strong> Validation runs without reasoning (<code>icv.reasoning.enabled</code> is <code>false</code> on <code>kit-c360</code>), so derived classes like <code>:Big_Spender</code> aren't targets by default.</li>
+    </ul>
+  </aside>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>What does SHACL stand for, and why does it exist when we already have OWL?</summary><p>Shapes Constraint Language, a W3C Recommendation from 2017. OWL and RDFS are open-world and <em>infer</em> rather than reject: a missing value is "unknown," and a range axiom adds a type instead of flagging an error. SHACL adds closed-world checks (required, single-valued, datatype, pattern, class) that produce a report of what's wrong.</p></details>
+    <details><summary>Translate <code>email varchar NOT NULL</code> plus "one value per row" into SHACL.</summary><p><code>sh:property [ sh:path :email ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ]</code> inside a node shape that targets <code>:Customer</code>.</p></details>
+    <details><summary>Our bad customer had two emails, one malformed. Why did deleting one triple clear two violations?</summary><p>The extra value (maxCount) and the malformed value (pattern) were the same triple, <code>:email "not-an-email"</code>.</p></details>
+    <details><summary>Does a SHACL shape in Stardog stop a bad row from arriving through a virtual graph?</summary><p>No. Writes go to Aurora and Redshift directly, never through Stardog, and guard mode (<code>icv.enabled</code>) only applies to transactions on data stored in Stardog. For virtual graphs, SHACL is a report you run.</p></details>
+    <details><summary>Is validating a virtual graph directly supported? Cite your source.</summary><p>Not in the main docs (Data Quality Constraints doesn't mention it). Stardog staff on the community forum describe <code>stardog icv report --named-graph virtual://…</code> and <code>#pragma simple.target on</code> + <code>VALIDATE GRAPH &lt;virtual://…&gt;</code>, but one user reported false <code>conforms true</code>. Possible, not officially documented; test it with a canary.</p></details>
+    <details><summary>Why did the exercise drop the shapes graph, not just the data graph?</summary><p><code>shacl.shape.graphs</code> defaults to all local graphs, so leftover shapes would join future <code>VALIDATE ALL</code> runs.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li><strong>SHACL</strong> = Shapes Constraint Language (W3C, 2017): closed-world data checks for RDF, the counterpart to OWL's open-world meaning.</li>
+    <li>Vocabulary: node shape, property shape (<code>sh:path</code>), target, constraint component, focus node, validation report, severity.</li>
+    <li>SQL mapping: NOT NULL → <code>minCount 1</code>, scalar → <code>maxCount 1</code>, type → <code>datatype</code>, FK → <code>class</code>, CHECK → <code>pattern</code>/<code>minExclusive</code>/<code>in</code>.</li>
+    <li>In Stardog (ICV): <code>VALIDATE GRAPH … USING SHAPES …</code>, <code>SERVICE icv:validate</code> for a table, <code>stardog icv report</code>, HTTP <code>icv/validate</code>. Shapes live in named graphs (<code>shacl.shape.graphs</code>) or inline.</li>
+    <li>In a federation SHACL is a report, not a gate, and especially good at catching mapping mistakes. Direct virtual-graph validation is only described on the forum; test it with a canary.</li>
+    <li>You validated, broke, fixed and dropped <code>&lt;urn:book:ch11&gt;</code> and <code>&lt;urn:book:ch11:shapes&gt;</code>.</li>
+  </ul></section>
+
+  <nav class="pn">
+    <a href="ch10.html"><small>← Previous</small>Chapter 10 · Reasoning: teaching the graph to conclude</a>
+    <a href="ch12.html" style="text-align:right"><small>Next →</small>Chapter 12 · Governance: same question, different answers</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f-11-1', (tl, cap) => {
+  const f = '#f-11-1 ';
+  cap(tl, 'Step 1: VALIDATE finds the targets, every node with "a :Customer" in the data graph. That gives three focus nodes.');
+  tl.from(f + '.n1, ' + f + '.n2, ' + f + '.n3', {opacity: 0, y: 12, stagger: 0.25, duration: 0.45});
+  tl.set(f + '.ok1, ' + f + '.ok2, ' + f + '.bad, ' + f + '.res text', {opacity: 0}, 0);
+  cap(tl, 'Step 2: focus node customer:1. One email, well-formed, and an address typed :Address. Nothing to report.');
+  tl.fromTo(f + '.scan', {x: 0, opacity: 0}, {x: 0, opacity: 1, duration: 0.3}, '+=0.3');
+  tl.to(f + '.ok1', {opacity: 1, duration: 0.4}, '+=0.6');
+  cap(tl, 'Step 3: focus node customer:225. Also fine.');
+  tl.to(f + '.scan', {x: 225, duration: 0.6}, '+=0.4');
+  tl.to(f + '.ok2', {opacity: 1, duration: 0.4}, '+=0.5');
+  cap(tl, 'Step 4: focus node customer:9999. Two emails (maxCount), one of them malformed (pattern), and an address with no "a :Address" (class).');
+  tl.to(f + '.scan', {x: 450, duration: 0.6}, '+=0.4');
+  tl.to(f + '.bad', {opacity: 1, duration: 0.4}, '+=0.4');
+  tl.to(f + '.res text', {opacity: 1, stagger: 0.45, duration: 0.3});
+  cap(tl, "Report: sh:conforms false. Jolynn and Carolyn pass silently. Customer 9999 produces three results: too many emails, a malformed email, and an address that isn't an Address.");
+  tl.to(f + '.scan', {opacity: 0, duration: 0.4}, '+=0.4');
+});
+</script>
+</body>
+</html>

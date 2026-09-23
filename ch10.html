@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 10 · Reasoning: teaching the graph to conclude</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 10</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 10</div>
+    <h1>Reasoning: teaching the graph to conclude</h1>
+    <p class="sub">How a two-line rule turns "big spender" into a live definition that works across Aurora and Redshift, without adding a column anywhere.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">It's Monday, and marketing wants one number: "How many big spenders do we have, per state?" There's no <code>big_spender</code> column and no <code>large_order</code> flag. The prices are in Redshift and the states are in Aurora, so no single SQL statement can join them. The old way is to query Redshift, paste 445 customer ids into an <code>IN (…)</code> list on Aurora, group by state, and repeat it next Monday, in the dashboard, and in the agent's prompt. By the end of this chapter you'll get that answer from one short SPARQL query over live rows, using a definition written exactly once, because Stardog will <em>conclude</em> facts nobody ever stored.</p>
+
+  <h2><span class="sn">10.1</span>Inference: facts you never stored</h2>
+  <p>Every triple you've queried so far was <em>asserted</em>: a mapping or an <code>INSERT DATA</code> said it explicitly. <dfn>Inference</dfn> means deriving new triples from asserted ones plus the model. Stardog calls the machinery <dfn>reasoning</dfn>, and per its docs it "does not materialize inferences; rather, reasoning is performed at query time." With reasoning on, Stardog finds everything the model implies, answers, and throws the derivation away. Four terms carry this chapter:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Inference</strong></td><td>Deriving a triple nobody asserted.</td><td>So facts that <em>follow</em> from your data don't need storing or syncing.</td><td>From <code>customer:225 a :Big_Spender</code> and <code>:Big_Spender rdfs:subClassOf :Customer</code>, infer <code>customer:225 a :Customer</code>.</td></tr>
+      <tr><td><strong>Rule</strong></td><td>An <code>IF { pattern } THEN { triples }</code> stored in the model.</td><td>Subclass axioms can't test values ("price over 250"); rules can.</td><td><code>IF { ?o a :Order ; :purchasePrice ?p . FILTER(?p &gt; 250) } THEN { ?o a :Large_Order }</code></td></tr>
+      <tr><td><strong><dfn>Derived class</dfn></strong></td><td>A class whose members come only from rules or axioms, never from data.</td><td>To name a business concept once, in the model.</td><td>No mapping says <code>a :Large_Order</code>. The rule decides, fresh on every query.</td></tr>
+      <tr><td><strong><dfn>Reasoning level</dfn></strong> (Stardog: <em>reasoning type</em>)</td><td>Which family of conclusions is allowed.</td><td>More expressive logic costs more, so you choose.</td><td><code>RDFS</code> does subclasses but ignores rules. <code>SL</code> does both.</td></tr>
+    </tbody>
+  </table></div>
+  <aside class="box sql">
+    <p>A derived class is closest to a <strong>view</strong>: <code>CREATE VIEW large_order AS SELECT id FROM purchase WHERE price &gt; 250</code>. The analogy stretches: a view lives in one database and must be named to be used, while a rule applies across every source and fires implicitly, chaining on its own. Like a non-materialized view, it has no refresh step and no index.</p>
+  </aside>
+
+  <aside class="box java"><p>A rule is a derived getter: computed on read from other fields, never stored.</p><div class="sbs"><div class="col"><p class="lbl">Stardog rule</p><pre>IF {
+  ?sub a :Customer .
+  ?o :purchasedBy ?sub .
+  ?o a :Large_Order .
+}
+THEN {
+  ?sub a :Big_Spender .
+}</pre></div><div class="col"><p class="lbl">Java</p><pre>// no boolean bigSpender field anywhere
+static final Predicate&lt;Order&gt; LARGE =
+    o -&gt; o.price().compareTo(new BigDecimal("250")) &gt; 0;
+
+boolean isBigSpender(Customer c) {
+  return orders(c).stream().anyMatch(LARGE);
+}</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> you call <code>isBigSpender()</code> by name, but a rule also changes answers to questions that never mention it (ask for <code>:Customer</code> and big spenders come in via <code>subClassOf</code>), and it runs over two databases the JVM never loaded.</p></aside>
+
+  <h2><span class="sn">10.2</span>Reasoning levels and schemas, in one page</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Reasoning type</th><th>Understands</th></tr></thead>
+    <tbody>
+      <tr><td><code>RDFS</code></td><td>subclasses, subproperties, <code>rdfs:domain</code>/<code>rdfs:range</code></td></tr>
+      <tr><td><code>QL</code>, <code>RL</code>, <code>EL</code></td><td>three standard OWL 2 "profiles," subsets of OWL picked so reasoning stays fast (e.g. <code>owl:inverseOf</code> from Chapter 6)</td></tr>
+      <tr><td><code>SL</code> <em>(default)</em></td><td>Stardog's combination of RDFS, QL, RL and EL, <strong>plus user-defined rules</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p><code>kit-c360</code> uses <code>SL</code>, which matters because Stardog's troubleshooting guide says user rules "are only evaluated using the SL reasoning type." You won't change it.</p>
+  <p>The setting you <em>will</em> touch is <code>reasoning.schemas</code> from Chapter 6. A <dfn>reasoning schema</dfn> is a named set of graphs whose axioms and rules the reasoner uses. You have one, <code>c360_schema</code>, and you'll add a second. Per the docs, <strong>a query uses exactly one schema</strong>; Stardog doesn't merge them. So there are two dials per query: reasoning on or off, and which schema.</p>
+
+  <h2><span class="sn">10.3</span>Reading a real rule</h2>
+  <p>A <dfn>Stardog rule</dfn> (Stardog Rule Syntax, or SRS) is a SPARQL pattern with a conclusion attached: "wherever <code>IF</code> matches, act as if the <code>THEN</code> triples exist." <code>IF</code> can hold the SPARQL you learned in Chapter 4 (triple patterns, <code>FILTER</code>, <code>BIND</code>, <code>UNION</code>, <code>VALUES</code>). The docs add three restrictions: every <code>THEN</code> variable must appear in <code>IF</code>; no variable may stand in the predicate position or as the class in <code>rdf:type</code>; and recursion is limited. Here is the kit's big-spender rule, copied exactly from <code>c360_extended_rules.ttl</code>:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>IF {
+  ?sub a stardog:ecomm:Customer .
+  ?obj_0 stardog:ecomm:purchasedBy ?sub . ?obj_0 a stardog:ecomm:Large_Order .
+}
+THEN {
+  ?sub rdf:type stardog:ecomm:Big_Spender .
+}</pre></div>
+  <p>In English: "if <code>?sub</code> is a Customer, and some order purchased by <code>?sub</code> is a Large_Order, then <code>?sub</code> is a Big_Spender." Names like <code>?obj_0</code> are what Stardog Designer generates when you build a rule by drag-and-drop.</p>
+
+  <h3>The prefix puzzle</h3>
+  <p>Our mappings say <code>:Customer</code>; the rule says <code>stardog:ecomm:Customer</code>. If those were different classes, every rule would silently match nothing. The kit file declares <code>@prefix stardog: &lt;tag:stardog:api:&gt;</code>, and a prefixed name is the prefix IRI plus everything after the <em>first</em> colon (Chapter 3):</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Written as</th><th>Expands to</th></tr></thead>
+    <tbody>
+      <tr><td><code>stardog:ecomm:Customer</code></td><td><code>tag:stardog:api:</code> + <code>ecomm:Customer</code> = <code>tag:stardog:api:ecomm:Customer</code></td></tr>
+      <tr><td><code>:Customer</code> (our mappings, <code>: = tag:stardog:api:ecomm:</code>)</td><td><code>tag:stardog:api:ecomm:Customer</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Two spellings of one IRI (Turtle allows a colon inside the local part). Two traps. First, the same file also declares an unused <code>@prefix : &lt;http://api.stardog.com/&gt;</code>; write <code>:Big_Spender</code> under that header and you mint a class nobody uses. Second, the rule text is a string (<code>rule:content """…"""</code>), so Stardog resolves its prefixes with the <em>database's</em> namespaces, not the file's <code>@prefix</code> lines. <code>stardog:</code>, <code>rdf:</code> and <code>xsd:</code> are known out of the box.</p>
+
+  <h2><span class="sn">10.4</span>The kit's five rules, and one firing</h2>
+  <p><code>c360_extended_model.ttl</code> is the Chapter 6 ontology plus five derived classes, each a subclass of Order or Customer. <code>c360_extended_rules.ttl</code> holds one rule per class. The two files add up to 197 triples (172 + 25). The last column is my answer key, computed with read-only SQL against the rows you'll query.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Rule label</th><th>IF (from the file)</th><th>THEN</th><th>Expect</th></tr></thead>
+    <tbody>
+      <tr><td>large purchases</td><td>an Order whose <code>purchasePrice &gt; "250"^^xsd:decimal</code></td><td><code>Large_Order</code></td><td>1,103 orders</td></tr>
+      <tr><td>big spenders</td><td>a Customer with some order that is a Large_Order</td><td><code>Big_Spender</code></td><td>445 customers</td></tr>
+      <tr><td>2022 orders</td><td>an Order with <code>purchaseDate</code> in 2022-01-01…2022-12-31</td><td><code>2022_Order</code></td><td>194 orders</td></tr>
+      <tr><td>customers who made purchases in 2022</td><td>a Customer with some 2022_Order</td><td><code>2022_Orderer</code></td><td>163 customers</td></tr>
+      <tr><td>sport category shopper</td><td>a Customer whose order's product is <code>inCategory &lt;…category:10&gt;</code> (Sports)</td><td><code>Sports_Category_Shopper</code></td><td>144 customers</td></tr>
+    </tbody>
+  </table></div>
+  <p>Two rules chain: big spenders needs large purchases, and 2022 orderers needs 2022 orders. You never say what order to run them in. Press Play to watch a chain fire on three real orders:</p>
+
+  <figure class="fig anim" id="f-10-1">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 680 330" role="img" aria-label="Three real orders: $10,479 and $7.74 by Carolyn Inworth, $179.82 by Tull McMurraya. The large purchases rule marks only the $10,479 order as Large_Order; the big spenders rule then marks Carolyn, not Tull, as Big_Spender">
+      <g transform="translate(0,28)">
+      <text x="110" y="22" text-anchor="middle" style="fill:var(--muted);font-size:12px">ASSERTED: Redshift orders</text>
+      <text x="580" y="22" text-anchor="middle" style="fill:var(--muted);font-size:12px">ASSERTED: Aurora customers</text>
+      <g class="ord"><rect x="10" y="40" width="200" height="44" rx="8" style="fill:var(--soft);stroke:var(--line)"/>
+        <text x="22" y="58" style="fill:var(--subj);font-size:12.5px;font-weight:700">order · $10,479.00</text>
+        <text x="22" y="75" style="fill:var(--muted);font-size:11.5px">purchasedBy customer:225</text></g>
+      <g class="ord"><rect x="10" y="110" width="200" height="44" rx="8" style="fill:var(--soft);stroke:var(--line)"/>
+        <text x="22" y="128" style="fill:var(--subj);font-size:12.5px;font-weight:700">order · $7.74</text>
+        <text x="22" y="145" style="fill:var(--muted);font-size:11.5px">purchasedBy customer:225</text></g>
+      <g class="ord"><rect x="10" y="180" width="200" height="44" rx="8" style="fill:var(--soft);stroke:var(--line)"/>
+        <text x="22" y="198" style="fill:var(--subj);font-size:12.5px;font-weight:700">order · $179.82</text>
+        <text x="22" y="215" style="fill:var(--muted);font-size:11.5px">purchasedBy customer:476</text></g>
+      <g class="r1"><rect x="240" y="100" width="130" height="62" rx="31" style="fill:var(--paper);stroke:var(--accent);stroke-width:2"/>
+        <text x="305" y="126" text-anchor="middle" style="fill:var(--accent);font-size:12.5px;font-weight:700">large purchases</text>
+        <text x="305" y="145" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">price &gt; 250 ?</text></g>
+      <g class="yes"><text x="222" y="67" style="fill:var(--try);font-size:16px;font-weight:700">✓</text></g>
+      <g class="no"><text x="222" y="137" style="fill:var(--gotcha);font-size:16px;font-weight:700">✗</text>
+        <text x="222" y="207" style="fill:var(--gotcha);font-size:16px;font-weight:700">✗</text></g>
+      <g class="lo"><rect x="12" y="234" width="200" height="26" rx="6" style="fill:var(--paper);stroke:var(--obj);stroke-dasharray:5 4;stroke-width:2"/>
+        <text x="112" y="252" text-anchor="middle" style="fill:var(--obj);font-size:12px;font-weight:700">$10,479 order a :Large_Order</text></g>
+      <g class="r2"><rect x="300" y="200" width="130" height="62" rx="31" style="fill:var(--paper);stroke:var(--accent);stroke-width:2"/>
+        <text x="365" y="226" text-anchor="middle" style="fill:var(--accent);font-size:12.5px;font-weight:700">big spenders</text>
+        <text x="365" y="245" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">Customer + Large_Order</text></g>
+      <g class="link" style="stroke:var(--muted);stroke-width:1.6;fill:none"><path d="M212 247 H296"/><path d="M430 225 C470 200 470 110 486 95"/></g>
+      <g><rect x="490" y="40" width="180" height="62" rx="8" style="fill:var(--soft);stroke:var(--line)"/>
+        <text x="580" y="62" text-anchor="middle" style="fill:var(--subj);font-size:12.5px;font-weight:700">customer:225</text>
+        <text x="580" y="80" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">Carolyn Inworth · WI</text>
+        <text x="580" y="95" text-anchor="middle" style="fill:var(--muted);font-size:11px">a :Customer</text></g>
+      <g><rect x="490" y="150" width="180" height="62" rx="8" style="fill:var(--soft);stroke:var(--line)"/>
+        <text x="580" y="172" text-anchor="middle" style="fill:var(--subj);font-size:12.5px;font-weight:700">customer:476</text>
+        <text x="580" y="190" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">Tull McMurraya · MO</text>
+        <text x="580" y="205" text-anchor="middle" style="fill:var(--muted);font-size:11px">a :Customer (max order $179.82)</text></g>
+      <g class="bs"><rect x="486" y="36" width="188" height="70" rx="10" style="fill:none;stroke:var(--obj);stroke-width:3"/>
+        <rect x="505" y="108" width="150" height="26" rx="6" style="fill:var(--paper);stroke:var(--obj);stroke-dasharray:5 4;stroke-width:2"/>
+        <text x="580" y="126" text-anchor="middle" style="fill:var(--obj);font-size:12px;font-weight:700">a :Big_Spender</text></g>
+      <text x="340" y="290" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">Solid = SQL rows seen as triples. Dashed = inferred, exists only while the query runs.</text>
+          </g>
+    </svg>
+    <p class="stepcap">Carolyn is a Big_Spender because one of her orders is a Large_Order. Tull, whose biggest order is $179.82, is not. Neither conclusion is stored.</p>
+    <figcaption>Figure 10.1: Two rules chaining on real rows (Carolyn's $10,479 and $7.74 orders, Tull McMurraya's $179.82 order).</figcaption>
+  </figure>
+
+  <p><strong>How a rule is stored.</strong> A rule is data too: a blank node <code>a rule:SPARQLRule</code> (<code>rule:</code> = <code>tag:stardog:api:rule:</code>) with an <code>rdfs:label</code> and the text in <code>rule:content</code>, which is what the reasoner reads. Two more triples, <code>&lt;tag:stardog:designer:rule:content&gt;</code> and <code>&lt;tag:stardog:designer:rule:data&gt;</code>, are Designer's copy of the text and a blob it uses to redraw the rule. Five triples times five rules gives the file's 25.</p>
+  <p><strong>Where the threshold lives:</strong> <code>FILTER(?dat_0 &gt; "250"^^xsd:decimal)</code> on <code>purchasePrice</code>, which our Redshift mapping takes from the <code>price</code> column: the <em>unit</em> price (Chapter 9 multiplied it by <code>quantity</code>). So a "large order" is a purchase line with a unit price over $250, not a basket over $250.</p>
+
+  <aside class="box gotcha">
+    <p><strong>Read the definition, not the name.</strong> Under this rule 445 of our 500 customers (89%) are "big spenders," because one item over $250 is enough. That's a business choice someone made in Designer, not a Stardog bug. The upside is that the definition is one visible line: change <code>250</code> to <code>5000</code> and every query, dashboard and agent that says "big spender" changes with it, instead of forty SQL files.</p>
+  </aside>
+
+  <h2><span class="sn">10.5</span>Where reasoning runs: before the SQL is written</h2>
+  <p>The big-spender rule needs Aurora ("?sub is a Customer") <em>and</em> Redshift ("an order over $250 purchased by ?sub"). The rule doesn't know that. It's written against the model, and the join works because both mappings mint the same customer IRI (Chapter 9's IRI trick).</p>
+  <p>The key point is <strong>when</strong> the rules run: inside Stardog's query planner, <em>before</em> the SPARQL-to-SQL rewrite. They aren't a batch job over copied data, and they aren't installed in Aurora or Redshift. The planner expands them into extra query patterns, and only then is the query split, turned into SQL, and sent to the live databases, so the rule logic always sees current rows. The docs support this picture (no materialization, and <code>reasoning.rewriting</code> "allows one to choose how query patterns are rewritten for reasoning") but don't publish the planner's internals, so treat these steps as a mental model rather than a spec:</p>
+  <ol>
+    <li><strong>Expand.</strong> <code>?c a :Big_Spender</code> becomes the big-spenders rule's <code>IF</code> pattern. That pattern mentions <code>:Large_Order</code>, which becomes the large-purchases pattern, including its <code>FILTER</code>.</li>
+    <li><strong>Rewrite to SQL.</strong> Now it's plain triple patterns, exactly what Chapter 9 federated. The Redshift part becomes something like <code>… FROM c360.purchase WHERE price &gt; 250</code>, and the Aurora part becomes a select on <code>customer</code> joined to <code>address</code>.</li>
+    <li><strong>Join on the IRI</strong> inside Stardog, then <code>GROUP BY</code> state.</li>
+  </ol>
+
+  <aside class="box java"><p>Reasoning is like composing a JPA <code>Specification</code>: predicates are combined first, and SQL is generated only when the query executes.</p><div class="sbs"><div class="col"><p class="lbl">What the planner does</p><pre>?c a :Big_Spender
+  ↓ expand rule "big spenders"
+?c a :Customer . ?o :purchasedBy ?c .
+?o a :Large_Order
+  ↓ expand rule "large purchases"
+?o :purchasePrice ?p . FILTER(?p &gt; 250)
+  ↓ only now: SPARQL → SQL</pre></div><div class="col"><p class="lbl">Java</p><pre>Specification&lt;Order&gt; large =
+    (r, q, cb) -&gt; cb.gt(r.get("price"), 250);
+Specification&lt;Order&gt; spec =
+    large.and(byCustomerState("WI"));
+
+// nothing has hit the database yet
+repo.findAll(spec);   // SQL generated here</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> you compose Specifications yourself; the reasoner composes them from the model whenever a query mentions a derived class, and may split the result across two engines.</p></aside>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Your query goes to the reasoner, which expands rules into plain patterns; only then is it rewritten into SQL for Aurora and Redshift and joined on the customer IRI">
+      <rect x="20" y="20" width="190" height="60" rx="8" style="fill:var(--code);stroke:var(--line)"/>
+      <text x="115" y="45" text-anchor="middle" style="fill:var(--ink);font-size:13px;font-family:ui-monospace,Menlo,monospace">?c a :Big_Spender</text>
+      <text x="115" y="65" text-anchor="middle" style="fill:var(--muted);font-size:12px">1 · your query</text>
+      <rect x="245" y="20" width="190" height="60" rx="8" style="fill:none;stroke:var(--accent);stroke-width:2"/>
+      <text x="340" y="45" text-anchor="middle" style="fill:var(--accent);font-size:13px;font-weight:700">2 · planner expands rules</text>
+      <text x="340" y="65" text-anchor="middle" style="fill:var(--muted);font-size:12px">no SQL yet</text>
+      <rect x="470" y="12" width="195" height="76" rx="8" style="fill:var(--code);stroke:var(--line)"/>
+      <text x="480" y="33" style="fill:var(--ink);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">?c a :Customer .</text>
+      <text x="480" y="51" style="fill:var(--ink);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">?o :purchasedBy ?c .</text>
+      <text x="480" y="69" style="fill:var(--ink);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">?o a :Order ; :purchasePrice ?p</text>
+      <text x="480" y="84" style="fill:var(--ink);font-size:11.5px;font-family:ui-monospace,Menlo,monospace">FILTER(?p &gt; 250)</text>
+      <rect x="60" y="150" width="240" height="60" rx="8" style="fill:var(--soft);stroke:var(--sql)"/>
+      <text x="180" y="174" text-anchor="middle" style="fill:var(--sql);font-size:13px;font-weight:700">3 · SQL on Aurora</text>
+      <text x="180" y="194" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">customer ⋈ address → IRI, state</text>
+      <rect x="380" y="150" width="240" height="60" rx="8" style="fill:var(--soft);stroke:var(--sql)"/>
+      <text x="500" y="174" text-anchor="middle" style="fill:var(--sql);font-size:13px;font-weight:700">3 · SQL on Redshift</text>
+      <text x="500" y="194" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">purchase WHERE price &gt; 250 → cid</text>
+      <g style="stroke:var(--muted);stroke-width:1.6;fill:none"><path d="M210 50 H241"/><path d="M435 50 H466"/><path d="M567 88 V120 H180 V146"/><path d="M500 120 V146"/></g>
+      <g style="fill:var(--muted)"><path d="M241 46 l8 4 -8 4z"/><path d="M466 46 l8 4 -8 4z"/><path d="M176 146 l4 8 4 -8z"/><path d="M496 146 l4 8 4 -8z"/></g>
+      <text x="340" y="238" text-anchor="middle" style="fill:var(--pred);font-size:13px;font-weight:700">4 · join on urn:stardog:demos:c360:customer:{cid} inside Stardog → GROUP BY state</text>
+    </svg>
+    <figcaption>Figure 10.2: Reasoning happens first, federation second. The rules become ordinary patterns, and the patterns become SQL on two live engines.</figcaption>
+  </figure>
+  <p><code>reasoning.virtual.graph.enabled</code> (default and here <code>true</code>) is what lets reasoning reach virtual graphs. Reasoning queries may send more SQL than plain ones, so don't loop them against a 1 RPU-hour daily cap.</p>
+
+  <h2><span class="sn">10.6</span>The Studio switches, and why the answer changes</h2>
+  <p>Reasoning is <strong>off by default</strong>, per query: <code>--reasoning</code> on the CLI, <code>reasoning=true</code> over HTTP, and a <strong>Reasoning toggle</strong> in Studio's query toolbar. When a database has named schemas, Studio also lets you pick the schema (its release notes list "Support specifying a particular schema when querying"); in current versions the picker sits by the toggle. If yours looks different, tell Claude what you see.</p>
+  <p>The schema choice decides everything. Flip the toggle without picking one and you get the schema called <code>default</code>, which here is the special graph <code>tag:stardog:api:context:schema</code>, and it's empty: no rules, no big spenders. Pick <code>c360_extended_rules</code>. It's self-contained, because the extended model repeats the whole Chapter 6 ontology.</p>
+  <p>This is the open world (Chapter 5) at work. With reasoning <strong>off</strong>, no asserted <code>?c rdf:type :Big_Spender</code> triples exist, so you get <strong>zero rows</strong>, not an error. With reasoning <strong>on</strong>, the identical text returns 42 rows. Only Stardog's permission to conclude changed.</p>
+
+  <aside class="box gotcha">
+    <p><strong>Reasoning faithfully applies whatever axioms you write, bugs included.</strong> A real bug from the kit (Chapter 6 flagged it): <code>schema.ttl</code> says <code>:rewardsAccountUsed owl:inverseOf :hasRewards</code>, but <code>rewardsAccountUsed</code> goes Order → RewardsAccount and <code>hasRewards</code> goes Customer → RewardsAccount. Both point <em>at</em> the account, so they can't be inverses. (Its second axiom, <code>:hasRewards owl:inverseOf :rewardsAccount</code>, names a property declared nowhere else.) Under the <code>c360_schema</code> schema with reasoning on, each of the 1,560 purchases that used a rewards account produces a nonsense triple <code>&lt;rewards account&gt; :hasRewards &lt;order&gt;</code>.</p>
+    <p><strong>How you'd spot it:</strong> count a property with reasoning off, then on; unexpected growth, or subjects of the wrong class, is the tell (step 9 below). <strong>How you'd fix it:</strong> delete the axiom, or replace it with a real inverse such as <code>:usedInOrder owl:inverseOf :rewardsAccountUsed</code>. This chapter's schema, <code>c360_extended_rules</code>, has no <code>owl:inverseOf</code> at all, one more reason the schema picker matters.</p>
+  </aside>
+
+  <aside class="box blog">
+    <p>This is the blog's section "Reasoning over the graph." It defines <code>Big_Spender</code> as "a customer who has placed at least one order above a threshold," and says that with reasoning at query time "how many big spenders by state?" works "without precomputing or materializing those facts." The blog never prints the threshold; you just found it in the kit (<code>purchasePrice &gt; 250</code>). Its one-line argument is worth keeping: encode business definitions once, "instead of re-implementing them in SQL queries, dashboards and prompts."</p>
+  </aside>
+
+  <h2><span class="sn">10.7</span>Build step 5: load the rules, flip the switch</h2>
+  <p>Before you start: <code>aurora_c360_safe</code> and <code>redshift_c360</code> exist (Chapters 8 and 9), and <code>reasoning.schemas</code> holds <code>c360_schema=…</code>. If Aurora is asleep, the first query can take 15 to 20 seconds.</p>
+
+  <aside class="box try">
+    <p><strong>1. Load both kit files into one named graph.</strong> <em>Databases → kit-c360 → Load Data</em>. Browse to <code>c360_extended_model.ttl</code> in <code>knowledge-kits/examples/c360/models/</code>. In the <b>Load Data To</b> dropdown (it starts at <code>stardog:context:default</code>), type this graph name into <b>"Search or create…"</b> and choose it:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>urn:stardog:c360_extended_rules:1.0:model</pre></div>
+    <p>Then load <code>c360_extended_rules.ttl</code> into the same graph.</p>
+    <p><strong>2. Count</strong> (reasoning off). Expect <strong>197</strong>. If you get 172 or 25, one file is missing.</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT (COUNT(*) AS ?triples)
+WHERE { GRAPH &lt;urn:stardog:c360_extended_rules:1.0:model&gt; { ?s ?p ?o } }</pre></div>
+    <p><strong>3. See the rules as data.</strong> Expect 5 rows.</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX rule: &lt;tag:stardog:api:rule:&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+SELECT ?label ?content
+WHERE { GRAPH &lt;urn:stardog:c360_extended_rules:1.0:model&gt; {
+  ?r a rule:SPARQLRule ; rdfs:label ?label ; rule:content ?content . } }
+ORDER BY ?label</pre></div>
+    <p><strong>4. Register the schema.</strong> <em>Databases → kit-c360 → Properties</em>, find <code>reasoning.schemas</code>, keep <code>c360_schema=…</code>, and <em>add</em> this value (the docs say it can be changed while the database is online):</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>c360_extended_rules=urn:stardog:c360_extended_rules:1.0:model</pre></div>
+    <p>Save. The Models tab should now list both schemas.</p>
+    <p><strong>5. Ask with reasoning OFF.</strong> Expect <strong>no rows</strong>.</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?state (COUNT(DISTINCT ?c) AS ?bigSpenders)
+FROM &lt;virtual://aurora_c360_safe&gt;
+FROM &lt;virtual://redshift_c360&gt;
+WHERE {
+  ?c a :Big_Spender ;
+     :address ?addr .
+  ?addr :state ?state .
+}
+GROUP BY ?state
+ORDER BY DESC(?bigSpenders) ?state</pre></div>
+    <p>The two <code>FROM</code> lines merge both virtual graphs into the query's default graph, so a rule can join across them.</p>
+    <p><strong>6. Same text, reasoning ON, schema <code>c360_extended_rules</code>.</strong> You should see approximately this: <strong>42 rows, 445 big spenders in total</strong>, starting</p>
+    <div class="tbl"><table>
+      <thead><tr><th>state</th><th>bigSpenders</th><th>state</th><th>bigSpenders</th></tr></thead>
+      <tbody>
+        <tr><td>Florida</td><td>46</td><td>Virginia</td><td>18</td></tr>
+        <tr><td>Texas</td><td>46</td><td>Pennsylvania</td><td>17</td></tr>
+        <tr><td>California</td><td>42</td><td>Ohio</td><td>16</td></tr>
+        <tr><td>District of Columbia</td><td>24</td><td>Georgia</td><td>14</td></tr>
+        <tr><td>New York</td><td>23</td><td>Illinois</td><td>14</td></tr>
+      </tbody>
+    </table></div>
+    <p>…ending with six states at 1 (Arkansas, Delaware, Kansas, New Hampshire, Tennessee and Vermont). Wisconsin, Carolyn's state, has 5. These come from my SQL answer key; if Stardog's differ, tell Claude.</p>
+    <p><strong>7. Poke the other derived classes</strong> (reasoning on, same schema). Expect <strong>1,103</strong>:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT (COUNT(DISTINCT ?o) AS ?n)
+FROM &lt;virtual://redshift_c360&gt;
+WHERE { ?o a :Large_Order }</pre></div>
+    <p>Swap in <code>:2022_Order</code> and expect <strong>194</strong>. For the customer classes, add <code>FROM &lt;virtual://aurora_c360_safe&gt;</code> and count <code>?o a :2022_Orderer</code> (<strong>163</strong>) and <code>?o a :Sports_Category_Shopper</code> (<strong>144</strong>).</p>
+    <p><strong>8. Cross-check in DBeaver</strong> (Redshift). Expect <code>1103 | 445</code>. The SQL agrees with the rule, but only the rule also knows each customer's state.</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT COUNT(*) AS large_orders, COUNT(DISTINCT cid) AS big_spenders
+FROM c360.purchase
+WHERE price &gt; 250;</pre></div>
+    <p><strong>9. (Optional) Catch the inverseOf bug.</strong> Run this with reasoning OFF, then ON with schema <code>c360_schema</code>:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT (COUNT(*) AS ?n)
+FROM &lt;virtual://aurora_c360_safe&gt;
+FROM &lt;virtual://redshift_c360&gt;
+WHERE { ?x :hasRewards ?y }</pre></div>
+    <p>Expect about <strong>500</strong> with reasoning off (one per <code>rewards_account</code> row) and about <strong>2,060</strong> with it on (plus the 1,560 bogus account → order triples). Add <code>?x a :RewardsAccount .</code> to the <code>WHERE</code> and the reasoning-on count is still about 1,560, though no rewards account should "have rewards." To fix the model, this removes the bad axiom (<code>&lt;urn:stardog:training-c360:1.0:model&gt;</code> goes from 161 to 160 triples). Nothing later depends on it.</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX :    &lt;tag:stardog:api:ecomm:&gt;
+PREFIX owl: &lt;http://www.w3.org/2002/07/owl#&gt;
+DELETE DATA {
+  GRAPH &lt;urn:stardog:training-c360:1.0:model&gt; { :rewardsAccountUsed owl:inverseOf :hasRewards }
+}</pre></div>
+    <p>Nothing to clean up. This is part of the real build.</p>
+  </aside>
+
+  <aside class="box gotcha">
+    <ul>
+      <li><strong>Zero rows with reasoning ON?</strong> Nine times out of ten the query ran under the empty <code>default</code> schema. Check the schema picker.</li>
+      <li><strong>Missing a <code>FROM</code>?</strong> Without the Aurora graph, <code>?c a :Customer</code> never matches, so there are no big spenders. <code>:Large_Order</code> alone needs only Redshift.</li>
+      <li>Checked both and still nothing? Stop and send Claude the query and what Studio shows.</li>
+    </ul>
+  </aside>
+
+  <h2><span class="sn">10.8</span>When to reach for reasoning</h2>
+  <p>Use it when a definition is <strong>shared</strong> and <strong>derivable</strong>: one definition, always fresh, applied across warehouses. Your Chapter 14 agent can then write <code>?c a :Big_Spender</code> instead of re-deriving the threshold and the join. Skip it when you need a <em>stored</em> answer (an audit snapshot), heavy aggregation on every query, or bad data <em>rejected</em>. Reasoning only adds conclusions; saying "no" is the next chapter's job.</p>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>After the reasoning query, where is the triple "customer:225 a :Big_Spender" stored?</summary><p>Nowhere. Stardog reasons at query time and doesn't materialize inferences. Turn reasoning off and the triple is gone.</p></details>
+    <details><summary>Why is <code>stardog:ecomm:Customer</code> the same class as our <code>:Customer</code>?</summary><p><code>stardog:</code> = <code>tag:stardog:api:</code>, so the name expands to <code>tag:stardog:api:ecomm:Customer</code>, exactly what <code>:Customer</code> expands to when <code>: = tag:stardog:api:ecomm:</code>.</p></details>
+    <details><summary>Reasoning is ON and the big-spender query returns nothing. Two likely causes?</summary><p>The query ran under the empty <code>default</code> schema instead of <code>c360_extended_rules</code> (only one schema per query), or the Aurora virtual graph wasn't in the dataset, so <code>?c a :Customer</code> never matched.</p></details>
+    <details><summary>Do the rules run in Aurora and Redshift?</summary><p>No. Stardog's planner expands the rules into extra query patterns first; only then is the query rewritten to SQL. The rule logic reaches the databases only as ordinary SQL (for example <code>WHERE price &gt; 250</code>) over live rows.</p></details>
+    <details><summary>What exactly makes a Large_Order here, and what does that imply?</summary><p><code>purchasePrice &gt; "250"^^xsd:decimal</code> on the unit price. One pricey item is enough, so 1,103 orders and 445 of 500 customers qualify. It's generous, but it's defined in one place and easy to change.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li><strong>Inference</strong> derives triples from data plus model. Stardog does it at query time and stores nothing.</li>
+    <li>A <strong>rule</strong> is <code>IF { pattern } THEN { triples }</code>, stored as a <code>rule:SPARQLRule</code>. A <strong>derived class</strong> gets its members only from rules. The <strong>reasoning level</strong> must be SL (the default) for rules to fire.</li>
+    <li>The kit's five rules: Large_Order (<code>price &gt; 250</code>), Big_Spender, 2022_Order, 2022_Orderer, Sports_Category_Shopper. Two of them chain.</li>
+    <li><code>stardog:ecomm:X</code> = <code>tag:stardog:api:ecomm:X</code> = our <code>:X</code>.</li>
+    <li>Rules are expanded in Stardog's planner <em>before</em> SPARQL becomes SQL, so they always run over live rows.</li>
+    <li>Reasoning and the schema are chosen per query, and only one schema is used per query. Pick <code>c360_extended_rules</code>.</li>
+    <li>Reasoning applies bad axioms too (the kit's <code>:rewardsAccountUsed owl:inverseOf :hasRewards</code>). Compare counts with reasoning off and on.</li>
+    <li>Build step 5 is done: 197 triples loaded, a second schema registered, and "big spenders per state" going from 0 rows to 42 (445 customers).</li>
+  </ul></section>
+
+  <section class="done">
+    <p><button class="sendback" type="button" data-chapter="10" data-step="5">Copy "Build step 5 done" message</button> <span class="sbmsg"></span></p>
+    <p class="donehint">Paste it to Claude with what you saw (the counts or results), so we can confirm it matches before the next build step relies on it.</p>
+  </section>
+
+  <nav class="pn">
+    <a href="ch09.html"><small>← Previous</small>Chapter 9 · Federation: where the magic happens</a>
+    <a href="ch11.html" style="text-align:right"><small>Next →</small>Chapter 11 · SHACL: when you do want rules to reject data</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f-10-1', (tl, cap) => {
+  const f = '#f-10-1 ';
+  cap(tl, 'Step 1: three real purchase rows arrive from Redshift as triples. Two are Carolyn\'s, one is Tull\'s.');
+  tl.from(f + '.ord', {opacity: 0, x: -20, stagger: 0.35, duration: 0.5});
+  cap(tl, 'Step 2: the "large purchases" rule tests each order: is purchasePrice > 250?');
+  tl.from(f + '.r1', {opacity: 0, scale: 0.7, transformOrigin: '50% 50%', duration: 0.5}, '+=0.4');
+  tl.from(f + '.yes', {opacity: 0, duration: 0.4}, '+=0.5');
+  tl.from(f + '.no text', {opacity: 0, stagger: 0.3, duration: 0.3}, '<');
+  cap(tl, 'Step 3: only the $10,479 order passes. It is now a Large_Order, inferred rather than stored (dashed).');
+  tl.from(f + '.lo', {opacity: 0, y: -10, duration: 0.6}, '+=0.4');
+  cap(tl, 'Step 4: the "big spenders" rule follows purchasedBy from each Large_Order to a Customer.');
+  tl.from(f + '.r2', {opacity: 0, scale: 0.7, transformOrigin: '50% 50%', duration: 0.5}, '+=0.6');
+  tl.from(f + '.link path', {opacity: 0, stagger: 0.3, duration: 0.4});
+  cap(tl, 'Step 5: Carolyn lights up as a Big_Spender. Tull, whose biggest order is $179.82, does not. Nothing is written to disk.');
+  tl.from(f + '.bs', {opacity: 0, scale: 0.85, transformOrigin: '50% 50%', duration: 0.6}, '+=0.3');
+});
+</script>
+</body>
+</html>

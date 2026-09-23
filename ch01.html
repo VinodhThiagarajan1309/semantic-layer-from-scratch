@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 1 · One question, five systems</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <aside class="box java"><p>intro</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>…</pre></div><div class="col"><p class="lbl">Java</p><pre>…</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> …</p></aside>   side-by-side Java analogy
+    <dfn>term</dfn>                       first definition of a glossary term
+   REQUIRED at the end of every chapter (before nav)
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 1</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 1</div>
+    <h1>One question, five systems</h1>
+    <p class="sub">Why a simple business question is hard to answer, and what a semantic layer does about it.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">On Monday morning someone in marketing sends you a message: "Who are our top spenders in Wisconsin? We want to invite them to a loyalty event." It's a one-line question, and every engineer knows it's not a one-line answer. The customers live in one system, the orders in another, the product catalog in a third, the loyalty accounts in a fourth, and the definition of "top spender" in somebody's spreadsheet. This chapter is about that gap, and about the idea this book builds: a layer that closes it by describing what the data <i>means</i> rather than copying it somewhere new.</p>
+
+  <h2><span class="sn">1.1</span>The question and the five systems</h2>
+
+  <p>In a typical company, answering "top spenders in Wisconsin" needs:</p>
+
+  <ol>
+    <li><b>The customer database</b>, usually an operational Postgres or MySQL behind the app or CRM: names, emails, and which address each customer has.</li>
+    <li><b>The data warehouse</b>, where orders land for analytics: every purchase, with a customer id, a date, a quantity and a price.</li>
+    <li><b>The product catalog</b>, if the question grows to "top spenders on sports gear in Wisconsin".</li>
+    <li><b>The loyalty or rewards system</b>, because marketing will immediately ask "and which of them already have a rewards account?"</li>
+    <li><b>The definitions</b>: whatever tool holds the agreed meaning of "top spender". Total spend or order count? Lifetime or this year? Usually a BI model, a dbt file, or a spreadsheet, in several slightly different versions.</li>
+  </ol>
+
+  <figure class="fig anim" id="f-1-1">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 700 340" width="700" role="img" aria-label="The question 'Who are our top spenders in Wisconsin?' in the middle, with lines to five systems: customer database, data warehouse, product catalog, rewards system, and the definitions in a BI tool or spreadsheet. In our lab, Aurora plays the customer and rewards roles and Redshift plays the warehouse and catalog roles.">
+      <g stroke="var(--muted)" stroke-width="1.3" stroke-dasharray="4 3" fill="none">
+        <path class="l1" d="M350 175 L130 70"/><path class="l2" d="M350 175 L570 70"/><path class="l3" d="M350 175 L590 280"/><path class="l4" d="M350 175 L110 280"/><path class="l5" d="M350 175 L350 300"/>
+      </g>
+      <g class="qq">
+        <rect x="215" y="145" width="270" height="60" rx="30" fill="var(--soft)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="350" y="171" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent)">"Who are our top spenders</text>
+        <text x="350" y="189" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent)">in Wisconsin?"</text>
+      </g>
+      <g font-size="12.5">
+        <g class="b1"><rect x="20" y="40" width="220" height="56" rx="8" fill="var(--paper)" stroke="var(--try)"/>
+        <text x="130" y="63" text-anchor="middle" font-weight="700" fill="var(--ink)">1 · Customer database</text>
+        <text x="130" y="82" text-anchor="middle" font-size="11" fill="var(--try)">our lab: Aurora (customer, address)</text></g>
+        <g class="b2"><rect x="460" y="40" width="220" height="56" rx="8" fill="var(--paper)" stroke="var(--try)"/>
+        <text x="570" y="63" text-anchor="middle" font-weight="700" fill="var(--ink)">2 · Data warehouse</text>
+        <text x="570" y="82" text-anchor="middle" font-size="11" fill="var(--try)">our lab: Redshift (purchase)</text></g>
+        <g class="b3"><rect x="490" y="250" width="200" height="56" rx="8" fill="var(--paper)" stroke="var(--try)"/>
+        <text x="590" y="273" text-anchor="middle" font-weight="700" fill="var(--ink)">3 · Product catalog</text>
+        <text x="590" y="292" text-anchor="middle" font-size="11" fill="var(--try)">our lab: Redshift (product, …)</text></g>
+        <g class="b4"><rect x="10" y="250" width="200" height="56" rx="8" fill="var(--paper)" stroke="var(--try)"/>
+        <text x="110" y="273" text-anchor="middle" font-weight="700" fill="var(--ink)">4 · Rewards system</text>
+        <text x="110" y="292" text-anchor="middle" font-size="11" fill="var(--try)">our lab: Aurora (rewards_account)</text></g>
+        <g class="b5"><rect x="250" y="272" width="200" height="56" rx="8" fill="var(--paper)" stroke="var(--model)"/>
+        <text x="350" y="295" text-anchor="middle" font-weight="700" fill="var(--ink)">5 · The definitions</text>
+        <text x="350" y="314" text-anchor="middle" font-size="11" fill="var(--model)">our lab: Stardog rules (ch10)</text></g>
+      </g>
+    </svg>
+    <p class="stepcap">5. Finally, what does "top spender" even mean? Somebody's spreadsheet knows. In our lab, a Stardog rule will (Chapter 10).</p>
+    <figcaption>Figure 1.1: One question, five systems. In our lab, two AWS databases stand in for the first four, and the fifth, the definitions, moves into Stardog.</figcaption>
+  </figure>
+
+  <p>Our lab is a small, honest version of this: two real AWS databases play the first four roles, and the fifth, the definitions, moves into the semantic layer as rules (Chapter 10).</p>
+
+  <h2><span class="sn">1.2</span>The usual answers, and what they cost</h2>
+
+  <p>You know the standard ways to answer a cross-system question. They all work, and each has a cost that grows with the number of questions and systems.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Approach</th><th>How it works</th><th>What it costs</th></tr></thead>
+    <tbody>
+      <tr><td><b>ETL into one warehouse</b></td><td>Copy customers and addresses from Aurora into Redshift every night, then JOIN.</td><td>A pipeline to build, schedule, monitor and fix. Data is as stale as the last run. Personal data lives in two places, with two sets of grants.</td></tr>
+      <tr><td><b>Federated SQL</b></td><td>A query engine (Trino, Athena federated queries, Redshift's federated query to Postgres) reads both sources in one SQL statement.</td><td>Solves the plumbing, not the meaning. The author still needs every table and join key, and "top spender" is still defined inside each query.</td></tr>
+      <tr><td><b>A BI semantic model</b></td><td>LookML, dbt metrics or a Power BI model defines "revenue" once for that tool.</td><td>Good within one tool, but tied to it (and usually one warehouse), and awkward for other programs or an AI agent to use.</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Notice the pattern. Getting rows from two places is solvable in several ways. The hard, recurring problem is <b>meaning</b>: which table holds customers, how orders connect to customers, what "top spender" means, who may see a Social Security number. Every approach above re-solves that in each pipeline, query or dashboard.</p>
+
+  <aside class="box sql">
+    <p>You cannot write <code>SELECT … FROM aurora.c360.customer JOIN redshift.c360.purchase …</code> in plain SQL: they are separate engines. Redshift's federated query can read an Aurora PostgreSQL database, and for this exact pair it would work. It stops being an answer once the third source is an API, a data lake or another vendor's warehouse, and it never tells anyone what the columns mean. Keep that distinction, <b>plumbing vs meaning</b>, in mind for the rest of the book.</p>
+  </aside>
+
+  <h2><span class="sn">1.3</span>What a semantic layer is, and what it isn't</h2>
+
+  <p>A <dfn>knowledge graph</dfn> is a way of representing information as a network of <i>things</i> (customers, orders, products) connected by named <i>relationships</i> (an order was <i>purchased by</i> a customer), together with a machine-readable description of what those things and relationships are. A <dfn>semantic layer</dfn> is a <i>job</i>, not a technology: a layer between people or programs and the physical data, where they ask questions in business terms and the layer works out which data answers them. A knowledge graph is one way to do that job (there are others; see "Other ways to build a semantic layer" below). This book builds the semantic layer <i>using</i> a knowledge graph.</p>
+
+  <p>Here the semantic layer is Stardog, with five parts, each of which you will build.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Part</th><th>What it does</th><th>Nearest SQL idea</th></tr></thead>
+    <tbody>
+      <tr><td><b>Ontology</b></td><td>The business vocabulary: kinds of things (Customer, Order) and how they relate</td><td>A logical data model, but one the database can read and reason with</td></tr>
+      <tr><td><b>Mappings</b></td><td>How each concept corresponds to tables and columns in Aurora and Redshift</td><td>The SELECT behind a view</td></tr>
+      <tr><td><b>Rules</b></td><td>Derived facts: "a customer with a large order is a big spender"</td><td>A view or a computed column, shared by every query</td></tr>
+      <tr><td><b>Security</b></td><td>Who may see which parts of the data</td><td>GRANTs and row/column security, in one place for all sources</td></tr>
+      <tr><td><b>Query engine</b></td><td>Takes one query, splits it by source, runs SQL, joins the results</td><td>A federated query planner</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Just as important is what it isn't:</p>
+  <ul>
+    <li><b>It is not a new database you ETL into.</b> Stardog <i>can</i> store data (Chapter 7), but in our design it stores none of the customer or order rows. They stay in Aurora and Redshift and are read at query time through <dfn>virtual graphs</dfn>, views defined over another database.</li>
+    <li><b>It is not magic.</b> You write the ontology and the mappings, and the answers are exactly as good as those.</li>
+    <li><b>It is not a warehouse replacement.</b> Heavy aggregation over billions of rows still belongs in Redshift. The layer pushes as much work as it can down to the databases (Chapter 9) and stitches the results together.</li>
+  </ul>
+
+  <aside class="box model">
+    <p>Picture a <b>universal translator who knows the business</b>. Every system speaks its own dialect. The translator carries one shared dictionary, the ontology, plus a phrasebook for each dialect, the mappings. You speak the shared language; it speaks to each system in its own.</p>
+  </aside>
+
+  <aside class="box java">
+    <p>The closest familiar Java stack is a JDBC <code>DataSource</code> plus Hibernate, if Hibernate could span many databases and every application shared the domain model:</p>
+    <div class="sbs"><div class="col"><p class="lbl">Stardog semantic layer</p><pre>ontology      :Customer, :Order,
+              :purchasedBy          # domain model
+mappings      c360.customer -&gt; :Customer
+              c360.purchase -&gt; :Order
+data sources  aurora_c360, redshift_c360
+query         SPARQL over :Customer, :Order</pre></div><div class="col"><p class="lbl">Java</p><pre>@Entity class Customer { … }   // domain model
+@Entity class Order { … }
+@Table(name = "customer")       // ORM mapping
+DataSource aurora;              // JDBC
+session.createQuery(
+  "from Order o where o.customer = :c")</pre></div></div>
+    <p class="breaks"><b>Where the analogy breaks:</b> a Hibernate session talks to one database and loads objects into memory. Stardog answers one query from several databases, returns rows rather than managed objects, and its domain model is itself data (triples) you can query and reason over, shared by every app, report and agent rather than compiled into each service.</p>
+  </aside>
+
+  <h3>Other ways to build a semantic layer</h3>
+
+  <p>A knowledge graph isn't the only way to build a semantic layer, and the relationship runs one way only: some semantic layers aren't knowledge graphs, and some knowledge graphs aren't semantic layers (Google's Knowledge Graph powers search results; others detect fraud or drive recommendations). There are six families in use today, and big companies often combine two of them.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Approach</th><th>Examples</th><th>How it works</th><th>Good at</th><th>Weaker at</th></tr></thead>
+    <tbody>
+      <tr><td><b>Metrics layer</b> ("headless BI")</td><td>dbt Semantic Layer (MetricFlow), Cube, AtScale, Looker's LookML, Snowflake semantic views, Databricks metric views</td><td>YAML or code defines entities, dimensions and measures ("revenue = sum(price × qty)") over a warehouse, then generates SQL</td><td>One consistent definition of every metric across dashboards; the most common choice today</td><td>Usually one warehouse; few relationships; no reasoning</td></tr>
+      <tr><td><b>BI-tool semantic model</b></td><td>Power BI semantic models (DAX), Tableau data models, SAP BusinessObjects "universes" (the original semantic layer, from the 1990s)</td><td>A business model built inside the reporting tool</td><td>Fast for analysts</td><td>Locked into that tool; other apps and agents can't reuse it</td></tr>
+      <tr><td><b>Data virtualization with business views</b></td><td>Denodo, Dremio, Trino/Starburst with views</td><td>One SQL query across engines, with views renamed into business terms</td><td>Cross-engine, no ETL</td><td>The "meaning" is only view and column names; no shared identity or rules</td></tr>
+      <tr><td><b>Knowledge graph</b> (this book)</td><td>Stardog, Ontotext GraphDB, Amazon Neptune (RDF); Neo4j (property graph)</td><td>An ontology plus mappings or loaded data, queried with SPARQL (or Cypher)</td><td>Relationships, one identity for the same customer across sources, rules and reasoning, federation (Stardog)</td><td>Steeper learning curve; slower than a warehouse at heavy aggregation</td></tr>
+      <tr><td><b>Operational ontology platform</b></td><td>Palantir Foundry Ontology</td><td>Business "object types", links <i>and actions</i> on top of datasets</td><td>Covers both reading and doing (workflows)</td><td>Proprietary; the data typically lives inside the platform</td></tr>
+      <tr><td><b>API or service layer</b></td><td>GraphQL (Apollo federation), domain microservices, even a JPA domain model</td><td>Business entities exposed as types or endpoints over many sources</td><td>Great for applications</td><td>Hand-coded; ad-hoc analytical questions are hard</td></tr>
+    </tbody>
+  </table></div>
+
+  <p><b>Which one when.</b> One warehouse and mostly KPIs and dashboards: a metrics layer, the cheapest and most mainstream option. Many systems, lots of relationships, the same customer scattered across them, and business rules like "big spender" that should be defined once: a knowledge graph. That is the customer-360 situation in this book, and the reason the AWS blog chose Stardog. For AI agents, every family is now adding an "AI-ready" semantic model (Snowflake Cortex Analyst's semantic model files, Databricks Genie, dbt's MCP server). A knowledge graph's edge there is that the ontology and its relationships give the model more meaning to work with.</p>
+
+  <aside class="box java">
+    <p>"Semantic layer" is an interface; a knowledge graph is one implementation of it.</p>
+    <div class="sbs"><div class="col"><p class="lbl">The job</p><pre>interface SemanticLayer {
+  // ask in business terms,
+  // get answers from the physical data
+  Result ask(String businessQuestion);
+}</pre></div><div class="col"><p class="lbl">Implementations</p><pre>class KnowledgeGraphLayer implements SemanticLayer {}  // this book
+class MetricsLayer        implements SemanticLayer {}  // dbt, Cube
+class VirtualViewsLayer   implements SemanticLayer {}  // Denodo
+class BiToolModel         implements SemanticLayer {}  // Power BI</pre></div></div>
+    <p class="breaks"><b>Where the analogy breaks:</b> real products don't share one clean interface. Each implementation covers a different part of the job (metrics, federation, relationships, reasoning), which is why companies often run two side by side, e.g. a metrics layer for dashboards and a knowledge graph for cross-system meaning and agents.</p>
+  </aside>
+
+  <h2><span class="sn">1.4</span>The three layers from the blog</h2>
+
+  <p>The AWS blog describes an agentic system in three layers, separating three jobs that often get blurred together.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 300" width="700" role="img" aria-label="Three stacked layers. Model layer: the LLM; the blog uses Claude Sonnet 4.6 on Amazon Bedrock, we use an OpenAI or OpenRouter model. Meaning layer: the semantic layer, Stardog, in both. Runtime layer: where the agent runs; the blog uses Bedrock AgentCore, we use a Python process on your laptop. Below them, the data: Aurora and Redshift.">
+      <text x="300" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="var(--muted)" letter-spacing="1">LAYER</text>
+      <text x="505" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="var(--blog)" letter-spacing="1">IN THE BLOG</text>
+      <text x="630" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="var(--accent)" letter-spacing="1">IN THIS BOOK</text>
+      <g font-size="12">
+        <rect x="20" y="34" width="420" height="58" rx="8" fill="var(--paper)" stroke="var(--accent2)" stroke-width="1.5"/>
+        <text x="36" y="58" font-size="14" font-weight="700" fill="var(--accent2)">Model</text>
+        <text x="36" y="78" fill="var(--ink)">the LLM: reads the question, writes queries, phrases answers</text>
+        <text x="505" y="58" text-anchor="middle" fill="var(--ink)">Claude Sonnet 4.6</text>
+        <text x="505" y="76" text-anchor="middle" fill="var(--muted)">on Amazon Bedrock</text>
+        <text x="630" y="58" text-anchor="middle" fill="var(--ink)">OpenAI model</text>
+        <text x="630" y="76" text-anchor="middle" fill="var(--muted)">or via OpenRouter</text>
+        <rect x="20" y="102" width="420" height="58" rx="8" fill="var(--soft)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="36" y="126" font-size="14" font-weight="700" fill="var(--accent)">Meaning</text>
+        <text x="36" y="146" fill="var(--ink)">the semantic layer: ontology, mappings, rules, security</text>
+        <text x="505" y="126" text-anchor="middle" fill="var(--ink)">Stardog</text>
+        <text x="630" y="126" text-anchor="middle" fill="var(--ink)">Stardog Cloud</text>
+        <text x="630" y="144" text-anchor="middle" fill="var(--muted)">Free tier</text>
+        <rect x="20" y="170" width="420" height="58" rx="8" fill="var(--paper)" stroke="var(--model)" stroke-width="1.5"/>
+        <text x="36" y="194" font-size="14" font-weight="700" fill="var(--model)">Runtime</text>
+        <text x="36" y="214" fill="var(--ink)">where the agent runs: sessions, tool calls, credentials</text>
+        <text x="505" y="194" text-anchor="middle" fill="var(--ink)">Bedrock AgentCore</text>
+        <text x="630" y="194" text-anchor="middle" fill="var(--ink)">Python on</text>
+        <text x="630" y="212" text-anchor="middle" fill="var(--muted)">your laptop</text>
+      </g>
+      <line x1="20" y1="246" x2="680" y2="246" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <rect x="120" y="258" width="200" height="34" rx="8" fill="var(--paper)" stroke="var(--try)"/>
+      <text x="220" y="280" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--try)">Aurora PostgreSQL</text>
+      <rect x="380" y="258" width="200" height="34" rx="8" fill="var(--paper)" stroke="var(--try)"/>
+      <text x="480" y="280" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--try)">Redshift Serverless</text>
+    </svg>
+    <figcaption>Figure 1.2: The blog's three layers, with the blog's choices and ours. The data stays below, untouched.</figcaption>
+  </figure>
+
+  <p><b>The model layer</b> is the language model: good at language, bad at knowing your data. Given only table names, it will cheerfully invent columns and guess join keys. <b>The meaning layer</b> fixes that: it gives the model a small, precise vocabulary ("an Order is <i>purchased by</i> a Customer; a Customer <i>has address</i> an Address") and a single query interface to everything. The model writes a query in business terms; the semantic layer turns it into correct SQL on the right systems. The word for this is <dfn>grounding</dfn>: the answer is tied to real data through a well-defined interface rather than to the model's guesses. <b>The runtime layer</b> runs the agent: holding the conversation, calling tools, keeping credentials safe.</p>
+
+  <p>Most of this book is about the middle layer. The model and runtime are interchangeable, which is why swapping Bedrock for OpenAI costs us nothing in the chapters that matter.</p>
+
+  <aside class="box blog">
+    <p>This chapter corresponds to the blog's opening sections: the <b>three layers</b> (Figure 1.2) and the <b>customer 360 use case</b>. The blog's closing advice on where to start (pick one workflow, write three to five competency questions, bootstrap the ontology, stand up virtual graphs, wire the agent) is essentially the table of contents of this book. <a href="https://aws.amazon.com/blogs/machine-learning/build-a-semantic-layer-for-agentic-ai-on-aws-with-stardog-and-amazon-bedrock-agentcore/">Read the blog post</a>.</p>
+  </aside>
+
+  <h2><span class="sn">1.5</span>Our use case: customer 360, split across two engines</h2>
+
+  <p>"Customer 360" means a complete view of each customer: who they are, where they live, what they bought, how they pay, whether they're in the rewards program. Our data is a Stardog training dataset (the <b>c360 knowledge kit</b>), split the way it might be in a real company: operational data in Aurora, transactional history in the warehouse.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Engine</th><th>Database.schema</th><th>Table</th><th>Rows</th><th>Key columns</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="4"><b>Aurora PostgreSQL</b></td><td rowspan="4"><code>c360.c360</code></td><td><code>customer</code></td><td>500</td><td><code>cid</code> (PK), <code>location</code> → address.id</td></tr>
+      <tr><td><code>address</code></td><td>500</td><td><code>id</code> (a UUID string), city, state, zip</td></tr>
+      <tr><td><code>credit_card</code></td><td>500</td><td><code>id</code>, <code>cid</code>, card_num, card_type</td></tr>
+      <tr><td><code>rewards_account</code></td><td>500</td><td><code>id</code>, <code>cid</code>, account_id, create_date</td></tr>
+      <tr><td rowspan="4"><b>Redshift Serverless</b></td><td rowspan="4"><code>dev.c360</code></td><td><code>purchase</code></td><td>2,500</td><td><code>id</code>, <code>pid</code>, <code>cid</code>, date, time, quantity, price</td></tr>
+      <tr><td><code>product</code></td><td>580</td><td><code>id</code>, name, brand, price, dept</td></tr>
+      <tr><td><code>category</code></td><td>31</td><td><code>id</code>, dept_name, parent</td></tr>
+      <tr><td><code>vendor</code></td><td>418</td><td><code>id</code>, vendor_name, industry</td></tr>
+    </tbody>
+  </table></div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 250" width="700" role="img" aria-label="Aurora box with tables customer, address, credit_card, rewards_account; Redshift box with purchase, product, category, vendor. A dashed line connects customer.cid in Aurora with purchase.cid in Redshift, labeled: same value, 225, but no foreign key and a different engine.">
+      <rect x="20" y="20" width="280" height="210" rx="12" fill="var(--soft)" stroke="var(--try)" stroke-width="1.5"/>
+      <text x="160" y="44" text-anchor="middle" font-size="13" font-weight="700" fill="var(--try)">Aurora PostgreSQL</text>
+      <rect x="400" y="20" width="280" height="210" rx="12" fill="var(--soft)" stroke="var(--try)" stroke-width="1.5"/>
+      <text x="540" y="44" text-anchor="middle" font-size="13" font-weight="700" fill="var(--try)">Redshift Serverless</text>
+      <g font-size="12" fill="var(--ink)">
+        <rect x="40" y="60" width="240" height="44" rx="6" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="52" y="79" font-weight="700">customer</text><text x="52" y="96" font-size="11" fill="var(--muted)">cid = 225 · Carolyn Inworth</text>
+        <rect x="40" y="112" width="240" height="30" rx="6" fill="var(--paper)" stroke="var(--line)"/><text x="52" y="132">address · Milwaukee, Wisconsin</text>
+        <rect x="40" y="148" width="240" height="30" rx="6" fill="var(--paper)" stroke="var(--line)"/><text x="52" y="168">credit_card</text>
+        <rect x="40" y="184" width="240" height="30" rx="6" fill="var(--paper)" stroke="var(--line)"/><text x="52" y="204">rewards_account</text>
+        <rect x="420" y="60" width="240" height="44" rx="6" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="432" y="79" font-weight="700">purchase</text><text x="432" y="96" font-size="11" fill="var(--muted)">cid = 225 · many rows</text>
+        <rect x="420" y="112" width="240" height="30" rx="6" fill="var(--paper)" stroke="var(--line)"/><text x="432" y="132">product</text>
+        <rect x="420" y="148" width="240" height="30" rx="6" fill="var(--paper)" stroke="var(--line)"/><text x="432" y="168">category</text>
+        <rect x="420" y="184" width="240" height="30" rx="6" fill="var(--paper)" stroke="var(--line)"/><text x="432" y="204">vendor</text>
+      </g>
+      <path d="M280 82 L420 82" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="350" y="72" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--accent)">same cid</text>
+      <text x="350" y="100" text-anchor="middle" font-size="10.5" fill="var(--muted)">no FK, no shared</text>
+      <text x="350" y="114" text-anchor="middle" font-size="10.5" fill="var(--muted)">engine, no JOIN</text>
+    </svg>
+    <figcaption>Figure 1.3: The split. The only thing connecting the two engines is a value: the customer id <code>cid</code> appears in both. Chapter 9 turns that shared value into a shared name.</figcaption>
+  </figure>
+
+  <p>Aurora's <code>customer.cid</code> is a primary key; Redshift's <code>purchase.cid</code> is a plain integer column with the same values. There can be no foreign key across engines. Carolyn Inworth is <code>cid</code> 225 in Aurora, and her purchases carry <code>cid</code> 225 in Redshift. Hold on to that: Chapters 3 and 9 turn that shared value into a shared <i>name</i>, the whole trick behind joining the two databases without ETL.</p>
+
+  <h3>Competency questions</h3>
+
+  <p>Before designing any vocabulary, the blog recommends writing down <dfn>competency questions</dfn>: a short list of real questions the ontology must be "competent" to answer. They keep the model small and honest; anything nobody asks about stays out. Ours come from the blog, plus the one we started with:</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>Question</th><th>Needs</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>List ten customers and their state.</td><td>Aurora only</td></tr>
+      <tr><td>2</td><td>Top ten products by units sold.</td><td>Redshift only</td></tr>
+      <tr><td>3</td><td>Top ten customer spenders, with their state.</td><td>Both (federated)</td></tr>
+      <tr><td>4</td><td>How many big spenders per state?</td><td>Both, plus a rule (reasoning)</td></tr>
+      <tr><td>5</td><td>Who are our top spenders in Wisconsin?</td><td>Both, plus a filter</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>These five come back in Chapter 14 as the test for the finished agent. You could answer the first two in SQL today, the third only with extra plumbing. The fourth needs a shared definition of "big spender" that doesn't exist yet.</p>
+
+  <h2><span class="sn">1.6</span>The questions this book answers</h2>
+
+  <p>Competency questions are what the <i>system</i> must answer. Your own questions as a skeptical database engineer (how the agent knows the ontology, who knows which data lives where, where SPARQL becomes SQL, how two engines' results get joined) are listed with their chapters in Section P.2. The short version: the <b>mappings</b> know where data lives, and Stardog's query engine splits the query, runs SQL on each source and joins the results itself, storing nothing (Chapter 9).</p>
+
+  <p>The chapters follow the build order: <b>foundations</b> (ch2–4: triples, names, SPARQL), <b>the model</b> (ch5–6: the ontology), <b>the data</b> (ch7–9: virtual graphs, mappings, federation), <b>meaning and control</b> (ch10–12: rules, SHACL, security) and <b>the agent</b> (ch13–14).</p>
+
+  <h2><span class="sn">1.7</span>The terms from this chapter</h2>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td><b>Knowledge graph</b></td><td>Data stored as things connected by named relationships, plus a description of what they mean.</td><td>Meaning travels with the data, not in people's heads.</td><td>Order 0e7e… <i>purchased by</i> customer 225.</td></tr>
+      <tr><td><b>Semantic layer</b></td><td>A knowledge graph used as a layer between consumers and physical databases.</td><td>Ask in business terms once, instead of re-encoding meaning in every query.</td><td>Ask for "Customers in Wisconsin", not <code>customer JOIN address</code>.</td></tr>
+      <tr><td><b>Virtual graph</b></td><td>A view-like graph whose facts are produced from SQL at query time.</td><td>Query data where it lives, with no ETL.</td><td><code>aurora_c360_safe</code> over Aurora's tables.</td></tr>
+      <tr><td><b>Grounding</b></td><td>Tying an LLM's answer to real data through a well-defined interface.</td><td>Models invent columns and joins when they guess.</td><td>The agent must answer from <code>run_sparql</code> results.</td></tr>
+      <tr><td><b>Competency question</b></td><td>A real question the finished system must answer.</td><td>Keeps the model small and gives you an acceptance test.</td><td>"How many big spenders per state?"</td></tr>
+    </tbody>
+  </table></div>
+
+  <aside class="box try">
+    <p>No building yet: a two-minute, read-only look at the baseline.</p>
+    <p><b>1. In DBeaver, on the Aurora connection</b>, run the question "how many customers per state?" the SQL way:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT a.state, COUNT(*) AS customers
+FROM c360.customer c
+JOIN c360.address  a ON a.id = c.location
+GROUP BY a.state
+ORDER BY customers DESC
+LIMIT 5;</pre></div>
+    <p><b>Expect:</b> Texas 53, California 51, Florida 48, District of Columbia 28, New York 25. (If Aurora was paused, the first run takes 15–20 seconds.) Remember these numbers: in Chapter 8 you will get the same answer from Stardog.</p>
+    <p><b>2. In DBeaver, on the Redshift connection</b>, count the orders:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT COUNT(*) FROM c360.purchase;</pre></div>
+    <p><b>Expect:</b> 2500. Now try to write, in one SQL statement, the sum of purchases per customer <i>with the customer's state</i>. You can't: the state is in the other database.</p>
+    <p><b>3. In Studio</b>, open the Workspace, choose the database <b>kit-c360</b> from the database menu, and run this. It counts every triple in the database, in every graph:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT (COUNT(*) AS ?n)
+WHERE { { ?s ?p ?o } UNION { GRAPH ?g { ?s ?p ?o } } }</pre></div>
+    <p><b>Expect:</b> one row, <code>n</code> = 0. The database is empty, by design. The syntax comes in Chapter 4.</p>
+  </aside>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>What's the difference between the "plumbing" problem and the "meaning" problem?</summary><p>Plumbing is getting rows from several systems into one place (ETL, federated SQL). Meaning is knowing which tables represent a customer or an order, how they connect, and what terms like "top spender" mean. Most tools solve plumbing; the semantic layer is mainly about meaning, and brings its own plumbing (virtual graphs).</p></details>
+    <details><summary>Does Stardog store copies of the customers and orders in our design?</summary><p>No. The rows stay in Aurora and Redshift. Stardog holds the ontology, mappings, rules and security, and reads the data at query time through virtual graphs.</p></details>
+    <details><summary>Which of the blog's three layers does this book mostly teach, and which two do we swap?</summary><p>The meaning layer (Stardog). We swap the model (Claude on Bedrock becomes an OpenAI or OpenRouter model) and the runtime (AgentCore becomes Python on your laptop).</p></details>
+    <details><summary>What connects Carolyn's Aurora row to her Redshift purchases?</summary><p>Only a value: <code>cid</code> = 225 appears in both, with no foreign key and no shared engine. Chapters 3 and 9 turn it into a shared name, which makes the federated join work.</p></details>
+    <details><summary>What is a competency question, and why write them first?</summary><p>A real question the finished system must answer. Writing three to five first keeps the ontology small: you model what the questions need and nothing else. They also become the agent's acceptance test.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li>A simple business question usually touches several systems plus a set of informal definitions.</li>
+    <li>ETL, federated SQL and BI semantic models solve the plumbing but re-solve the meaning in every pipeline, query or dashboard.</li>
+    <li>A semantic layer is a job: a business-terms layer over physical data. We build it with a knowledge graph (ontology, mappings, rules, security and a query engine); metrics layers, BI models and data virtualization are other ways. It is not a database you copy into.</li>
+    <li>The blog's three layers are model, meaning and runtime; we keep Stardog for meaning and swap the other two for OpenAI/OpenRouter and plain Python.</li>
+    <li>Our data: customers, addresses, cards and rewards in Aurora; purchases, products, categories and vendors in Redshift; tied together only by <code>cid</code>.</li>
+    <li>Five competency questions define what the system must answer.</li>
+  </ul></section>
+
+  <nav class="pn">
+    <a href="preface.html"><small>← Previous</small>Preface · What we are building</a>
+    <a href="ch02.html" style="text-align:right"><small>Next →</small>Chapter 2 · The triple: the atom of knowledge</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f-1-1', (tl, cap) => {
+  const f = '#f-1-1 ';
+  cap(tl, 'Marketing asks one question.');
+  tl.from(f + '.qq', {opacity: 0, scale: .9, transformOrigin: '50% 50%', duration: .6});
+  const steps = [
+    ['1. Names and addresses live in the customer database.', 1],
+    ['2. Orders live in the warehouse, keyed by a customer id.', 2],
+    ['3. "Top spenders on sports gear?" Now you need the product catalog too.', 3],
+    ['4. "Which of them are in the rewards program?" Another system.', 4],
+    ['5. Finally, what does "top spender" even mean? Somebody\'s spreadsheet knows. In our lab, a Stardog rule will (Chapter 10).', 5]
+  ];
+  steps.forEach(([text, i]) => {
+    cap(tl, text, '+=.5');
+    tl.from(f + '.l' + i, {opacity: 0, duration: .4});
+    tl.from(f + '.b' + i, {opacity: 0, y: 8, duration: .5});
+  });
+});
+</script>
+</body>
+</html>

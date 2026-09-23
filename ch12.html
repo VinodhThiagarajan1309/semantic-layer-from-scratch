@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 12 · Governance: same question, different answers</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Chapter 12</span></div>
+
+  <header class="opener">
+    <div class="num">Chapter 12</div>
+    <h1>Governance: same question, different answers</h1>
+    <p class="sub">Users, roles and permissions in Stardog, and how one switch makes the PII graph vanish for marketing while HR still sees it.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">Two colleagues paste the same SPARQL into Studio at the same moment: "show me Jolynn Bithany's name and SSN." Priya from HR gets <code>Jolynn Bithany | 609-38-5573</code>. Marco from marketing gets <code>Jolynn Bithany |</code> with an empty cell. No error, no "access denied": for Marco, the part of the graph that holds SSNs simply doesn't exist. Nobody wrote a second query, a masked view, or a <code>GRANT</code> in Aurora. By the end of this chapter you'll have built exactly that, and your Chapter 14 agent inherits it for free: an LLM running as marketing that asks for SSNs gets nothing to leak.</p>
+
+  <h2><span class="sn">12.1</span>Five terms, broken down</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>What it is</th><th>Why it exists</th><th>Tiny example</th></tr></thead>
+    <tbody>
+      <tr><td><dfn>User</dfn></td><td>A login on the Stardog server (username + password).</td><td>Every request is made <em>as</em> someone.</td><td><code>stardog_admin</code>, and soon <code>hr_user</code></td></tr>
+      <tr><td><dfn>Role</dfn></td><td>A named bundle of permissions that users are assigned to.</td><td>You change a policy in one place, not per person.</td><td><code>marketing</code></td></tr>
+      <tr><td><dfn>Permission</dfn></td><td>A triple of <em>action</em> + <em>resource type</em> + <em>resource</em>.</td><td>To say exactly what may be done to what.</td><td><code>read</code> + <code>db</code> + <code>kit-c360</code></td></tr>
+      <tr><td><dfn>Named-graph security</dfn></td><td>A database option that makes each named graph a separately permissioned resource.</td><td>So access can be narrower than "the whole database."</td><td><code>read</code> on <code>named-graph:kit-c360\virtual://aurora_c360_safe</code></td></tr>
+      <tr><td><dfn>Sensitive property</dfn></td><td>A property whose values are masked for users without explicit permission.</td><td>Hides one column-like property wherever it appears, without splitting graphs.</td><td><code>:ssn</code> shows as a masked string for marketing.</td></tr>
+    </tbody>
+  </table></div>
+
+  <aside class="box sql">
+    <p>You know this pattern from Postgres: a user is a login role, a Stardog role is a group role, and a permission is a <code>GRANT</code>, so <code>GRANT SELECT ON c360.customer TO marketing</code> becomes <code>read</code> on a named graph. The differences: Stardog grants are on <em>graphs</em> (or sensitive <em>properties</em>), not tables or columns, and apply to meaning that can span two warehouses. And a graph you can't read doesn't raise "permission denied"; it silently disappears from your query, closer to row-level security than to a failed <code>SELECT</code>.</p>
+  </aside>
+
+  <aside class="box java"><p>Roles and permissions work like Spring Security: you declare them, and the framework enforces them before your code runs.</p><div class="sbs"><div class="col"><p class="lbl">Stardog</p><pre>role  hr
+  read · db          · kit-c360
+  read · named-graph · kit-c360\virtual://aurora_c360_safe
+  read · named-graph · kit-c360\virtual://aurora_c360_pii
+user  hr_user  → role hr</pre></div><div class="col"><p class="lbl">Java</p><pre>@PreAuthorize("hasRole('HR')")
+public String ssn(int cid) {
+  return customerRepo.ssn(cid);
+}
+// marketing_user → AccessDeniedException</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> <code>@PreAuthorize</code> guards a <em>method</em> and throws. Stardog guards <em>data</em> (graphs) whichever query touches it, and for <code>GRAPH</code>/<code>FROM</code> silently removes the graph; only <code>SERVICE</code> throws.</p></aside>
+
+  <h2><span class="sn">12.2</span>The Stardog security model</h2>
+  <p>Stardog's docs define a permission as an <strong>action</strong> on a <strong>resource</strong> of some <strong>resource type</strong>. The valid actions are <code>read</code>, <code>write</code>, <code>create</code>, <code>delete</code>, <code>grant</code>, <code>revoke</code>, <code>execute</code>, and <code>all</code>. The resource types you'll meet most:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Resource type</th><th>Written as (CLI)</th><th>Controls</th></tr></thead>
+    <tbody>
+      <tr><td><code>db</code></td><td><code>db:kit-c360</code></td><td>querying / updating a database</td></tr>
+      <tr><td><code>named-graph</code></td><td><code>named-graph:kit-c360\&lt;graph IRI&gt;</code></td><td>one graph, <em>only if</em> named-graph security is on</td></tr>
+      <tr><td><code>virtual-graph</code></td><td><code>virtual-graph:virtual://name</code></td><td>managing a virtual graph's definition</td></tr>
+      <tr><td><code>data-source</code></td><td><code>data-source:data-source://name</code></td><td>managing a JDBC data source</td></tr>
+      <tr><td><code>sensitive-properties</code></td><td><code>sensitive-properties:kit-c360</code></td><td>seeing unmasked sensitive values</td></tr>
+      <tr><td><code>metadata</code>, <code>admin</code>, <code>dbms-admin</code>, <code>stored-query</code>, <code>icv-constraints</code>…</td><td></td><td>database options, admin tasks, and the rest</td></tr>
+    </tbody>
+  </table></div>
+  <p>Your server (read with a read-only API call) has two roles. <strong><code>cloud</code></strong> has every action on every resource type and belongs to <code>stardog_admin</code>, which is why nothing in this chapter locks <em>you</em> out. <strong><code>reader</code></strong> has <code>read</code> on <code>db</code>, <code>named-graph</code>, <code>virtual-graph</code>, <code>data-source</code>, <code>metadata</code>, <code>stored-query</code> and <code>icv-constraints</code>, all with the wildcard <code>*</code>. Remember that <code>named-graph *</code> line; it comes back in a gotcha.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 220" role="img" aria-label="Users are assigned roles; roles hold permissions; each permission is an action on a resource of a resource type">
+      <rect x="10" y="30" width="140" height="56" rx="8" style="fill:var(--soft);stroke:var(--line)"/>
+      <text x="80" y="54" text-anchor="middle" style="fill:var(--subj);font-size:13px;font-weight:700">hr_user</text>
+      <text x="80" y="72" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">user</text>
+      <rect x="10" y="130" width="140" height="56" rx="8" style="fill:var(--soft);stroke:var(--line)"/>
+      <text x="80" y="154" text-anchor="middle" style="fill:var(--subj);font-size:13px;font-weight:700">marketing_user</text>
+      <text x="80" y="172" text-anchor="middle" style="fill:var(--muted);font-size:11.5px">user</text>
+      <rect x="200" y="30" width="110" height="56" rx="28" style="fill:none;stroke:var(--accent);stroke-width:2"/>
+      <text x="255" y="63" text-anchor="middle" style="fill:var(--accent);font-size:13px;font-weight:700">role: hr</text>
+      <rect x="200" y="130" width="110" height="56" rx="28" style="fill:none;stroke:var(--accent);stroke-width:2"/>
+      <text x="255" y="163" text-anchor="middle" style="fill:var(--accent);font-size:13px;font-weight:700">role: marketing</text>
+      <rect x="360" y="14" width="310" height="192" rx="8" style="fill:var(--code);stroke:var(--line)"/>
+      <text x="372" y="36" style="fill:var(--muted);font-size:11px">PERMISSIONS (action · type · resource)</text>
+      <g style="font-size:11.5px;font-family:ui-monospace,Menlo,monospace">
+        <text x="372" y="60" style="fill:var(--pred)">read · db · kit-c360</text>
+        <text x="372" y="80" style="fill:var(--pred)">read · named-graph · …\virtual://aurora_c360_safe</text>
+        <text x="372" y="100" style="fill:var(--pred)">read · named-graph · …\virtual://redshift_c360</text>
+        <text x="372" y="120" style="fill:var(--pred)">read · named-graph · …\urn:…:model (×2)</text>
+        <text x="372" y="150" style="fill:var(--obj)">read · named-graph · …\virtual://aurora_c360_pii</text>
+        <text x="372" y="190" style="fill:var(--muted)">(…\ = kit-c360\)</text>
+      </g>
+      <text x="520" y="168" text-anchor="middle" style="fill:var(--obj);font-size:11px">hr only</text>
+      <g style="stroke:var(--muted);stroke-width:1.6;fill:none"><path d="M150 58 H196"/><path d="M150 158 H196"/><path d="M310 58 H356"/><path d="M310 158 C335 158 335 90 356 90"/><path d="M310 52 C340 52 340 146 356 146"/></g>
+      <g style="fill:var(--muted)"><path d="M196 54 l8 4 -8 4z"/><path d="M196 154 l8 4 -8 4z"/><path d="M356 54 l8 4 -8 4z"/><path d="M356 86 l8 4 -8 4z"/><path d="M356 142 l8 4 -8 4z"/></g>
+    </svg>
+    <figcaption>Figure 12.1: Users get roles, and roles hold permissions. Both roles share the "safe" permissions. Only <code>hr</code> gets the PII graph.</figcaption>
+  </figure>
+
+  <h2><span class="sn">12.3</span>Named-graph security, and why virtual graphs are covered</h2>
+  <p>By default a user who can read a database can read <em>every</em> graph in it. The option <code>security.named.graphs</code> changes that: "If enabled, named graphs are an explicit resource type in Stardog's security model." It's <code>false</code> by default and on <code>kit-c360</code> today, and can be changed while the database is online. Once it's on:</p>
+  <ul>
+    <li>A graph permission is written <code>named-graph:&lt;db&gt;\&lt;graph IRI&gt;</code>, with a backslash between database and graph. The docs' example is <code>stardog-admin user grant -a read -o 'named-graph:myDB\http://example.org/g1' myUser</code>.</li>
+    <li>Only <code>read</code> and <code>write</code> apply to named graphs, and "Wildcards <strong>cannot</strong> be used to grant permissions over named graphs," so you list each graph.</li>
+    <li>Graphs a user can't read are "silently dropped from the RDF dataset for the query," with no error.</li>
+  </ul>
+  <p>Do virtual graphs count? Yes. The docs' <em>Virtual Graph Security</em> page says "Accessing virtual graphs is controlled the same way as regular named graphs": with named-graph security off, all virtual graphs are accessible, and with it on, "users will be able to query only the virtual graphs for which they have been granted access." So the permission for our PII graph is <code>read</code> on <code>named-graph:kit-c360\virtual://aurora_c360_pii</code>. (That exact string isn't printed on the page; it follows from the named-graph format. If Studio rejects it, tell Claude.) The same page distinguishes query forms:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>How the query names the graph</th><th>User lacks permission →</th></tr></thead>
+    <tbody>
+      <tr><td><code>GRAPH &lt;virtual://aurora_c360_pii&gt; { … }</code></td><td>treated as empty, no error</td></tr>
+      <tr><td><code>FROM &lt;virtual://aurora_c360_pii&gt;</code></td><td>treated as empty, no error</td></tr>
+      <tr><td><code>SERVICE &lt;virtual://aurora_c360_pii&gt; { … }</code></td><td>an error</td></tr>
+    </tbody>
+  </table></div>
+  <aside class="box java"><p>The silent disappearance is closer to a Hibernate <code>@Filter</code> switched on per session than to an access check.</p><div class="sbs"><div class="col"><p class="lbl">What marketing effectively runs</p><pre>SELECT ?name ?ssn WHERE {
+  GRAPH &lt;virtual://aurora_c360_safe&gt; { … }
+  OPTIONAL {
+    GRAPH &lt;virtual://aurora_c360_pii&gt; { … }  # dropped
+  }
+}
+# → Jolynn Bithany | (empty)</pre></div><div class="col"><p class="lbl">Java</p><pre>@Entity
+@FilterDef(name = "noPii")
+@Filter(name = "noPii", condition = "1 = 0")
+class CustomerPii { … }
+
+session.enableFilter("noPii");  // marketing
+// queries on CustomerPii return nothing,
+// no exception</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> a Hibernate filter lives in one application and one database. Stardog enforces the permission in the data layer, for every client and every source behind it, so no application code can forget it.</p></aside>
+
+  <p>This is why Chapter 8 split Aurora into <code>aurora_c360_safe</code> and <code>aurora_c360_pii</code>: security works per graph, and the PII mapping holds only <code>:ssn</code> and <code>:cardNumber</code>, so hiding that graph hides exactly those two properties.</p>
+
+  <figure class="fig anim" id="f-12-2">
+    <button class="play" type="button">▶ Play</button>
+    <svg viewBox="0 0 680 310" role="img" aria-label="The same query is sent by hr_user and marketing_user; hr sees all three virtual graphs and gets the SSN; for marketing the PII graph is dropped and the SSN cell is empty">
+      <rect x="215" y="8" width="250" height="44" rx="8" style="fill:var(--code);stroke:var(--line)"/>
+      <text x="340" y="27" text-anchor="middle" style="fill:var(--ink);font-size:12px;font-family:ui-monospace,Menlo,monospace">SELECT ?name ?ssn … customer:1</text>
+      <text x="340" y="44" text-anchor="middle" style="fill:var(--muted);font-size:11px">same text, two users</text>
+      <g class="q1"><path d="M290 52 L170 88" style="stroke:var(--muted);stroke-width:1.6;fill:none"/><path d="M166 84 l-6 7 9 0z" style="fill:var(--muted)"/></g>
+      <g class="q2"><path d="M390 52 L510 88" style="stroke:var(--muted);stroke-width:1.6;fill:none"/><path d="M514 84 l6 7 -9 0z" style="fill:var(--muted)"/></g>
+      <text x="170" y="108" text-anchor="middle" style="fill:var(--subj);font-size:13px;font-weight:700">hr_user (role hr)</text>
+      <text x="510" y="108" text-anchor="middle" style="fill:var(--subj);font-size:13px;font-weight:700">marketing_user (role marketing)</text>
+      <g class="hg">
+        <rect x="30" y="122" width="280" height="30" rx="6" style="fill:var(--soft);stroke:var(--try)"/><text x="170" y="142" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">virtual://aurora_c360_safe ✓</text>
+        <rect x="30" y="158" width="280" height="30" rx="6" style="fill:var(--soft);stroke:var(--try)"/><text x="170" y="178" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">virtual://redshift_c360 ✓</text>
+        <rect x="30" y="194" width="280" height="30" rx="6" style="fill:var(--soft);stroke:var(--try)"/><text x="170" y="214" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">virtual://aurora_c360_pii ✓</text></g>
+      <g class="mg">
+        <rect x="370" y="122" width="280" height="30" rx="6" style="fill:var(--soft);stroke:var(--try)"/><text x="510" y="142" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">virtual://aurora_c360_safe ✓</text>
+        <rect x="370" y="158" width="280" height="30" rx="6" style="fill:var(--soft);stroke:var(--try)"/><text x="510" y="178" text-anchor="middle" style="fill:var(--ink);font-size:11.5px">virtual://redshift_c360 ✓</text></g>
+      <g class="pii"><rect x="370" y="194" width="280" height="30" rx="6" style="fill:none;stroke:var(--gotcha);stroke-dasharray:5 4"/><text x="510" y="214" text-anchor="middle" style="fill:var(--gotcha);font-size:11.5px">virtual://aurora_c360_pii: dropped, no error</text></g>
+      <g class="r1"><rect x="30" y="244" width="280" height="50" rx="8" style="fill:var(--paper);stroke:var(--line)"/>
+        <text x="45" y="265" style="fill:var(--muted);font-size:11px">name · ssn</text>
+        <text x="45" y="284" style="fill:var(--ink);font-size:12.5px;font-family:ui-monospace,Menlo,monospace">Jolynn Bithany · 609-38-5573</text></g>
+      <g class="r2"><rect x="370" y="244" width="280" height="50" rx="8" style="fill:var(--paper);stroke:var(--line)"/>
+        <text x="385" y="265" style="fill:var(--muted);font-size:11px">name · ssn</text>
+        <text x="385" y="284" style="fill:var(--ink);font-size:12.5px;font-family:ui-monospace,Menlo,monospace">Jolynn Bithany · (empty)</text></g>
+    </svg>
+    <p class="stepcap">Same SPARQL, two roles, two result sets. HR sees the SSN. For marketing the PII graph was silently removed from the query's dataset, so the OPTIONAL part finds nothing.</p>
+    <figcaption>Figure 12.2: Named-graph security is applied while the query is planned. The PII virtual graph isn't hidden after the fact. For marketing it's never queried at all.</figcaption>
+  </figure>
+
+  <aside class="box blog">
+    <p>This is the blog's section "Govern access with named-graph security." Its setup is the one you're building: <code>aurora_c360_safe</code>, <code>aurora_c360_pii</code> and <code>redshift_c360</code>, where <code>hr_user</code> has "Read on all three virtual graphs" and <code>marketing_user</code> has "Read on <code>aurora_c360_safe</code> and <code>redshift_c360</code> only." When marketing asks for <code>?c :ssn ?ssn</code>, "Stardog's planner treats <code>aurora_c360_pii</code> as if it did not exist for that user." In the blog's words: "Same SPARQL query, two roles, two different result sets." (The blog names both roles and users <code>hr_user</code>/<code>marketing_user</code>; we name the roles <code>hr</code> and <code>marketing</code> to tell them apart.)</p>
+  </aside>
+
+  <h2><span class="sn">12.4</span>The alternative: sensitive properties</h2>
+  <p>Splitting graphs means designing mappings around security. Stardog's other tool works per <em>property</em>: you list property IRIs in the database option <code>security.properties.sensitive</code> (named groups go in <code>security.properties.sensitive.groups</code>). Users without <code>read</code> on <code>sensitive-properties:kit-c360</code> (or <code>sensitive-properties:kit-c360\GroupName</code> for a group) get the row with the value masked, by default as a SHA-256 hash. <code>kit-c360</code> has a friendlier mask in <code>security.masking.function</code>: the string <em>"Insufficient privileges to view this value"</em>.</p>
+  <p>So with <code>security.properties.sensitive = tag:stardog:api:ecomm:ssn</code>, marketing would see <code>Jolynn Bithany | Insufficient privileges to view this value</code> instead of an empty cell, arguably clearer because they learn the value exists. The blog describes this route as tagging <code>:ssn</code> as <code>m:SensitiveProperty</code> in the model (<code>m:</code> = <code>urn:stardog:modules:</code>); the server docs describe the database option, not that tag, so if you try it, set the option.</p>
+  <aside class="box gotcha">
+    <p>The docs say the sensitive-property feature "should not be considered production-ready": full-text search and zero-length property paths can bypass the mask, write permissions aren't restricted, and they don't say whether masking applies to virtual graphs. For real PII, use the graph split (what we built) as the control, and treat masking as a convenience on top.</p>
+  </aside>
+
+  <h2><span class="sn">12.5</span>Why this beats per-warehouse grants, and where it doesn't</h2>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>Grants in each warehouse</th><th>Named-graph security in Stardog</th></tr></thead>
+    <tbody>
+      <tr><td>Where policy lives</td><td>Aurora <code>GRANT</code>s + Redshift <code>GRANT</code>s, kept in sync by hand</td><td>One place, stated in business terms (the "PII graph")</td></tr>
+      <tr><td>Cross-warehouse questions</td><td>Each engine enforces its half; the join happens in someone's code</td><td>One query, one policy, applied before any SQL is sent</td></tr>
+      <tr><td>An agent writing arbitrary queries</td><td>Needs its own DB credentials per warehouse</td><td>Runs as one Stardog user and can't reach what that user can't read</td></tr>
+      <tr><td>Adding a third source (say, Athena)</td><td>A third grant system</td><td>One more graph to permission</td></tr>
+    </tbody>
+  </table></div>
+  <p>The honest limit: Stardog reaches Aurora and Redshift through the data sources' <em>own</em> logins (Chapter 7), so the warehouses see one service account, not Priya or Marco. Keep that account least-privileged (read-only on schema <code>c360</code>) and treat Stardog's roles as the per-person layer on top; warehouse controls stay as defense in depth. (Stardog can pass through a user's own credentials for some sources, such as Databricks with Microsoft Entra ID, but not in our setup.)</p>
+
+  <h2><span class="sn">12.6</span>Build step 6: two roles, two users, one query</h2>
+  <p>Users and roles live in Studio → <strong>Security</strong> (the padlock in the left sidebar), available on your Free tier. Per the docs: <strong>+</strong> in the ROLES pane to add a role; select a role → <strong>Add Permission</strong> (action, resource type, resource); <strong>+</strong> in the USERS pane to add a user; select a user → <strong>Assign Role</strong>. And "When adding permissions via Studio, you can omit the resource type prefix," so you type <code>kit-c360\virtual://aurora_c360_safe</code>, not <code>named-graph:kit-c360\…</code>.</p>
+
+  <aside class="box try">
+    <p><strong>1. Baseline, as <code>stardog_admin</code>.</strong> Run this in Studio (reasoning off). Expect one row, <code>Jolynn Bithany | 609-38-5573</code> (fake data). Aurora may take about 20 s to wake.</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?name ?ssn
+WHERE {
+  VALUES ?c { &lt;urn:stardog:demos:c360:customer:1&gt; }
+  GRAPH &lt;virtual://aurora_c360_safe&gt; { ?c :name ?name }
+  OPTIONAL { GRAPH &lt;virtual://aurora_c360_pii&gt; { ?c :ssn ?ssn } }
+}</pre></div>
+    <p><strong>2. Turn on named-graph security.</strong> <em>Databases → kit-c360 → Properties</em>, set <code>security.named.graphs</code> to <code>true</code>, save. Rerun step 1: unchanged, because <code>stardog_admin</code>'s <code>cloud</code> role reads everything. (If the Free tier won't let you change this property, stop and tell Claude.)</p>
+    <p><strong>3. Create role <code>marketing</code></strong> and add these five permissions (action <code>read</code>, resource type <code>db</code> for the first and <code>named-graph</code> for the rest):</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>db           kit-c360
+named-graph  kit-c360\virtual://aurora_c360_safe
+named-graph  kit-c360\virtual://redshift_c360
+named-graph  kit-c360\urn:stardog:training-c360:1.0:model
+named-graph  kit-c360\urn:stardog:c360_extended_rules:1.0:model</pre></div>
+    <p>The two model graphs expose the ontology, which Studio's Models view and Voicebox (Chapter 13) rely on.</p>
+    <p><strong>4. Create role <code>hr</code></strong> with the same five, plus a sixth:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>named-graph  kit-c360\virtual://aurora_c360_pii</pre></div>
+    <p>For reference only (you have no CLI here), the CLI form of one grant is <code>stardog-admin role grant -n hr -a read -o 'named-graph:kit-c360\virtual://aurora_c360_pii'</code>.</p>
+    <p><strong>5. Create users</strong> <code>hr_user</code> and <code>marketing_user</code>, each with a password you choose and never paste into a chat. Assign role <code>hr</code> to <code>hr_user</code> and role <code>marketing</code> to <code>marketing_user</code>. <strong>Do not</strong> also assign the built-in <code>reader</code> role (see the gotcha below).</p>
+    <p><strong>6. Run step 1's query as each user.</strong> Either add a Studio connection to your endpoint <code>https://&lt;your-endpoint&gt;.stardog.cloud:5820</code> with that username and password, or use the terminal:</p>
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>read -rs SDPW   # type marketing_user's password, press Enter (nothing is echoed)
+curl -s -u "marketing_user:$SDPW" -H 'Accept: text/csv' \
+  --data-urlencode 'query=PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?name ?ssn WHERE {
+  VALUES ?c { &lt;urn:stardog:demos:c360:customer:1&gt; }
+  GRAPH &lt;virtual://aurora_c360_safe&gt; { ?c :name ?name }
+  OPTIONAL { GRAPH &lt;virtual://aurora_c360_pii&gt; { ?c :ssn ?ssn } } }' \
+  https://&lt;your-endpoint&gt;.stardog.cloud:5820/kit-c360/query
+unset SDPW</pre></div>
+    <p>Expected:</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Run as</th><th>name</th><th>ssn</th></tr></thead>
+      <tbody>
+        <tr><td><code>stardog_admin</code></td><td>Jolynn Bithany</td><td>609-38-5573</td></tr>
+        <tr><td><code>hr_user</code></td><td>Jolynn Bithany</td><td>609-38-5573</td></tr>
+        <tr><td><code>marketing_user</code></td><td>Jolynn Bithany</td><td><em>(empty)</em></td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>7. See the two failure styles</strong> as <code>marketing_user</code>. Remove the <code>OPTIONAL { … }</code> wrapper (keep its inner <code>GRAPH</code> block) and you get <strong>zero rows, no error</strong>. Then change that <code>GRAPH</code> to <code>SERVICE</code> and you should get <strong>an error</strong>, as the Virtual Graph Security page describes.</p>
+    <p>These roles and users stay; they're part of the real build. To undo everything later, set <code>security.named.graphs</code> back to <code>false</code> and delete the two users and roles in Security.</p>
+  </aside>
+
+  <aside class="box gotcha">
+    <ul>
+      <li><strong>The <code>reader</code> trap.</strong> The built-in <code>reader</code> role has <code>read</code> on <code>named-graph *</code>. Give it to <code>marketing_user</code> and the PII graph comes straight back: permissions only add up.</li>
+      <li><strong>Silence is the failure mode.</strong> A typo in a permission's graph IRI doesn't error; the graph just comes back empty. If <code>marketing_user</code> gets no rows even for the name, check the spelling and the backslash first. If it's still empty, try also granting <code>read</code> on resource type <code>virtual-graph</code> with resource <code>virtual://aurora_c360_safe</code> (the built-in <code>reader</code> role includes that type, and the docs don't say whether querying needs it), then tell Claude which one fixed it.</li>
+      <li><strong>No wildcards for graphs.</strong> A new virtual graph is invisible to both roles until you grant it.</li>
+    </ul>
+  </aside>
+
+  <section class="check"><h2>Check yourself</h2>
+    <details><summary>What are the three parts of a Stardog permission? Give one from this chapter.</summary><p>Action, resource type, resource. For example <code>read</code> · <code>named-graph</code> · <code>kit-c360\virtual://aurora_c360_pii</code> (CLI form <code>named-graph:kit-c360\virtual://aurora_c360_pii</code>).</p></details>
+    <details><summary>Does named-graph security cover virtual graphs? What's your source?</summary><p>Yes. The docs' Virtual Graph Security page says access to virtual graphs "is controlled the same way as regular named graphs."</p></details>
+    <details><summary>Marketing runs <code>GRAPH &lt;virtual://aurora_c360_pii&gt; { ?c :ssn ?ssn }</code>. Error or empty? And with <code>SERVICE</code>?</summary><p><code>GRAPH</code> (and <code>FROM</code>) give an empty result with no error, because the graph is silently dropped from the dataset. <code>SERVICE</code> gives an error.</p></details>
+    <details><summary>Why did Chapter 8 split Aurora into two virtual graphs?</summary><p>Named-graph security grants whole graphs. Putting only <code>:ssn</code> and <code>:cardNumber</code> in <code>aurora_c360_pii</code> lets you hide exactly the sensitive properties by withholding one graph.</p></details>
+    <details><summary>How would sensitive properties change marketing's result, and why aren't they our main control?</summary><p>Marketing would get the row with the SSN masked ("Insufficient privileges to view this value" here). The docs call the feature not production-ready (full-text search and zero-length paths can bypass it) and don't say whether it covers virtual graphs.</p></details>
+    <details><summary>Does Stardog security replace Aurora and Redshift grants?</summary><p>No. The warehouses see only Stardog's data source login, which you keep read-only and least-privileged; Stardog roles are the per-person layer on top.</p></details>
+  </section>
+
+  <section class="recap"><h2>Chapter recap</h2><ul>
+    <li><strong>Users</strong> get <strong>roles</strong>; roles hold <strong>permissions</strong> (action + resource type + resource). Your server has <code>cloud</code> (everything, on <code>stardog_admin</code>) and <code>reader</code> (read on everything, every named graph included).</li>
+    <li><code>security.named.graphs=true</code> makes each graph a resource: <code>named-graph:kit-c360\&lt;IRI&gt;</code>, read/write only, no wildcards. Unreadable graphs are silently dropped.</li>
+    <li>Virtual graphs are covered the same way: <code>GRAPH</code>/<code>FROM</code> give empty results, <code>SERVICE</code> an error.</li>
+    <li>The safe/PII split from Chapter 8 is what makes graph-level security precise.</li>
+    <li><strong>Sensitive properties</strong> mask values per property, but the docs say they aren't production-ready.</li>
+    <li>Build step 6 is done: roles <code>hr</code> and <code>marketing</code>, users <code>hr_user</code> and <code>marketing_user</code>, and the same SSN query returning 609-38-5573 for HR and an empty cell for marketing.</li>
+  </ul></section>
+
+  <section class="done">
+    <p><button class="sendback" type="button" data-chapter="12" data-step="6">Copy "Build step 6 done" message</button> <span class="sbmsg"></span></p>
+    <p class="donehint">Paste it to Claude with what you saw (the counts or results), so we can confirm it matches before the next build step relies on it.</p>
+  </section>
+
+  <nav class="pn">
+    <a href="ch11.html"><small>← Previous</small>Chapter 11 · SHACL: when you do want rules to reject data</a>
+    <a href="ch13.html" style="text-align:right"><small>Next →</small>Chapter 13 · The Stardog toolbox</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+<script>
+bookAnim('f-12-2', (tl, cap) => {
+  const f = '#f-12-2 ';
+  tl.set(f + '.r1, ' + f + '.r2', {opacity: 0}, 0);
+  cap(tl, 'Step 1: hr_user and marketing_user send the identical SPARQL query.');
+  tl.from(f + '.q1, ' + f + '.q2', {opacity: 0, duration: 0.5});
+  cap(tl, 'Step 2: Stardog builds each user\'s dataset. HR may read all three virtual graphs.');
+  tl.from(f + '.hg rect, ' + f + '.hg text', {opacity: 0, x: -12, stagger: 0.12, duration: 0.35}, '+=0.4');
+  cap(tl, 'Step 3: marketing may read only the safe graph and Redshift. The PII graph is silently dropped: no error, and no SQL is ever sent for it.');
+  tl.from(f + '.mg rect, ' + f + '.mg text', {opacity: 0, x: 12, stagger: 0.12, duration: 0.35}, '+=0.6');
+  tl.from(f + '.pii', {opacity: 0, duration: 0.5}, '+=0.3');
+  tl.to(f + '.pii', {opacity: 0.35, yoyo: true, repeat: 3, duration: 0.25});
+  tl.to(f + '.pii', {opacity: 1, duration: 0.2});
+  cap(tl, "Step 4: same SPARQL, two roles, two result sets. HR gets the SSN. Marketing's OPTIONAL finds nothing, so the cell is empty.");
+  tl.to(f + '.r1', {opacity: 1, duration: 0.5}, '+=0.4');
+  tl.to(f + '.r2', {opacity: 1, duration: 0.5}, '+=0.3');
+});
+</script>
+</body>
+</html>

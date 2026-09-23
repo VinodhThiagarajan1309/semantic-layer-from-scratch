@@ -223,5 +223,33 @@ document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',asy
   const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
   try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
 </script>
+
+<!-- chapter-nav -->
+<style>
+#cnav-btn{position:fixed;top:14px;left:14px;z-index:1000;width:44px;height:44px;border-radius:10px;border:1px solid var(--line,#e4ddcf);background:var(--paper,#fffdf8);color:var(--ink,#1f1d1a);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+#cnav-btn svg{width:22px;height:22px}
+#cnav-shade{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1001;display:none}
+#cnav{position:fixed;top:0;left:0;bottom:0;width:min(340px,86vw);z-index:1002;background:var(--paper,#fffdf8);color:var(--ink,#1f1d1a);border-right:1px solid var(--line,#e4ddcf);transform:translateX(-102%);transition:transform .2s ease;overflow-y:auto;padding:16px 0 24px;font:15px/1.4 system-ui,-apple-system,Segoe UI,sans-serif}
+#cnav.open{transform:none} #cnav.open ~ #cnav-shade{display:block}
+#cnav .h{display:flex;justify-content:space-between;align-items:center;padding:4px 16px 12px;font-weight:700}
+#cnav .h button{border:0;background:none;color:inherit;font-size:24px;cursor:pointer;line-height:1}
+#cnav a{display:block;padding:9px 16px;color:inherit;text-decoration:none;border-left:3px solid transparent}
+#cnav a:hover{background:var(--soft,#f1ebe0)}
+#cnav a.cur{border-left-color:var(--accent,#7a2e1f);background:var(--soft,#f1ebe0);font-weight:600}
+@media print{#cnav-btn,#cnav,#cnav-shade{display:none!important}}
+</style>
+<button id="cnav-btn" type="button" aria-label="Open chapter menu" aria-expanded="false" aria-controls="cnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+<nav id="cnav" aria-label="Chapters"><div class="h"><span>Chapters</span><button type="button" aria-label="Close menu">&times;</button></div><a href="index.html" data-p="index.html">Cover and contents</a><a href="preface.html" data-p="preface.html">Preface · What we are building</a><a href="ch01.html" data-p="ch01.html">Chapter 1 · One question, five systems</a><a href="ch02.html" data-p="ch02.html">Chapter 2 · The triple: the atom of knowledge</a><a href="ch03.html" data-p="ch03.html">Chapter 3 · Names, values and files</a><a href="ch04.html" data-p="ch04.html">Chapter 4 · SPARQL for people who know SQL</a><a href="ch05.html" data-p="ch05.html">Chapter 5 · The T-Box, part 1: classes (RDFS)</a><a href="ch06.html" data-p="ch06.html">Chapter 6 · The T-Box, part 2: properties and the c360 ontology (OWL)</a><a href="ch07.html" data-p="ch07.html">Chapter 7 · Where the data lives: materialized vs virtual</a><a href="ch08.html" data-p="ch08.html">Chapter 8 · Mappings: teaching Stardog to read your tables</a><a href="ch09.html" data-p="ch09.html">Chapter 9 · Federation: where the magic happens</a><a href="ch10.html" data-p="ch10.html">Chapter 10 · Reasoning: teaching the graph to conclude</a><a href="ch11.html" data-p="ch11.html">Chapter 11 · SHACL: when you do want rules to reject data</a><a href="ch12.html" data-p="ch12.html">Chapter 12 · Governance: same question, different answers</a><a href="ch13.html" data-p="ch13.html">Chapter 13 · The Stardog toolbox</a><a href="ch14.html" data-p="ch14.html">Chapter 14 · The agent: from question to answer</a><a href="ch15.html" data-p="ch15.html">Chapter 15 · At scale: huge ontologies and answers you can trust</a><a href="glossary.html" data-p="glossary.html">Appendix · Glossary</a></nav>
+<div id="cnav-shade"></div>
+<script>
+(function(){var n=document.getElementById("cnav"),b=document.getElementById("cnav-btn"),s=document.getElementById("cnav-shade");
+var p=(location.pathname.split("/").pop()||"index.html");
+n.querySelectorAll("a").forEach(function(a){if(a.getAttribute("data-p")===p){a.classList.add("cur");a.setAttribute("aria-current","page");}});
+function set(o){n.classList.toggle("open",o);b.setAttribute("aria-expanded",o);if(o){var c=n.querySelector("a.cur")||n.querySelector("a");c&&c.focus();}}
+b.onclick=function(){set(!n.classList.contains("open"));};s.onclick=function(){set(false);};
+n.querySelector(".h button").onclick=function(){set(false);b.focus();};
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&n.classList.contains("open")){set(false);b.focus();}});})();
+</script>
+<!-- /chapter-nav -->
 </body>
 </html>

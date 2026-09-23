@@ -324,7 +324,7 @@ void assertTriple(Object s, String p, Object o) {
   </aside>
 
   <h2><span class="sn">6.4</span>owl:inverseOf, and a wrinkle in the kit</h2>
-  <p>Every relationship reads two ways: "order <em>purchased by</em> customer" is also "customer <em>placed</em> order". SPARQL can already walk an arrow backward (<code>?order :purchasedBy customer:225</code>), but sometimes you want a name for the reverse direction. <dfn>owl:inverseOf</dfn> says two properties are one relationship read in opposite directions: if <code>P owl:inverseOf Q</code>, then <code>x P y</code> holds exactly when <code>y Q x</code> does. A correct example (not in the kit): <code>:placedOrder owl:inverseOf :purchasedBy</code>.</p>
+  <p>Every relationship reads two ways: "order <em>purchased by</em> customer" is also "customer <em>placed</em> order". SPARQL can already walk an arrow backward (<code>?order :purchasedBy customer:225</code>), but sometimes you want a name for the reverse direction. <dfn>owl:inverseOf</dfn> says two properties are one relationship read in opposite directions. A correct example (not in the kit): <code>:placedOrder owl:inverseOf :purchasedBy</code>. With that line in the model, <code>order:0e7e… :purchasedBy customer:225</code> also means <code>customer:225 :placedOrder order:0e7e…</code>: the same fact, read from the other end.</p>
   <aside class="box java">
     <p><code>owl:inverseOf</code> is a bidirectional JPA relationship: <code>@ManyToOne</code> on one side, <code>@OneToMany(mappedBy = …)</code> on the other.</p>
     <div class="sbs">

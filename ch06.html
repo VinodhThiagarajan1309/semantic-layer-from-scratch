@@ -164,7 +164,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
     <p>The analogy has three limits. A property is not owned by a table: one <code>:name</code> serves customers, products, categories and vendors, where SQL has four unrelated <code>name</code> columns. There is no cardinality by default: zero, one or five values are all fine (open world). And many-to-many needs no join table; you just write more triples.</p>
   </aside>
 
-  <p>The kit's <code>:firstName</code>, exactly as in <code>schema.ttl</code>:</p>
+  <p>Where does the real c360 vocabulary come from? The c360 knowledge kit (Chapter 1) ships its whole ontology as one Turtle file, <code>schema.ttl</code>, in Stardog's public GitHub repository: <a href="https://github.com/stardog-union/knowledge-kits/blob/main/examples/c360/models/schema.ttl">https://github.com/stardog-union/knowledge-kits/blob/main/examples/c360/models/schema.ttl</a>. You'll load all of it at the end of this chapter. Here is its entry for <code>:firstName</code>, unchanged:</p>
 
 <div class="codewrap"><button class="copy" type="button">Copy</button><pre>:firstName a owl:DatatypeProperty ;
     rdfs:label "first name" ;

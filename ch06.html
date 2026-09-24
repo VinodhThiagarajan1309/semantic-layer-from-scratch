@@ -320,7 +320,7 @@ void assertTriple(Object s, String p, Object o) {
   <p>They are <strong>documentation that machines can read</strong>. Stardog Designer writes them when you draw a property between two classes, and model views use them to show which properties belong to which class. Voicebox and your agent read them when writing SPARQL; <code>:name so:domainIncludes :Category, :Customer, :Product, :Vendor</code> is exactly the hint that <code>:name</code> can appear on a category, a customer, a product or a vendor, so a question like "what is customer 225's name?" is answered with <code>:name</code>. (How each tool uses them internally is up to that tool; if a view looks empty, tell Claude.)</p>
 
   <aside class="box model">
-    <p>In a federated semantic layer you do not own the data. Inference rules that re-type things based on whatever Aurora and Redshift return are a liability: one bad row upstream changes your model's meaning. Descriptive "includes" predicates leave enforcement to SHACL (Chapter 11) and inference to rules you write on purpose (Chapter 10).</p>
+    <p><b>Why this matters for us.</b> Our data lives in Aurora and Redshift, and other people control what goes into those tables. Say one wrong row ever gives product 268 (Wax Paper) a <code>:purchasedBy</code> value. With <code>rdfs:domain</code>, Stardog would call Wax Paper an Order in every answer from then on, even though nobody changed the ontology. With <code>so:domainIncludes</code>, the bad row stays just a bad row, and Wax Paper is still only a Product. Finding bad rows is SHACL's job (Chapter 11). Any automatic labels you <i>do</i> want, you write yourself as rules (Chapter 10).</p>
   </aside>
 
   <h2><span class="sn">6.4</span>owl:inverseOf, and a wrinkle in the kit</h2>

@@ -500,7 +500,7 @@ carolyn.placedOrders.add(order);</pre></div>
       <tr><td>Used in c360</td><td>labels, comments; <code>subClassOf</code> in Chapter 10</td><td><code>owl:Class</code>, both property types, <code>owl:inverseOf</code></td></tr>
     </tbody>
   </table></div>
-  <p>Stardog's reasoner supports a practical subset of OWL (default level SL) plus its own rules, which express business logic such as "big spender" (<a href="ch10.html">Chapter 10</a>). In one line: RDFS names things and arranges them in hierarchies, OWL describes relationships precisely, and neither validates.</p>
+  <p>Stardog lets you choose how much of OWL its reasoner applies. The default setting (called SL) covers the everyday parts you've met in this book, such as subclasses, inverses, and domain and range, and it also runs Stardog's own IF/THEN rules, like "big spender" (<a href="ch10.html">Chapter 10</a>). You never need to change that setting for this book. In one line: RDFS names kinds of things and arranges them in hierarchies, OWL says more precisely how things relate, and neither one checks your data.</p>
 
   <aside class="box blog">
     <p>The blog's ontology section is exactly this model, drawn in Stardog Designer and shared by mappings, reasoning, Voicebox and the agent. Two later sections hang off it: the named-graph security demo protects the properties marked <code>m:SensitiveProperty</code>, and the agent's system prompt (Path A) carries "a compact ontology summary", essentially Section 6.5's two tables condensed, which you write in Chapter 14.</p>

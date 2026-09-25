@@ -145,8 +145,8 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
   <h2><span class="sn">7.3</span>Option two: virtualize (leave the data where it is)</h2>
   <p>A <dfn>virtual graph</dfn> is a named graph whose triples are never stored in Stardog. Instead, Stardog holds three things: a connection to the source database, a <em>mapping</em> that says how rows turn into triples (Chapter 8), and a name such as <code>virtual://aurora_c360_safe</code>. When a query touches that graph, Stardog translates that part into SQL, sends it to the source, and turns the returned rows into triples on the fly. Only query results cross the wire.</p>
   <p>The technique that makes this workable is <dfn>pushdown</dfn>: instead of dragging whole tables into Stardog and filtering there, Stardog pushes as much work as it can (filters, joins within one source, aggregates, limits) into the SQL it sends, because the database has the indexes (the Stardog docs call it moving the compute to the data). For example: ask for customers in Texas and Aurora receives <code>… WHERE state = 'Texas'</code>, returning 53 rows instead of 500. Chapter 9 takes pushdown apart on a real federated query.</p>
-  <aside class="box java">
-    <p>Materialized versus virtual is eager copy versus lazy view.</p>
+  <aside class="box sql">
+    <p>Materialized versus virtual is <code>CREATE MATERIALIZED VIEW</code> versus <code>CREATE VIEW</code>.</p>
     <div class="sbs">
       <div class="col"><p class="lbl">Stardog</p><pre># Materialized: triples copied into Stardog
 # (INSERT DATA, bulk load, virtual import).
@@ -158,20 +158,25 @@ GRAPH &lt;virtual://aurora_c360_safe&gt; {
   ?a :state "Texas" .
 }
 # becomes SQL: ... WHERE state = 'Texas'</pre></div>
-      <div class="col"><p class="lbl">Java 21</p><pre>// Materialized: an eager snapshot
-List&lt;Customer&gt; copy = List.copyOf(repo.findAll());
-var texans = copy.stream()
-    .filter(c -&gt; c.state().equals("Texas"))
-    .toList();
+      <div class="col"><p class="lbl">SQL (PostgreSQL)</p><pre>-- Materialized: rows copied once,
+-- as fresh as the last refresh
+CREATE MATERIALIZED VIEW customer_state_copy AS
+SELECT c.cid, c.first_name, a.state
+FROM c360.customer c
+JOIN c360.address a ON a.id = c.location;
+REFRESH MATERIALIZED VIEW customer_state_copy;
 
-// Virtual: a lazy view; each call runs fresh SQL
-interface CustomerView { List&lt;Customer&gt; byState(String s); }
-CustomerView view = s -&gt; jdbc.query(
-    "SELECT c.* FROM c360.customer c " +
-    "JOIN c360.address a ON a.id = c.location " +
-    "WHERE a.state = ?", customerMapper, s);</pre></div>
+-- Virtual: stores only the query;
+-- every read runs it fresh
+CREATE VIEW customer_state AS
+SELECT c.cid, c.first_name, a.state
+FROM c360.customer c
+JOIN c360.address a ON a.id = c.location;
+
+SELECT * FROM customer_state
+WHERE state = 'Texas';   -- 53 rows</pre></div>
     </div>
-    <p class="breaks"><b>Where the analogy breaks:</b> a Hibernate lazy proxy fetches the whole row on first touch and then keeps it; a virtual graph keeps nothing between queries and pushes work down as SQL, like the hand-written <code>CustomerView</code>. What Java does not give you is one query spanning two such views on two databases, with the join done for you (Chapter 9).</p>
+    <p class="breaks"><b>Where the analogy breaks:</b> a SQL view lives inside one database and speaks in its table and column names. A virtual graph speaks in the ontology's words (<code>:state</code>, <code>:Customer</code>), and one SPARQL query can read virtual graphs on two different databases at once, with Stardog doing the join (Chapter 9). No SQL view can reach across Aurora and Redshift like that.</p>
   </aside>
 
   <figure class="fig">

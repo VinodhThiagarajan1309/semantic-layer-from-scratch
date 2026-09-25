@@ -128,6 +128,18 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
 
   <h2><span class="sn">8.1</span>What a mapping is</h2>
   <p>A mapping has an input, a SQL query, and an output, triple patterns with variables in them. For every row, Stardog fills the variables and emits the triples. For a <em>virtual</em> graph nothing is emitted in advance: the mapping is a recipe on file, and Stardog reads it <em>backwards</em>: when a query asks for <code>?c :email ?e</code>, it looks up "<code>:email</code> comes from the <code>email</code> column of the customer SQL" and generates SQL to fetch just that.</p>
+  <p>Here is the smallest useful mapping, for Carolyn's email. It has three parts, each marked by a keyword:</p>
+  <div class="codewrap"><pre>MAPPING
+FROM SQL {                                   # 1. input: a SQL query on Aurora
+  SELECT cid, email FROM c360.customer
+}
+TO {                                         # 2. output: the triples to produce
+  ?c :email ?email .
+}
+WHERE {                                      # 3. how to build the names
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?c)
+}</pre></div>
+  <p>For the row <code>cid = 225, email = 'cinworth68@g.co'</code>, the <code>FROM SQL</code> part supplies the columns, the <code>WHERE</code> part turns 225 into the name <code>customer:225</code>, and the <code>TO</code> part produces the triple <code>customer:225 :email "cinworth68@g.co"</code>. Section 8.3 goes through each part in detail.</p>
   <p>So <em>who knows that customers live in Aurora?</em> Not the ontology (it only defines what <code>:Customer</code> means) and not Aurora (it's never heard of the ontology). The mapping does: it names ontology terms in its <code>TO</code> block and tables in its <code>FROM SQL</code>, and the virtual graph ties it to a data source. Chapter 9 draws this as three layers.</p>
   <aside class="box sql">
     <p>A mapping is like a <code>CREATE VIEW</code> whose output is triples with globally unique names. Postgres inlines a view's definition into your query; Stardog likewise inlines the mapping into the SPARQL query, then generates SQL. Where it stops: one mapping emits several kinds of fact per row (a type, properties, links), queried with SPARQL patterns, not column lists.</p>

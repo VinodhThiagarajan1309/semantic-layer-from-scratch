@@ -780,6 +780,7 @@ ORDER BY DESC(?how_many)</pre></div>
       </tbody>
     </table></div>
     <p><strong>Check 3: the relationships.</strong> Expect <strong>11 rows</strong>, matching the table in Section 6.5.</p>
+    <p>In this book, a <b>relationship</b> is an <b>object property</b>: a link from one thing to another, like <code>:purchasedBy</code> (Order → Customer). The <b>datatype properties</b> are called <b>attributes</b>: facts that end in a literal, like <code>:firstName</code> → "Carolyn". That is where the chapter's numbers come from: <b>11 relationships</b> (the object properties, the 11 rows of this query) and <b>22 attributes</b> (the datatype properties). In SQL terms, relationships are the foreign-key columns and attributes are the plain columns.</p>
 <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX owl:  &lt;http://www.w3.org/2002/07/owl#&gt;
 PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
 PREFIX so:   &lt;https://schema.org/&gt;

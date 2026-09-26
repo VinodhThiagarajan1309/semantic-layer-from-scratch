@@ -193,6 +193,24 @@ WHERE {                                      # 3. how to build the names
     <li><strong><code>WHERE { … }</code></strong> creates new variables with <code>BIND</code>. For SQL sources, only two kinds of function are allowed: <code>TEMPLATE(…)</code> to build IRIs, and datatype casts such as <code>xsd:integer(…)</code>, <code>xsd:decimal(…)</code>, <code>xsd:date(…)</code> (plus <code>strdt</code>). Anything else, such as string concatenation, has to happen in the SQL.</li>
   </ul>
 
+  <aside class="box sql">
+    <p><b>Written in one order, run in another.</b> A mapping is written <code>FROM SQL</code> → <code>TO</code> → <code>WHERE</code>, but it runs <code>FROM SQL</code> → <code>WHERE</code> → <code>TO</code>. And <code>WHERE</code> here does not filter rows the way SQL's <code>WHERE</code> does: it <i>computes new values</i>, like an extra expression in a <code>SELECT</code>. One row, step by step:</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Step</th><th>Part</th><th>What happens to Carolyn's row</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code>FROM SQL</code></td><td><code>SELECT cid, email FROM c360.customer</code> gives <code>cid = 225, email = 'cinworth68@g.co'</code></td></tr>
+        <tr><td>2</td><td><code>WHERE</code></td><td><code>BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?c)</code> fills the <code>{cid}</code> slot, so <code>?c = urn:stardog:demos:c360:customer:225</code></td></tr>
+        <tr><td>3</td><td><code>TO</code></td><td><code>?c :email ?email .</code> writes the triple <code>customer:225 :email "cinworth68@g.co"</code></td></tr>
+      </tbody>
+    </table></div>
+    <p>The same three steps as one SQL statement:</p>
+    <pre>SELECT 'urn:stardog:demos:c360:customer:' || cid AS c,  -- step 2 (WHERE / BIND)
+       email                                             -- used in step 3 (TO)
+FROM c360.customer;                                      -- step 1 (FROM SQL)
+-- each result row then becomes the triple:  &lt;c&gt; :email "&lt;email&gt;"</pre>
+    <p>In one line: <code>FROM SQL</code> is where the rows come from, <code>WHERE</code> builds the names (IRIs) from each row's key, and <code>TO</code> says which triples to write.</p>
+  </aside>
+
   <h2><span class="sn">8.4</span>The customer mapping, line by line</h2>
   <p>Here is the first block of <code>aurora_c360_safe.sms</code>, exactly as it's used in the working build:</p>
   <div class="codewrap"><button class="copy" type="button">Copy</button><pre>prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;

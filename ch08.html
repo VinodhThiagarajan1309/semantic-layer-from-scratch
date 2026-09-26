@@ -153,8 +153,8 @@ WHERE {                                      # 3. how to build the names
   <p>An SMS2 file has a <strong>prologue</strong> (prefix declarations, exactly like Turtle and SPARQL) followed by one or more mapping blocks separated by semicolons. Each block has four parts:</p>
 
   <figure class="fig">
-    <svg viewBox="0 0 680 310" role="img" aria-label="Anatomy of an SMS2 mapping block: MAPPING names the block, FROM SQL gives the query whose columns become variables, TO lists the triple patterns to emit, WHERE builds IRIs and typed values with BIND.">
-      <rect x="20" y="14" width="400" height="282" rx="10" style="fill:var(--code);stroke:var(--line)"/>
+    <svg viewBox="0 0 680 326" role="img" aria-label="Anatomy of an SMS2 mapping block: MAPPING names the block, FROM SQL gives the query whose columns become variables, TO lists the triple patterns to emit, WHERE builds IRIs and typed values with BIND.">
+      <rect x="20" y="14" width="400" height="298" rx="10" style="fill:var(--code);stroke:var(--line)"/>
       <text x="36" y="42" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--accent)">MAPPING &lt;urn:c360:aurora:customer&gt;</text>
       <text x="36" y="76" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--accent2)">FROM SQL {</text>
       <text x="52" y="94" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">SELECT cid, email, location … </text>
@@ -166,7 +166,8 @@ WHERE {                                      # 3. how to build the names
       <text x="36" y="216" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--pred)">}</text>
       <text x="36" y="246" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--obj)">WHERE {</text>
       <text x="52" y="264" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">BIND(TEMPLATE("…customer:{cid}") AS ?iri)</text>
-      <text x="36" y="284" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--obj)">}</text>
+      <text x="52" y="282" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--ink)">BIND(TEMPLATE("…location:{location}") AS ?loc_iri)</text>
+      <text x="36" y="300" font-size="12.5" font-family="ui-monospace,Menlo,monospace" style="fill:var(--obj)">}</text>
       <line x1="424" y1="38" x2="448" y2="38" style="stroke:var(--accent)" stroke-width="2"/>
       <text x="454" y="34" font-size="12" font-weight="700" style="fill:var(--accent)">MAPPING</text>
       <text x="454" y="50" font-size="11" style="fill:var(--muted)">a name for this block (any IRI)</text>

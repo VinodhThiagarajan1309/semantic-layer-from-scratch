@@ -360,6 +360,10 @@ public class Customer {
     <p class="stepcap">Press ▶ Play to watch one row pass through the mapping and come out as triples.</p>
     <figcaption>Figure 8.2: Carolyn's row through the customer (and address) mappings, some properties omitted. Subjects in <span class="s">red</span>, properties in <span class="p">green</span>, literal values in <span class="o">purple</span>.</figcaption>
   </figure>
+  <aside class="box sql">
+    <p><b>Where is the JOIN?</b> Neither mapping has one. The customer mapping reads only <code>c360.customer</code> and writes <code>customer:225 :address location:b80ea2ce…</code> (template <code>location:{location}</code>). The address mapping (Section 8.6) reads only <code>c360.address</code> and writes <code>location:b80ea2ce… :city "Milwaukee"</code> (template <code>location:{id}</code>). Both templates produce the same string, <code>urn:stardog:demos:c360:location:b80ea2ce…</code>, so they are the same node: the matching name plays the part of <code>customer.location = address.id</code>. The JOIN happens when you <i>query</i>: ask for <code>?c :address ?a . ?a :city ?city</code> and Stardog sends Aurora <code>… FROM c360.customer c JOIN c360.address a ON a.id = c.location</code> itself. Mappings stay one table each; Stardog writes the joins a query needs.</p>
+  </aside>
+
 
   <h2><span class="sn">8.5</span>IRI templates: the most important line in the file</h2>
   <p>An IRI is RDF's globally unique name for a thing (Chapter 3). An <dfn>IRI template</dfn> is a string with <code>{column}</code> placeholders that turns a row's local key into such a name: <code>cid = 225</code> means nothing outside the customer table, but <code>urn:stardog:demos:c360:customer:225</code> means one customer anywhere. Three things matter in practice:</p>

@@ -213,7 +213,8 @@ FROM c360.customer;                                      -- step 1 (FROM SQL)
   </aside>
 
   <h2><span class="sn">8.4</span>The customer mapping, line by line</h2>
-  <p>Here is the first block of <code>aurora_c360_safe.sms</code>, exactly as it's used in the working build:</p>
+  <p>We will map Aurora's data into <b>two</b> virtual graphs. <code>aurora_c360_safe</code> holds everything <i>except</i> the sensitive values: Carolyn's name, email, phone and address go here. <code>aurora_c360_pii</code> holds <i>only</i> the sensitive ones (PII, personally identifiable information): her SSN <code>640-83-5765</code> (fake data) and full card numbers. Keeping them apart lets you later give Marketing the safe graph and HR both (Section 8.7 explains why, Chapter 12 does it).</p>
+  <p>Here is the first block of <code>aurora_c360_safe.sms</code>, the mapping file for the safe graph, exactly as it's used in the working build:</p>
   <div class="codewrap"><button class="copy" type="button">Copy</button><pre>prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
 prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
 prefix : &lt;tag:stardog:api:ecomm:&gt;

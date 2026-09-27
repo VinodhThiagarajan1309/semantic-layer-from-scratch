@@ -332,7 +332,7 @@ FROM generate_series(5, 500, 5) AS g;
 SELECT count(*) AS orders, sum(amount) AS total FROM c360.online_order;
 SELECT * FROM c360.online_order WHERE cid = 225;</pre></div>
     <p>Expect <code>100 | 252500.00</code>, then one row for Carolyn: <code>cid 225, amount 2250.00, 2024-01-15</code>. (If you ran this as a user other than the data source's login, also <code>GRANT SELECT ON c360.online_order</code> to that login.) The truth is now: Carolyn's total spend is $502,529.42 in store plus $2,250.00 online, <strong>$504,779.42</strong>.</p>
-    <p><strong>Step 2. Map it, with a deliberate bug.</strong> In Studio, create a virtual graph exactly as in Chapter 8: name <code>aurora_online_c360</code>, database <code>kit-c360</code>, data source <code>aurora_c360</code>, syntax <code>SMS2</code>, and this mapping. Look at the second <code>BIND</code>: <code>cust:</code> instead of <code>customer:</code>.</p>
+    <p><strong>Step 2. Map it, with a deliberate bug.</strong> In Studio, create a virtual graph exactly as in Chapter 8: name <code>aurora_online_c360</code>, database <code>kit-c360</code>, data source <code>aurora_c360</code>, and this mapping saved as <code>aurora_online_c360.sms</code> (select it under <b>File</b>, untick <b>Auto-generate mapping</b>, click <b>Create</b>). Look at the second <code>BIND</code>: <code>cust:</code> instead of <code>customer:</code>.</p>
     <div class="codewrap"><button class="copy" type="button">Copy</button><pre># Virtual graph: aurora_online_c360 - online orders from Aurora.
 # DELIBERATE BUG (Chapter 15): the customer template says cust: instead of customer:
 prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;

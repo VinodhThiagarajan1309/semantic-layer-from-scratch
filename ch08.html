@@ -553,13 +553,14 @@ Map&lt;Integer, String&gt; ssnByCid = pii.stream()
         <tr><td>Name</td><td><code>aurora_c360_safe</code></td></tr>
         <tr><td>Database</td><td><code>kit-c360</code> (not "all databases" / <code>*</code>)</td></tr>
         <tr><td>Data source</td><td>the existing <code>aurora_c360</code> (do not create a new one)</td></tr>
-        <tr><td>Mapping syntax / format</td><td><code>SMS2</code></td></tr>
-        <tr><td>Mappings</td><td>paste the full text below</td></tr>
-        <tr><td>Other properties / options</td><td>leave empty</td></tr>
+        <tr><td>Create from</td><td><b>Existing Data Source</b> → <code>aurora_c360</code></td></tr>
+        <tr><td>Virtual graph options</td><td>leave everything at its default</td></tr>
+        <tr><td>File</td><td><b>Browse</b> to <code>aurora_c360_safe.sms</code> (the mapping below, saved as a text file)</td></tr>
+        <tr><td>Auto-generate mapping</td><td><b>untick it</b>. Left ticked, Stardog invents its own mapping from the table layout, with its own names instead of <code>customer:{cid}</code>, and the join with Redshift in Chapter 9 breaks.</td></tr>
       </tbody>
     </table></div>
-    <p>If the form looks different (for example, it wants you to upload a file, or has no syntax selector), stop and tell Claude what you see.</p>
-    <p><strong>Step 2. Paste this mapping (the complete, verified file) and save.</strong></p>
+    <p>The form (called <b>Create Virtual Graph</b>) takes the mapping as a <b>file</b>, not pasted text. The <code>.sms</code> extension tells Stardog the file is in SMS2. If your form looks different, tell Claude what you see.</p>
+    <p><strong>Step 2. Save this mapping as <code>aurora_c360_safe.sms</code></strong> (copy it into any text editor and save it with that name), select it under <b>File</b>, untick <b>Auto-generate mapping</b>, and click <b>Create</b>.</p>
     <div class="codewrap"><button class="copy" type="button">Copy</button><pre># Virtual graph: aurora_c360_safe — Aurora operational data WITHOUT PII (no ssn, no card numbers).
 # IRIs are identical to the materialized kit, so federation joins on customer:{cid}.
 prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
@@ -639,7 +640,7 @@ WHERE {
   }
 }</pre></div>
     <p>Expected: one row per property, including <code>rdf:type</code> <code>:Customer</code>, <code>:email</code> "cinworth68@g.co", <code>:firstName</code>, <code>:lastName</code>, <code>:phone</code> "704-619-5453", <code>:name</code> and <code>rdfs:label</code> "Carolyn Inworth", <code>:address</code> pointing to the <code>location:b80ea2ce-…</code> IRI, and a <code>:hasRewards</code> arrow (emitted by the rewards mapping). No <code>:ssn</code>.</p>
-    <p><strong>Step 5. Create the PII graph.</strong> Repeat step 1 with name <code>aurora_c360_pii</code>, database <code>kit-c360</code>, the same data source <code>aurora_c360</code>, syntax <code>SMS2</code>, and this mapping:</p>
+    <p><strong>Step 5. Create the PII graph.</strong> Repeat step 1 with name <code>aurora_c360_pii</code>, database <code>kit-c360</code>, the same data source <code>aurora_c360</code>, and this mapping saved as <code>aurora_c360_pii.sms</code> (select it under <b>File</b>, untick <b>Auto-generate mapping</b>, click <b>Create</b>):</p>
     <div class="codewrap"><button class="copy" type="button">Copy</button><pre># Virtual graph: aurora_c360_pii — ONLY the sensitive properties. Grant to hr_user, not marketing_user.
 prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
 prefix xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;

@@ -687,6 +687,41 @@ jq -n --rawfile m aurora_c360_safe.sms \
     <p><strong>Slow first query or a timeout.</strong> Aurora was paused. Run the query again after 20 seconds.</p>
   </aside>
 
+  <h2><span class="sn">8.9</span>How it works: small mappings in, one SQL query out</h2>
+  <p>You now have separate mapping blocks for customers, addresses and rewards accounts. None of them knows about the others, and none contains a JOIN. So what happens when one query needs all three? Take this question: <i>which Wisconsin customers have a rewards account, with their city and account ID?</i></p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?fullname ?city ?accountId
+WHERE {
+  GRAPH &lt;virtual://aurora_c360_safe&gt; {
+    ?c :name ?fullname ; :address ?a ; :hasRewards ?r .
+    ?a :state "Wisconsin" ; :city ?city .
+    ?r :accountId ?accountId .
+  }
+}</pre></div>
+  <p>It returns 8 rows (Christine Ricardon has 3 accounts, Renaud Brosio and Sephira McKleod 2 each, Corbin Mandel 1). Carolyn is missing because she has no rewards account. The interesting part is what Stardog sent to Aurora. This is its real plan for that query:</p>
+  <div class="codewrap"><pre>SELECT rewards_account.account_id, customer.full_name, address.city
+FROM c360.rewards_account
+INNER JOIN c360.customer ON rewards_account.cid = customer.cid
+INNER JOIN c360.address  ON customer.location   = address.id
+                         AND address.state = 'Wisconsin'</pre></div>
+  <p><b>One SQL query, with two JOINs Stardog wrote itself.</b> Step by step:</p>
+  <ol>
+    <li><b>Find the mappings.</b> For each line of the query, Stardog finds the mapping block whose <code>TO</code> produces that property: <code>:name</code> and <code>:address</code> from the customer block, <code>:state</code> and <code>:city</code> from the address block, <code>:accountId</code> from the rewards block.</li>
+    <li><b>Notice they share a source.</b> All three blocks read from the same data source, <code>aurora_c360</code>, so one SQL statement can cover them all.</li>
+    <li><b>Turn shared variables into JOINs.</b> <code>?c</code> appears in the customer and rewards lines, and both mappings build it from <code>cid</code>, so Stardog writes <code>rewards_account.cid = customer.cid</code>. <code>?a</code> links customer and address, both built from the location ID, so it writes <code>customer.location = address.id</code>. It joins on the real key columns, never on the long IRI strings.</li>
+    <li><b>Push the filter down.</b> <code>"Wisconsin"</code> becomes <code>address.state = 'Wisconsin'</code> inside the SQL, so Aurora uses its own indexes and returns only 8 rows.</li>
+    <li><b>Turn rows back into answers.</b> Each result row fills <code>?fullname</code>, <code>?city</code> and <code>?accountId</code>.</li>
+  </ol>
+  <aside class="box sql">
+    <p>This is the query optimizer you already trust in Postgres, one level up. Postgres turns your SQL into a plan over its tables. Stardog turns your SPARQL into SQL for each data source, pushing down as much as it can (joins, filters, even aggregates). Mappings stay small, one table each, and a different question simply gets a different JOIN, with no new mapping and no SQL written by you.</p>
+  </aside>
+  <aside class="box try">
+    <p><b>See it yourself.</b> Paste the query above into Studio's Workspace and use the <b>Explain</b> / <b>Query Plan</b> button next to Run (the label varies by Studio version). Look for <code>VirtualGraphSql</code> with a <code>Query=</code> line: that is the exact SQL sent to Aurora.</p>
+  </aside>
+  <aside class="box gotcha">
+    <p>Pushdown is only as complete as the SQL translation. Simple patterns like these push down fully; some SPARQL features have no SQL equivalent, and then Stardog fetches more rows and finishes that part itself. Explain tells you which happened. And when a query needs <i>two</i> data sources, as in the next chapter, no single SQL statement can reach both, so Stardog sends one query to each and does the join itself.</p>
+  </aside>
+
   <section class="check"><h2>Check yourself</h2>
     <details><summary>What are the four parts of an SMS2 mapping block, and what does each do?</summary><p><code>MAPPING</code> names the block; <code>FROM SQL</code> is the source query whose columns become variables; <code>TO</code> lists the triple patterns emitted per row; <code>WHERE</code> binds new variables with <code>TEMPLATE</code> (IRIs) and casts (typed literals). Blocks are separated by semicolons after a prefix prologue.</p></details>
     <details><summary>How does the <code>location</code> column in <code>customer</code> become an arrow to an address node?</summary><p>The customer mapping builds <code>?loc_iri</code> with <code>TEMPLATE("urn:stardog:demos:c360:location:{location}")</code> and emits <code>?iri :address ?loc_iri</code>. The address mapping mints its subjects with the same template from <code>address.id</code>. Same value, same template, same IRI: no join condition needed.</p></details>

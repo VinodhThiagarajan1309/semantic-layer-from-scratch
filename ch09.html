@@ -381,63 +381,63 @@ JOIN (SELECT id, city, state, zip, ... FROM c360.address) AS "t1" ON "t0"."locat
       <g class="s1">
         <line class="ar" x1="60" y1="86" x2="204" y2="86" style="stroke:var(--ink)" stroke-width="1.8"/>
         <polygon points="200,81 210,86 200,91" style="fill:var(--ink)"/>
-        <text x="66" y="80" font-size="11" style="fill:var(--ink)">1  SPARQL query</text>
+        <circle cx="74" cy="76" r="8.5" style="fill:#a8741a"/><text x="74" y="79.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">1</text><text x="87" y="80" font-size="11" style="fill:var(--ink)">SPARQL query</text>
       </g>
       <g class="s2">
         <rect x="150" y="100" width="290" height="28" rx="5" style="fill:var(--paper);stroke:var(--accent)"/>
-        <text x="160" y="118" font-size="11" style="fill:var(--ink)">2  route each pattern to a mapping block</text>
+        <circle cx="168" cy="114" r="8.5" style="fill:#a8741a"/><text x="168" y="117.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">2</text><text x="181" y="118" font-size="11" style="fill:var(--ink)">route each pattern to a mapping block</text>
       </g>
       <g class="s3">
         <rect x="150" y="134" width="290" height="28" rx="5" style="fill:var(--paper);stroke:var(--accent)"/>
-        <text x="160" y="152" font-size="11" style="fill:var(--ink)">3  split: 4 Redshift patterns | 3 Aurora patterns</text>
+        <circle cx="168" cy="148" r="8.5" style="fill:#a8741a"/><text x="168" y="151.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">3</text><text x="181" y="152" font-size="11" style="fill:var(--ink)">split: 4 Redshift patterns | 3 Aurora patterns</text>
       </g>
       <g class="s4">
         <rect x="150" y="168" width="290" height="28" rx="5" style="fill:var(--paper);stroke:var(--accent)"/>
-        <text x="160" y="186" font-size="11" style="fill:var(--ink)">4  rewrite each bundle to SQL (Calcite, pushdown)</text>
+        <circle cx="168" cy="182" r="8.5" style="fill:#a8741a"/><text x="168" y="185.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">4</text><text x="181" y="186" font-size="11" style="fill:var(--ink)">rewrite each bundle to SQL (Calcite, pushdown)</text>
       </g>
       <g class="s5">
         <line class="ar" x1="210" y1="222" x2="354" y2="222" style="stroke:var(--ink)" stroke-width="1.8"/>
         <polygon points="350,217 360,222 350,227" style="fill:var(--ink)"/>
-        <text x="216" y="216" font-size="11" style="fill:var(--ink)">5  plan: 2 SQL leaves + join</text>
+        <circle cx="224" cy="212" r="8.5" style="fill:#a8741a"/><text x="224" y="215.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">5</text><text x="237" y="216" font-size="11" style="fill:var(--ink)">plan: 2 SQL leaves + join</text>
       </g>
       <g class="s6">
         <line class="ar" x1="360" y1="262" x2="624" y2="262" style="stroke:var(--accent2)" stroke-width="1.8"/>
         <polygon points="620,257 630,262 620,267" style="fill:var(--accent2)"/>
-        <text x="368" y="256" font-size="11" style="fill:var(--accent2)">6  SQL → purchase: cid, price, quantity</text>
+        <circle cx="376" cy="252" r="8.5" style="fill:#a8741a"/><text x="376" y="255.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">6</text><text x="389" y="256" font-size="11" style="fill:var(--accent2)">SQL → purchase: cid, price, quantity</text>
         <rect x="590" y="270" width="80" height="34" rx="4" style="fill:var(--soft);stroke:var(--accent2)"/>
         <text x="630" y="291" text-anchor="middle" font-size="10" style="fill:var(--muted)">scan 2,500 rows</text>
       </g>
       <g class="s7">
         <line class="ar" x1="360" y1="300" x2="499" y2="300" style="stroke:var(--accent2)" stroke-width="1.8"/>
         <polygon points="495,295 505,300 495,305" style="fill:var(--accent2)"/>
-        <text x="368" y="294" font-size="11" style="fill:var(--accent2)">7  SQL → customer ⋈ address</text>
+        <circle cx="376" cy="290" r="8.5" style="fill:#a8741a"/><text x="376" y="293.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">7</text><text x="389" y="294" font-size="11" style="fill:var(--accent2)">SQL → customer ⋈ address</text>
         <rect x="465" y="308" width="80" height="34" rx="4" style="fill:var(--soft);stroke:var(--accent2)"/>
         <text x="505" y="329" text-anchor="middle" font-size="10" style="fill:var(--muted)">join 500 × 500</text>
       </g>
       <g class="s8">
         <line class="al" x1="630" y1="366" x2="366" y2="366" style="stroke:var(--accent2)" stroke-width="1.8" stroke-dasharray="6 4"/>
         <polygon points="370,361 360,366 370,371" style="fill:var(--accent2)"/>
-        <text x="376" y="360" font-size="11" style="fill:var(--accent2)">8  2,500 rows (cid, price, quantity)</text>
+        <circle cx="384" cy="356" r="8.5" style="fill:#a8741a"/><text x="384" y="359.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">8</text><text x="397" y="360" font-size="11" style="fill:var(--accent2)">2,500 rows (cid, price, quantity)</text>
       </g>
       <g class="s9">
         <line class="al" x1="505" y1="398" x2="366" y2="398" style="stroke:var(--accent2)" stroke-width="1.8" stroke-dasharray="6 4"/>
         <polygon points="370,393 360,398 370,403" style="fill:var(--accent2)"/>
-        <text x="376" y="392" font-size="11" style="fill:var(--accent2)">9  500 rows (cid, name, state)</text>
+        <circle cx="384" cy="388" r="8.5" style="fill:#a8741a"/><text x="384" y="391.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">9</text><text x="397" y="392" font-size="11" style="fill:var(--accent2)">500 rows (cid, name, state)</text>
       </g>
       <g class="s10">
         <rect x="226" y="414" width="268" height="54" rx="6" style="fill:var(--soft);stroke:var(--subj)" stroke-width="2.5"/>
-        <text x="236" y="433" font-size="11" font-weight="700" style="fill:var(--subj)">10  cid → customer:{cid} on both sides;</text>
+        <circle cx="244" cy="429" r="8.5" style="fill:#a8741a"/><text x="244" y="432.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">10</text><text x="257" y="433" font-size="11" font-weight="700" style="fill:var(--subj)">cid → customer:{cid} on both sides;</text>
         <text x="236" y="449" font-size="11" font-weight="700" style="fill:var(--subj)">      hash join on ?c: THE FEDERATION</text>
         <text x="236" y="462" font-size="9.5" style="fill:var(--muted)">       in Stardog's memory, never stored</text>
       </g>
       <g class="s11">
         <rect x="226" y="476" width="268" height="28" rx="6" style="fill:var(--paper);stroke:var(--accent)"/>
-        <text x="236" y="494" font-size="11" style="fill:var(--ink)">11  SUM(price×qty) per ?c; sort; LIMIT 10</text>
+        <circle cx="244" cy="490" r="8.5" style="fill:#a8741a"/><text x="244" y="493.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">11</text><text x="257" y="494" font-size="11" style="fill:var(--ink)">SUM(price×qty) per ?c; sort; LIMIT 10</text>
       </g>
       <g class="s12">
         <line class="al" x1="360" y1="530" x2="66" y2="530" style="stroke:var(--ink)" stroke-width="1.8" stroke-dasharray="6 4"/>
         <polygon points="70,525 60,530 70,535" style="fill:var(--ink)"/>
-        <text x="76" y="524" font-size="11" style="fill:var(--ink)">12  10 rows: Carolyn Inworth · Wisconsin · 502529.42 …</text>
+        <circle cx="84" cy="520" r="8.5" style="fill:#a8741a"/><text x="84" y="523.6" font-size="9.5" font-weight="700" text-anchor="middle" style="fill:#fffaf0">12</text><text x="97" y="524" font-size="11" style="fill:var(--ink)">10 rows: Carolyn Inworth · Wisconsin · 502529.42 …</text>
       </g>
       <circle class="pk pkR" cx="360" cy="262" r="6" opacity="0" style="fill:var(--accent2)"/>
       <circle class="pk pkA" cx="360" cy="300" r="6" opacity="0" style="fill:var(--accent2)"/>
@@ -763,34 +763,34 @@ bookAnim('f-9-2', (tl, cap) => {
   const F = '#f-9-2 ';
   const R = sel => F + sel + ' .ar', L = sel => F + sel + ' .al';
   tl.set(F + '.s1,' + F + '.s2,' + F + '.s3,' + F + '.s4,' + F + '.s5,' + F + '.s6,' + F + '.s7,' + F + '.s8,' + F + '.s9,' + F + '.s10,' + F + '.s11,' + F + '.s12', {opacity: 0});
-  cap(tl, '1. You press Run. Studio sends the SPARQL text to the Stardog server. Nothing has touched AWS yet.');
+  cap(tl, 'Step 1: You press Run. Studio sends the SPARQL text to the Stardog server. Nothing has touched AWS yet.');
   tl.to(F + '.s1', {opacity: 1, duration: .2}).from(R('.s1'), {scaleX: 0, transformOrigin: '0% 50%', duration: .6});
   tl.to({}, {duration: .8});
-  cap(tl, '2. The planner routes each triple pattern to the mapping block that can produce it: :purchasedBy to Redshift, :name and :address to Aurora.');
+  cap(tl, 'Step 2: The planner routes each triple pattern to the mapping block that can produce it: :purchasedBy to Redshift, :name and :address to Aurora.');
   tl.to(F + '.s2', {opacity: 1, duration: .4}).to({}, {duration: 1.2});
-  cap(tl, '3. Patterns are bundled by source: one bundle per virtual graph, because one SQL statement can answer each bundle.');
+  cap(tl, 'Step 3: Patterns are bundled by source: one bundle per virtual graph, because one SQL statement can answer each bundle.');
   tl.to(F + '.s3', {opacity: 1, duration: .4}).to({}, {duration: 1.2});
-  cap(tl, '4. Each bundle is rewritten into that database\'s SQL (Stardog uses Apache Calcite), pushing down all the work that source can do alone.');
+  cap(tl, 'Step 4: Each bundle is rewritten into that database\'s SQL (Stardog uses Apache Calcite), pushing down all the work that source can do alone.');
   tl.to(F + '.s4', {opacity: 1, duration: .4}).to({}, {duration: 1.2});
-  cap(tl, '5. The plan: two SQL leaves under a join, with group, sort and limit on top.');
+  cap(tl, 'Step 5: The plan: two SQL leaves under a join, with group, sort and limit on top.');
   tl.to(F + '.s5', {opacity: 1, duration: .2}).from(R('.s5'), {scaleX: 0, transformOrigin: '0% 50%', duration: .6}).to({}, {duration: .8});
-  cap(tl, '6 and 7. Two SQL queries fly out: purchases to Redshift, customers joined to addresses to Aurora. The databases never talk to each other.');
+  cap(tl, 'Steps 6 and 7: Two SQL queries fly out: purchases to Redshift, customers joined to addresses to Aurora. The databases never talk to each other.');
   tl.to(F + '.s6', {opacity: 1, duration: .2}).from(R('.s6'), {scaleX: 0, transformOrigin: '0% 50%', duration: .7}, '<')
     .fromTo(F + '.pkR', {opacity: 1, x: 0}, {x: 264, duration: .9, ease: 'power1.inOut'}, '<')
     .set(F + '.pkR', {opacity: 0});
   tl.to(F + '.s7', {opacity: 1, duration: .2}, '-=0.6').from(R('.s7'), {scaleX: 0, transformOrigin: '0% 50%', duration: .6}, '<')
     .fromTo(F + '.pkA', {opacity: 1, x: 0}, {x: 139, duration: .8, ease: 'power1.inOut'}, '<')
     .set(F + '.pkA', {opacity: 0}).to({}, {duration: .6});
-  cap(tl, '8 and 9. Rows stream back over JDBC into Stardog\'s memory: 2,500 purchase rows from Redshift, 500 customer rows from Aurora.');
+  cap(tl, 'Steps 8 and 9: Rows stream back over JDBC into Stardog\'s memory: 2,500 purchase rows from Redshift, 500 customer rows from Aurora.');
   tl.to(F + '.s8', {opacity: 1, duration: .2}).from(L('.s8'), {scaleX: 0, transformOrigin: '100% 50%', duration: .7}, '<')
     .fromTo(F + '.pkR2', {opacity: 1, x: 0}, {x: -264, duration: .9, ease: 'power1.inOut'}, '<').set(F + '.pkR2', {opacity: 0});
   tl.to(F + '.s9', {opacity: 1, duration: .2}, '-=0.5').from(L('.s9'), {scaleX: 0, transformOrigin: '100% 50%', duration: .6}, '<')
     .fromTo(F + '.pkA2', {opacity: 1, x: 0}, {x: -139, duration: .8, ease: 'power1.inOut'}, '<').set(F + '.pkA2', {opacity: 0}).to({}, {duration: .6});
-  cap(tl, '10. The magic: each cid becomes the IRI customer:{cid} on both sides, and Stardog hash-joins the two streams on that IRI, in memory. This is the federation.');
+  cap(tl, 'Step 10: The magic: each cid becomes the IRI customer:{cid} on both sides, and Stardog hash-joins the two streams on that IRI, in memory. This is the federation.');
   tl.to(F + '.s10', {opacity: 1, duration: .3}).from(F + '.s10 rect', {scale: 1.12, transformOrigin: '50% 50%', duration: .5, ease: 'back.out(2)'}, '<').to({}, {duration: 1.6});
-  cap(tl, '11. Only now can the rollup happen: SUM(price x qty) per customer, sort descending, keep ten. It needs both sides, so it could not be pushed to either database.');
+  cap(tl, 'Step 11: Only now can the rollup happen: SUM(price x qty) per customer, sort descending, keep ten. It needs both sides, so it could not be pushed to either database.');
   tl.to(F + '.s11', {opacity: 1, duration: .4}).to({}, {duration: 1.4});
-  cap(tl, '12. Ten rows go back to Studio. Carolyn Inworth, Wisconsin, $502,529.42 is first. Stardog frees the memory; nothing was stored.');
+  cap(tl, 'Step 12: Ten rows go back to Studio. Carolyn Inworth, Wisconsin, $502,529.42 is first. Stardog frees the memory; nothing was stored.');
   tl.to(F + '.s12', {opacity: 1, duration: .2}).from(L('.s12'), {scaleX: 0, transformOrigin: '100% 50%', duration: .7}, '<');
 });
 </script>

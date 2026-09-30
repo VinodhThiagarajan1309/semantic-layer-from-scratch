@@ -655,14 +655,14 @@ export AGENT_MODEL="anthropic/claude-sonnet-4.6"          # the default; the blo
         <text x="75" y="43" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">Question</text>
         <text x="75" y="62" text-anchor="middle" font-size="10.5" fill="var(--muted)">"Top spenders in WI?"</text>
         <line x1="140" y1="48" x2="246" y2="48" stroke="var(--muted)" stroke-width="2" marker-end="url(#ah14)"/>
-        <text x="193" y="40" text-anchor="middle" font-size="11" fill="var(--ink)">① + prompt</text>
+        <text x="193" y="40" text-anchor="middle" font-size="11" fill="var(--ink)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❶</tspan> + prompt</text>
         <rect x="250" y="20" width="140" height="56" rx="8" fill="var(--soft)" stroke="var(--obj)" stroke-width="2"/>
         <text x="320" y="43" text-anchor="middle" font-size="13" font-weight="700" fill="var(--obj)">LLM</text>
         <text x="320" y="62" text-anchor="middle" font-size="10.5" fill="var(--muted)">matches words to terms</text>
       </g>
       <g class="s2">
         <line x1="295" y1="76" x2="295" y2="136" stroke="var(--muted)" stroke-width="2" marker-end="url(#ah14)"/>
-        <text x="288" y="102" text-anchor="end" font-size="11" fill="var(--ink)">② tool call:</text>
+        <text x="288" y="102" text-anchor="end" font-size="11" fill="var(--ink)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❷</tspan> tool call:</text>
         <text x="288" y="116" text-anchor="end" font-size="11" fill="var(--ink)">run_sparql(SPARQL)</text>
         <rect x="250" y="140" width="140" height="52" rx="8" fill="var(--soft)" stroke="var(--accent2)" stroke-width="2"/>
         <text x="320" y="162" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent2)">agent.py</text>
@@ -670,15 +670,15 @@ export AGENT_MODEL="anthropic/claude-sonnet-4.6"          # the default; the blo
       </g>
       <g class="s3">
         <line x1="295" y1="192" x2="295" y2="246" stroke="var(--muted)" stroke-width="2" marker-end="url(#ah14)"/>
-        <text x="288" y="224" text-anchor="end" font-size="11" fill="var(--ink)">③ /kit-c360/query</text>
+        <text x="288" y="224" text-anchor="end" font-size="11" fill="var(--ink)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❸</tspan> /kit-c360/query</text>
         <rect x="200" y="250" width="240" height="74" rx="10" fill="var(--soft)" stroke="var(--accent)" stroke-width="2"/>
         <text x="320" y="272" text-anchor="middle" font-size="13" font-weight="700" fill="var(--accent)">Stardog planner</text>
         <text x="320" y="292" text-anchor="middle" font-size="11" fill="var(--ink)">split by GRAPH, rewrite to SQL</text>
       </g>
-      <text class="s8" x="320" y="312" text-anchor="middle" font-size="11" font-weight="700" fill="var(--accent)">⑧ join on customer IRI, SUM, sort</text>
+      <text class="s8" x="320" y="312" text-anchor="middle" font-size="11" font-weight="700" fill="var(--accent)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❽</tspan> join on customer IRI, SUM, sort</text>
       <g class="s4">
         <line x1="240" y1="324" x2="152" y2="368" stroke="var(--pred)" stroke-width="2" marker-end="url(#ah14)"/>
-        <text x="186" y="338" text-anchor="end" font-size="11" fill="var(--pred)">④ SQL</text>
+        <text x="186" y="338" text-anchor="end" font-size="11" fill="var(--pred)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❹</tspan> SQL</text>
         <rect x="10" y="372" width="260" height="98" rx="8" fill="var(--soft)" stroke="var(--pred)"/>
         <text x="140" y="391" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">Aurora PostgreSQL</text>
         <text x="20" y="410" font-size="10.5" fill="var(--ink)">SELECT c.cid, c.full_name, a.city</text>
@@ -687,12 +687,12 @@ export AGENT_MODEL="anthropic/claude-sonnet-4.6"          # the default; the blo
       </g>
       <g class="s5">
         <line x1="200" y1="370" x2="262" y2="328" stroke="var(--pred)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ah14)"/>
-        <text x="238" y="360" font-size="11" fill="var(--pred)">⑤</text>
-        <text x="20" y="460" font-size="10.5" font-weight="700" fill="var(--pred)">⑤ returns 8 customers</text>
+        <text x="238" y="360" font-size="11" fill="var(--pred)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❺</tspan></text>
+        <text x="20" y="460" font-size="10.5" font-weight="700" fill="var(--pred)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❺</tspan> returns 8 customers</text>
       </g>
       <g class="s6">
         <line x1="400" y1="324" x2="488" y2="368" stroke="var(--pred)" stroke-width="2" marker-end="url(#ah14)"/>
-        <text x="455" y="338" font-size="11" fill="var(--pred)">⑥ SQL</text>
+        <text x="455" y="338" font-size="11" fill="var(--pred)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❻</tspan> SQL</text>
         <rect x="370" y="372" width="260" height="98" rx="8" fill="var(--soft)" stroke="var(--pred)"/>
         <text x="500" y="391" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">Redshift Serverless</text>
         <text x="380" y="410" font-size="10.5" fill="var(--ink)">SELECT cid, price, quantity</text>
@@ -701,19 +701,19 @@ export AGENT_MODEL="anthropic/claude-sonnet-4.6"          # the default; the blo
       </g>
       <g class="s7">
         <line x1="440" y1="370" x2="378" y2="328" stroke="var(--pred)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ah14)"/>
-        <text x="392" y="360" text-anchor="end" font-size="11" fill="var(--pred)">⑦</text>
-        <text x="380" y="460" font-size="10.5" font-weight="700" fill="var(--pred)">⑦ returns 46 purchase rows</text>
+        <text x="392" y="360" text-anchor="end" font-size="11" fill="var(--pred)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❼</tspan></text>
+        <text x="380" y="460" font-size="10.5" font-weight="700" fill="var(--pred)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❼</tspan> returns 46 purchase rows</text>
       </g>
       <g class="s9">
         <line x1="345" y1="248" x2="345" y2="196" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ah14)"/>
-        <text x="352" y="224" font-size="11" fill="var(--ink)">⑨ 8 result rows</text>
+        <text x="352" y="224" font-size="11" fill="var(--ink)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❾</tspan> 8 result rows</text>
         <line x1="345" y1="138" x2="345" y2="80" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ah14)"/>
-        <text x="352" y="102" font-size="11" fill="var(--ink)">⑨ tool result</text>
+        <text x="352" y="102" font-size="11" fill="var(--ink)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❾</tspan> tool result</text>
         <text x="352" y="116" font-size="11" fill="var(--ink)">(compact JSON)</text>
       </g>
       <g class="s10">
         <line x1="390" y1="48" x2="476" y2="48" stroke="var(--muted)" stroke-width="2" marker-end="url(#ah14)"/>
-        <text x="433" y="40" text-anchor="middle" font-size="11" fill="var(--ink)">⑩</text>
+        <text x="433" y="40" text-anchor="middle" font-size="11" fill="var(--ink)"><tspan style="fill:#a8741a;font-size:1.45em;font-weight:700">❿</tspan></text>
         <rect x="480" y="20" width="150" height="56" rx="8" fill="var(--soft)" stroke="var(--try)" stroke-width="2"/>
         <text x="555" y="40" text-anchor="middle" font-size="13" font-weight="700" fill="var(--try)">Answer</text>
         <text x="555" y="56" text-anchor="middle" font-size="10.5" fill="var(--ink)">Carolyn Inworth</text>
@@ -1241,33 +1241,33 @@ bookAnim('f-14-2', (tl, cap) => {
     tl.fromTo(dot, {attr: {cx: x1, cy: y1}, opacity: 1}, {attr: {cx: x2, cy: y2}, duration: .8, ease: 'power1.inOut'});
     tl.to(dot, {opacity: 0, duration: .15});
   };
-  cap(tl, '① The question, the system prompt (the ontology summary) and the two tool definitions go to the LLM.');
+  cap(tl, 'Step 1: The question, the system prompt (the ontology summary) and the two tool definitions go to the LLM.');
   tl.from(q('.s1'), {opacity: 0, duration: .5});
   hop(75, 48, 320, 48);
-  cap(tl, '② The LLM replies with a tool call, not text: run_sparql with one SPARQL query whose two GRAPH blocks share ?c.');
+  cap(tl, 'Step 2: The LLM replies with a tool call, not text: run_sparql with one SPARQL query whose two GRAPH blocks share ?c.');
   tl.from(q('.s2'), {opacity: 0, duration: .5}, '+=.6');
   hop(295, 76, 295, 166);
-  cap(tl, '③ guard() checks it (a SELECT with LIMIT 10) and agent.py POSTs it to /kit-c360/query as a read-only user.');
+  cap(tl, 'Step 3: guard() checks it (a SELECT with LIMIT 10) and agent.py POSTs it to /kit-c360/query as a read-only user.');
   tl.from(q('.s3'), {opacity: 0, duration: .5}, '+=.8');
   hop(295, 192, 295, 282);
-  cap(tl, '④ The planner runs the Aurora mapping in reverse: one SQL join of customer and address, with the Wisconsin filter pushed down.');
+  cap(tl, 'Step 4: The planner runs the Aurora mapping in reverse: one SQL join of customer and address, with the Wisconsin filter pushed down.');
   tl.from(q('.s4'), {opacity: 0, duration: .5}, '+=1');
   hop(240, 324, 152, 368);
-  cap(tl, '⑤ Aurora returns 8 Wisconsin customers (cid, name, city), not all 500.');
+  cap(tl, 'Step 5: Aurora returns 8 Wisconsin customers (cid, name, city), not all 500.');
   tl.from(q('.s5'), {opacity: 0, duration: .5}, '+=1');
   hop(200, 370, 262, 328);
-  cap(tl, '⑥ For the purchases block it writes Redshift SQL. Shown here as a bind join on the 8 cids; the planner may choose a hash join instead.');
+  cap(tl, 'Step 6: For the purchases block it writes Redshift SQL. Shown here as a bind join on the 8 cids; the planner may choose a hash join instead.');
   tl.from(q('.s6'), {opacity: 0, duration: .5}, '+=1');
   hop(400, 324, 488, 368);
-  cap(tl, '⑦ Redshift returns 46 purchase rows (cid, price, quantity).');
+  cap(tl, 'Step 7: Redshift returns 46 purchase rows (cid, price, quantity).');
   tl.from(q('.s7'), {opacity: 0, duration: .5}, '+=1');
   hop(440, 370, 378, 328);
-  cap(tl, '⑧ Inside Stardog: both sides become urn:stardog:demos:c360:customer:{cid}, rows join on that IRI, then SUM(price × quantity), sort, LIMIT.');
+  cap(tl, 'Step 8: Inside Stardog: both sides become urn:stardog:demos:c360:customer:{cid}, rows join on that IRI, then SUM(price × quantity), sort, LIMIT.');
   tl.from(q('.s8'), {opacity: 0, scale: .9, transformOrigin: '50% 50%', duration: .6}, '+=1');
-  cap(tl, '⑨ 8 result rows go back as SPARQL JSON; agent.py flattens them into a compact tool result for the LLM.', '+=1.4');
+  cap(tl, 'Step 9: 8 result rows go back as SPARQL JSON; agent.py flattens them into a compact tool result for the LLM.', '+=1.4');
   tl.from(q('.s9'), {opacity: 0, duration: .5});
   hop(345, 248, 345, 80);
-  cap(tl, '⑩ The LLM writes the answer from those rows: Carolyn Inworth, Milwaukee, $502,529.42 across 15 orders.');
+  cap(tl, 'Step 10: The LLM writes the answer from those rows: Carolyn Inworth, Milwaukee, $502,529.42 across 15 orders.');
   tl.from(q('.s10'), {opacity: 0, duration: .5}, '+=.6');
   hop(390, 48, 555, 48);
   cap(tl, 'Question → LLM → SPARQL → Stardog → SQL on Aurora and Redshift → join and SUM on the customer IRI → JSON → LLM → answer. Press Play to replay.', '+=1.2');

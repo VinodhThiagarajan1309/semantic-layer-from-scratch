@@ -212,7 +212,38 @@ WHERE {
   <div class="codewrap"><button class="copy" type="button">Copy</button><pre>BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust_iri)   -- Redshift, purchase block
 BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?iri)        -- Aurora, customer block (Chapter 8)</pre></div>
   <p>Character for character, the same template. Redshift's <code>purchase.cid = 225</code> and Aurora's <code>customer.cid = 225</code> both become the IRI <code>&lt;urn:stardog:demos:c360:customer:225&gt;</code>, and in RDF a node <em>is</em> its IRI (Chapter 3). So Aurora's facts about customer 225 and Redshift's orders "purchased by" customer 225 are facts about one and the same node. In Redshift, <code>purchase.cid</code> is a plain integer column: no foreign key can point from Redshift to a table in Aurora. The cross-engine "join" is the shared IRI template instead.</em></p>
-  <p>The other three blocks (product, category, vendor) use the same ideas. Two details are new:</p>
+  <p>The same file, <code>redshift_c360.sms</code>, has three more blocks after the purchase block: one each for products, categories and vendors. Here they are in full:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>MAPPING &lt;urn:c360:redshift:product&gt;
+FROM SQL { SELECT id, name, brand, price, dept, description, '$' || CAST(price AS varchar) AS price_label FROM c360.product }
+TO {
+  ?iri a :Product ; :inCategory ?cat_iri ; :description ?description ; :msrp ?up ;
+    :vendor ?vendor_iri ; :name ?name ; rdfs:label ?name .
+  ?up a :UnitPrice ; rdfs:label ?price_label ; :hasCurrency "USD" ; :hasPrice ?pf .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:product:{id}") AS ?iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:category:{dept}") AS ?cat_iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:vendor:{brand}") AS ?vendor_iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:unitprice:{id}") AS ?up)
+  BIND(xsd:float(?price) AS ?pf)
+}
+;
+MAPPING &lt;urn:c360:redshift:category&gt;
+FROM SQL { SELECT id, dept_name FROM c360.category }
+TO { ?iri a :Category ; :name ?dept_name ; rdfs:label ?dept_name . }
+WHERE { BIND(TEMPLATE("urn:stardog:demos:c360:category:{id}") AS ?iri) }
+;
+MAPPING &lt;urn:c360:redshift:vendor&gt;
+FROM SQL { SELECT id, vendor_name, industry, homepage FROM c360.vendor }
+TO {
+  ?iri a :Vendor ; :industry ?ind ; :homepage ?homepage ; :name ?vendor_name ; rdfs:label ?vendor_name .
+  ?ind a :Industry ; :name ?industry ; rdfs:label ?industry .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:vendor:{vendor_name}") AS ?iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:industry:{industry}") AS ?ind)
+}</pre></div>
+  <p>They use the same ideas you already know (<code>FROM SQL</code>, <code>TO</code>, <code>TEMPLATE</code>, casts). Three details are new:</p>
   <ul>
     <li><b>Vendors are matched by name, not by an ID.</b> The product table has a <code>brand</code> column holding the vendor's name; the vendor table has a <code>vendor_name</code> column. Both mappings build the vendor's IRI from that name, so they meet on the same node. Product 1, a Ring Light with brand <code>Neewer</code>, gives <code>vendor:Neewer</code>; the vendor row named <code>Neewer</code> gives <code>vendor:Neewer</code> too.</li>
     <li><b>Spaces in names are encoded.</b> An IRI can't contain a space, so Stardog replaces it with <code>%20</code> (this is called percent-encoding, the same thing a browser does in URLs). The brand <code>Charmin Ultra Soft</code> becomes <code>vendor:Charmin%20Ultra%20Soft</code> in both mappings, so they still match.</li>

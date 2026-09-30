@@ -102,6 +102,14 @@ th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04
 .sbs pre{font-size:12.5px;height:100%}
 .box .breaks{font-size:.9rem;color:var(--muted)}
 @media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.keyidea{position:relative;margin:30px 0;padding:18px 22px 16px 22px;border-radius:12px;background:linear-gradient(135deg,#fbf5e6 0%,#f4ead3 100%);border:1px solid #e2cf9f;border-left:5px solid #a8741a}
+.keyidea::before{content:"\2726  Key idea";display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8a5d10;margin-bottom:10px}
+.keyidea .ki{font:600 1.18rem/1.45 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;color:#2b2112;margin:0 0 8px}
+.keyidea .ki-ex{font:14px/1.5 -apple-system,sans-serif;color:#5b4a2c;margin:0}
+.keyidea .ki-ex code{background:rgba(168,116,26,.10)}
+@media (prefers-color-scheme: dark){.keyidea{background:linear-gradient(135deg,#2a2317 0%,#221c12 100%);border-color:#5a4520;border-left-color:#d9a441}.keyidea::before{color:#e3b45a}.keyidea .ki{color:#f3e6c8}.keyidea .ki-ex{color:#cdb88f}}
+.kigrid{display:grid;gap:14px}
+.kichap{font:700 12px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:30px 0 8px}
 .done{margin-top:36px;text-align:center}
 .sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
 @media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
@@ -262,6 +270,8 @@ BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust_iri)</pre></div>
 
   <p>Both sides produce exactly the same string for Carolyn, and triples that use the same name are about the same node (Section 2.4). The blog calls this the IRI template; this book calls it the <b>IRI trick</b>, and Chapter 9 shows the machinery. For now, notice that it's nothing more than an agreement about spelling.</p>
 
+  <div class="keyidea" id="ki-4"><p class="ki">An IRI is a globally unique primary key, for things and for properties alike.</p><p class="ki-ex">Example: <code>customer:225</code> and <code>product:225</code> never collide, while Aurora's and Redshift's cid 225 become the same node.</p></div>
+
   <aside class="box gotcha">
     <p>The trick only works if the templates agree <b>exactly</b>. <code>customer:{cid}</code> in one mapping and <code>customers:{cid}</code> in another, or <code>225</code> in one database and <code>0225</code> in the other, gives two nodes and a federated query that silently returns nothing. Build IRIs from keys that never change (the vendor IRI uses <code>vendor_name</code>, so a rename would change it), and write each template once.</p>
   </aside>
@@ -310,6 +320,8 @@ LocalDate  day   = LocalDate.parse("2011-01-21");
 float      bad   = 439.78f;  // 439.7799987…</pre></div></div>
     <p class="breaks"><b>Where the analogy breaks:</b> in Java the <i>variable</i> declares the type and the compiler enforces it. In RDF each <i>value</i> carries its own type and nothing enforces consistency: one price can be a decimal and the next a string. (<code>xsd:integer</code> is unbounded, hence <code>BigInteger</code>.)</p>
   </aside>
+
+  <div class="keyidea" id="ki-5"><p class="ki">Money is xsd:decimal, never xsd:float.</p><p class="ki-ex">Example: 502,529.42 stored as a float comes back as 502,529.40625.</p></div>
 
   <p>When the data lives in Aurora and Redshift, a value's type comes from the <b>mapping</b>. The ontology can say what type a property is <i>meant</i> to have, but that documents rather than converts (Chapter 6). So the working mappings cast explicitly: <code>xsd:decimal</code> for money, <code>xsd:integer</code> for quantities, <code>xsd:date</code> for dates. Without casts, values arrive with whatever type the database driver reports.</p>
 
@@ -643,7 +655,7 @@ bookAnim('f-3-2', (tl, cap) => {
 @media print{#cnav-btn,#cnav,#cnav-shade{display:none!important}}
 </style>
 <button id="cnav-btn" type="button" aria-label="Open chapter menu" aria-expanded="false" aria-controls="cnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
-<nav id="cnav" aria-label="Chapters"><div class="h"><span>Chapters</span><button type="button" aria-label="Close menu">&times;</button></div><a href="index.html" data-p="index.html">Cover and contents</a><a href="preface.html" data-p="preface.html">Preface · What we are building</a><a href="ch01.html" data-p="ch01.html">Chapter 1 · One question, five systems</a><a href="ch02.html" data-p="ch02.html">Chapter 2 · The triple: the atom of knowledge</a><a href="ch03.html" data-p="ch03.html">Chapter 3 · Names, values and files</a><a href="ch04.html" data-p="ch04.html">Chapter 4 · SPARQL for people who know SQL</a><a href="ch05.html" data-p="ch05.html">Chapter 5 · The T-Box, part 1: classes (RDFS)</a><a href="ch06.html" data-p="ch06.html">Chapter 6 · The T-Box, part 2: properties and the c360 ontology (OWL)</a><a href="ch07.html" data-p="ch07.html">Chapter 7 · Where the data lives: materialized vs virtual</a><a href="ch08.html" data-p="ch08.html">Chapter 8 · Mappings: teaching Stardog to read your tables</a><a href="ch09.html" data-p="ch09.html">Chapter 9 · Federation: where the magic happens</a><a href="ch10.html" data-p="ch10.html">Chapter 10 · Reasoning: teaching the graph to conclude</a><a href="ch11.html" data-p="ch11.html">Chapter 11 · SHACL: when you do want rules to reject data</a><a href="ch12.html" data-p="ch12.html">Chapter 12 · Governance: same question, different answers</a><a href="ch13.html" data-p="ch13.html">Chapter 13 · The Stardog toolbox</a><a href="ch14.html" data-p="ch14.html">Chapter 14 · The agent: from question to answer</a><a href="ch15.html" data-p="ch15.html">Chapter 15 · At scale: huge ontologies and answers you can trust</a><a href="glossary.html" data-p="glossary.html">Appendix · Glossary</a></nav>
+<nav id="cnav" aria-label="Chapters"><div class="h"><span>Chapters</span><button type="button" aria-label="Close menu">&times;</button></div><a href="index.html" data-p="index.html">Cover and contents</a><a href="preface.html" data-p="preface.html">Preface · What we are building</a><a href="ch01.html" data-p="ch01.html">Chapter 1 · One question, five systems</a><a href="ch02.html" data-p="ch02.html">Chapter 2 · The triple: the atom of knowledge</a><a href="ch03.html" data-p="ch03.html">Chapter 3 · Names, values and files</a><a href="ch04.html" data-p="ch04.html">Chapter 4 · SPARQL for people who know SQL</a><a href="ch05.html" data-p="ch05.html">Chapter 5 · The T-Box, part 1: classes (RDFS)</a><a href="ch06.html" data-p="ch06.html">Chapter 6 · The T-Box, part 2: properties and the c360 ontology (OWL)</a><a href="ch07.html" data-p="ch07.html">Chapter 7 · Where the data lives: materialized vs virtual</a><a href="ch08.html" data-p="ch08.html">Chapter 8 · Mappings: teaching Stardog to read your tables</a><a href="ch09.html" data-p="ch09.html">Chapter 9 · Federation: where the magic happens</a><a href="ch10.html" data-p="ch10.html">Chapter 10 · Reasoning: teaching the graph to conclude</a><a href="ch11.html" data-p="ch11.html">Chapter 11 · SHACL: when you do want rules to reject data</a><a href="ch12.html" data-p="ch12.html">Chapter 12 · Governance: same question, different answers</a><a href="ch13.html" data-p="ch13.html">Chapter 13 · The Stardog toolbox</a><a href="ch14.html" data-p="ch14.html">Chapter 14 · The agent: from question to answer</a><a href="ch15.html" data-p="ch15.html">Chapter 15 · At scale: huge ontologies and answers you can trust</a><a href="glossary.html" data-p="glossary.html">Appendix · Glossary</a><a href="keyideas.html" data-p="keyideas.html">Summary · Key ideas at a glance</a></nav>
 <div id="cnav-shade"></div>
 <script>
 (function(){var n=document.getElementById("cnav"),b=document.getElementById("cnav-btn"),s=document.getElementById("cnav-shade");

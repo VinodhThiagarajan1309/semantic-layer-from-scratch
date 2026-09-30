@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Semantic Layer, From Scratch</title>
+<title>Summary · Key ideas at a glance</title>
 <!--
   BOOK TEMPLATE, "The Semantic Layer, From Scratch".
   Copy this whole file for each chapter. Change only: <title>, the header block, the
@@ -102,8 +102,6 @@ th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04
 .sbs pre{font-size:12.5px;height:100%}
 .box .breaks{font-size:.9rem;color:var(--muted)}
 @media (max-width:760px){.sbs{grid-template-columns:1fr}}
-.est{white-space:nowrap;font-variant-numeric:tabular-nums}.est span{font-size:12px;color:var(--muted)}
-.esttotal{font:15px/1.5 -apple-system,sans-serif;background:var(--soft);border-radius:8px;padding:10px 14px}
 .keyidea{position:relative;margin:30px 0;padding:18px 22px 16px 22px;border-radius:12px;background:linear-gradient(135deg,#fbf5e6 0%,#f4ead3 100%);border:1px solid #e2cf9f;border-left:5px solid #a8741a}
 .keyidea::before{content:"\2726  Key idea";display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8a5d10;margin-bottom:10px}
 .keyidea .ki{font:600 1.18rem/1.45 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;color:#2b2112;margin:0 0 8px}
@@ -126,89 +124,71 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
 </head>
 <body>
 <div class="page">
-  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Contents</span></div>
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Summary</span></div>
 
-  <header class="opener" style="margin:72px 0 40px">
-    <div class="num">A hands-on book</div>
-    <h1 style="font-size:2.8rem">The Semantic Layer, From Scratch</h1>
-    <p class="sub">Building a federated knowledge graph over Aurora and Redshift with Stardog, and putting an AI agent on top</p>
+  <header class="opener">
+    <div class="num">Summary</div>
+    <h1>Key ideas at a glance</h1>
+    <p class="sub">Fifteen ideas worth remembering, each linked to where it is taught.</p>
     <div class="rule"></div>
-    <p style="margin:26px 0 4px;font-size:1.15rem"><b>Vinodh Thiagarajan</b></p>
   </header>
 
-  <p style="text-align:center;color:var(--muted);font:13.5px/1.5 -apple-system,sans-serif;max-width:560px;margin:0 auto 30px"><b>About this book.</b> Fifteen short chapters that take a database engineer from "what is a triple?" to a working AI agent answering questions live across Aurora PostgreSQL and Amazon Redshift through Stardog. Each chapter is a self-contained page with hands-on steps in Stardog Studio. Inspired by the AWS Machine Learning blog post on building a semantic layer with Stardog and Amazon Bedrock AgentCore.</p>
+  <p>Chapters 10–15 will add their key ideas as they are read.</p>
 
-  <figure class="fig">
-    <svg viewBox="0 0 660 150" width="660" role="img" aria-label="Thumbnail architecture: a question goes to an agent, the agent queries Stardog, and Stardog reads live from Aurora and Redshift, then the answer comes back.">
-      <defs><marker id="ia" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0L9,4.5L0,9z" fill="var(--muted)"/></marker></defs>
-      <rect x="6" y="46" width="130" height="56" rx="10" fill="var(--soft)" stroke="var(--line)"/>
-      <text x="71" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">Question</text>
-      <text x="71" y="88" text-anchor="middle" font-size="10.5" fill="var(--muted)">plain English</text>
-      <rect x="176" y="46" width="130" height="56" rx="10" fill="var(--paper)" stroke="var(--accent2)" stroke-width="1.5"/>
-      <text x="241" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent2)">Agent</text>
-      <text x="241" y="88" text-anchor="middle" font-size="10.5" fill="var(--muted)">OpenAI / OpenRouter</text>
-      <rect x="346" y="36" width="140" height="76" rx="10" fill="var(--paper)" stroke="var(--accent)" stroke-width="1.5"/>
-      <text x="416" y="64" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent)">Stardog</text>
-      <text x="416" y="82" text-anchor="middle" font-size="10.5" fill="var(--muted)">ontology, rules,</text>
-      <text x="416" y="97" text-anchor="middle" font-size="10.5" fill="var(--muted)">virtual graphs</text>
-      <rect x="526" y="14" width="128" height="50" rx="10" fill="var(--paper)" stroke="var(--try)" stroke-width="1.5"/>
-      <text x="590" y="36" text-anchor="middle" font-size="12" font-weight="700" fill="var(--try)">Aurora</text>
-      <text x="590" y="53" text-anchor="middle" font-size="10.5" fill="var(--muted)">customers</text>
-      <rect x="526" y="86" width="128" height="50" rx="10" fill="var(--paper)" stroke="var(--try)" stroke-width="1.5"/>
-      <text x="590" y="108" text-anchor="middle" font-size="12" font-weight="700" fill="var(--try)">Redshift</text>
-      <text x="590" y="125" text-anchor="middle" font-size="10.5" fill="var(--muted)">purchases</text>
-      <g stroke="var(--muted)" stroke-width="1.5" fill="none" marker-end="url(#ia)">
-        <path d="M136 74 L172 74"/><path d="M306 74 L342 74"/><path d="M486 62 L522 44"/><path d="M486 86 L522 106"/>
-      </g>
-      <text x="416" y="140" text-anchor="middle" font-size="10.5" fill="var(--muted)">live SQL, joined on shared names, no ETL</text>
-    </svg>
-    <figcaption>The system you will build, one chapter at a time. The preface shows the full diagram.</figcaption>
-  </figure>
+  <p class="kichap">Chapter 1 · One question, five systems</p>
+  <div class="kigrid">
+    <div class="keyidea" id="sum-ki-1"><p class="ki">A semantic layer is a job, not a technology: an ETL-free business view over many databases, where the ontology supplies the meaning and the mappings supply the connections.</p><p class="ki-ex">Example: This book builds it with a knowledge graph on Stardog; metrics layers, BI models and data virtualization are other ways. <a href="ch01.html#ki-1">Read it in context →</a></p></div>
+  </div>
 
-  <h2>Who this is for</h2>
-  <p>You are an engineer who knows databases very well: SQL, joins, schemas, Postgres, Redshift, ETL. You have never worked with RDF, triples, SPARQL, OWL, ontologies, reasoning rules, SHACL, Stardog, Voicebox or MCP, and you would like to understand them properly rather than copy a demo. This book takes you from "what is a triple?" to a working AI agent that answers business questions live across two AWS databases, explaining every new idea in terms of the SQL you already know and saying plainly where the comparison breaks.</p>
+  <p class="kichap">Chapter 2 · The triple: the atom of knowledge</p>
+  <div class="kigrid">
+    <div class="keyidea" id="sum-ki-2"><p class="ki">Every fact is one sentence: subject → predicate → object.</p><p class="ki-ex">Example: <code>customer:225 :firstName "Carolyn"</code> <a href="ch02.html#ki-2">Read it in context →</a></p></div>
+    <div class="keyidea" id="sum-ki-3"><p class="ki">Things have IRIs and can have facts of their own; literals are plain values and are always dead ends.</p><p class="ki-ex">Example: <code>customer:225 :address location:b80e…</code> points to a thing; <code>"Milwaukee"</code> is a literal. <a href="ch02.html#ki-3">Read it in context →</a></p></div>
+  </div>
 
-  <h2>How to read it</h2>
-  <ul>
-    <li>Keep <b>Stardog Studio</b> open beside the book, connected to the database <code>kit-c360</code>. Keep <b>DBeaver</b> handy to check answers in SQL.</li>
-    <li>Do every green <b>"Try it in Studio"</b> box yourself. Practice steps use scratch graphs and clean up after themselves; chapters marked <b>build step</b> leave something permanent that later chapters rely on, so do them in order.</li>
-    <li>Ask Claude whenever something is unclear. After each <b>build step</b>, press its <b>"Build step N done"</b> button and paste it to Claude with your results, so we can confirm them before the next step builds on them.</li>
-    <li>Code blocks have a <b>Copy</b> button. Pages follow your system's light or dark setting.</li>
-  </ul>
+  <p class="kichap">Chapter 3 · Names, values and files</p>
+  <div class="kigrid">
+    <div class="keyidea" id="sum-ki-4"><p class="ki">An IRI is a globally unique primary key, for things and for properties alike.</p><p class="ki-ex">Example: <code>customer:225</code> and <code>product:225</code> never collide, while Aurora's and Redshift's cid 225 become the same node. <a href="ch03.html#ki-4">Read it in context →</a></p></div>
+    <div class="keyidea" id="sum-ki-5"><p class="ki">Money is xsd:decimal, never xsd:float.</p><p class="ki-ex">Example: 502,529.42 stored as a float comes back as 502,529.40625. <a href="ch03.html#ki-5">Read it in context →</a></p></div>
+  </div>
 
-  <h2>Contents</h2>
-  <p class="esttotal"><b>Time to finish:</b> about 12 hours in total: roughly 4.3 hours of reading and 7.4 hours hands-on in Studio and DBeaver. One or two chapters per sitting works well. The build chapters take longer because you create something real.</p>
-  <div class="tbl"><table>
-    <thead><tr><th>#</th><th>Chapter</th><th>Time</th><th></th></tr></thead>
-    <tbody>
-      <tr><td></td><td><a href="preface.html"><b>Preface: What we are building</b></a><br>The goal, the finished architecture, the build track, what's already done, and how to read the book.</td><td class="est"><b>~15 min</b><br><span>15 read</span></td><td></td></tr>
-      <tr><td>1</td><td><a href="ch01.html"><b>One question, five systems</b></a><br>Why data fragments, what a semantic layer is (and isn't), the blog's three layers, and our Aurora/Redshift split.</td><td class="est"><b>~30 min</b><br><span>15 read · 15 hands-on</span></td><td></td></tr>
-      <tr><td>2</td><td><a href="ch02.html"><b>The triple: the atom of knowledge</b></a><br>RDF's one shape, subject → predicate → object; a SQL row becomes triples; following arrows instead of joining.</td><td class="est"><b>~30 min</b><br><span>15 read · 15 hands-on</span></td><td></td></tr>
-      <tr><td>3</td><td><a href="ch03.html"><b>Names, values and files</b></a><br>IRIs, literals and datatypes, prefixes, Turtle files, and named graphs as folders.</td><td class="est"><b>~45 min</b><br><span>15 read · 30 hands-on</span></td><td></td></tr>
-      <tr><td>4</td><td><a href="ch04.html"><b>SPARQL for people who know SQL</b></a><br>Triple patterns, the shared variable as a join, FILTER, OPTIONAL, GROUP BY, and updates, side by side with SQL.</td><td class="est"><b>~45 min</b><br><span>15 read · 30 hands-on</span></td><td></td></tr>
-      <tr><td>5</td><td><a href="ch05.html"><b>The T-Box, part 1: classes (RDFS)</b></a><br>Schema vs data, classes and subclasses, and the open-world assumption. You create the c360 classes.</td><td class="est"><b>~45 min</b><br><span>15 read · 30 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 1</span></td></tr>
-      <tr><td>6</td><td><a href="ch06.html"><b>The T-Box, part 2: properties and the c360 ontology (OWL)</b></a><br>Object vs datatype properties, domain and range, inverses, and loading the full kit ontology.</td><td class="est"><b>~60 min</b><br><span>18 read · 42 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 2</span></td></tr>
-      <tr><td>7</td><td><a href="ch07.html"><b>Where the data lives: materialized vs virtual</b></a><br>Copying triples in vs virtual graphs over SQL, data sources, and the trade-offs.</td><td class="est"><b>~30 min</b><br><span>15 read · 15 hands-on</span></td><td></td></tr>
-      <tr><td>8</td><td><a href="ch08.html"><b>Mappings: teaching Stardog to read your tables</b></a><br>SMS2 mappings and IRI templates; you create the Aurora virtual graphs, safe and PII.</td><td class="est"><b>~45 min</b><br><span>15 read · 30 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 3</span></td></tr>
-      <tr><td>9</td><td><a href="ch09.html"><b>Federation: where the magic happens</b></a><br>The Redshift mapping, the IRI trick, what happens inside a federated query, and the top-spenders answer.</td><td class="est"><b>~60 min</b><br><span>18 read · 42 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 4</span></td></tr>
-      <tr><td>10</td><td><a href="ch10.html"><b>Reasoning: teaching the graph to conclude</b></a><br>Inference at query time, Stardog rules, and the kit's five rules, including "big spender".</td><td class="est"><b>~45 min</b><br><span>15 read · 30 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 5</span></td></tr>
-      <tr><td>11</td><td><a href="ch11.html"><b>SHACL: when you do want rules to reject data</b></a><br>Closed-world validation with shapes: the NOT NULL and CHECK constraints of the graph world.</td><td class="est"><b>~45 min</b><br><span>15 read · 30 hands-on</span></td><td></td></tr>
-      <tr><td>12</td><td><a href="ch12.html"><b>Governance: same question, different answers</b></a><br>Users, roles and named-graph security; HR sees SSNs, Marketing doesn't.</td><td class="est"><b>~45 min</b><br><span>12 read · 33 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 6</span></td></tr>
-      <tr><td>13</td><td><a href="ch13.html"><b>The Stardog toolbox</b></a><br>Cloud portal vs endpoint, Studio, Designer, Explorer, Voicebox, the MCP server, and knowledge kits.</td><td class="est"><b>~30 min</b><br><span>15 read · 15 hands-on</span></td><td></td></tr>
-      <tr><td>14</td><td><a href="ch14.html"><b>The agent: from question to answer</b></a><br>An OpenAI/OpenRouter model with a SPARQL tool, end to end, and how it maps to Bedrock AgentCore.</td><td class="est"><b>~60 min</b><br><span>20 read · 40 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 7</span></td></tr>
-      <tr><td>15</td><td><a href="ch15.html"><b>At scale: huge ontologies and answers you can trust</b></a><br>Schema retrieval for ontologies too big for a prompt, and a source registry plus completeness checks so the agent says "partial" instead of a confident wrong total.</td><td class="est"><b>~75 min</b><br><span>28 read · 47 hands-on</span></td><td><span style="font:700 10.5px/1 -apple-system,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--try);border:1px solid var(--try);border-radius:99px;padding:3px 7px;white-space:nowrap">Build step 8</span></td></tr>
-      <tr><td></td><td><a href="glossary.html"><b>Glossary</b></a><br>Every term in the book, A to Z, with the chapter that introduces it.</td><td class="est">reference</td><td></td></tr>
-      <tr><td></td><td><a href="keyideas.html"><b>Key ideas at a glance</b></a><br>The fifteen ideas worth remembering, each linked to where it is taught.</td><td class="est"><b>~5 min</b><br><span>5 read</span></td><td></td></tr>
-    </tbody>
-  </table></div>
+  <p class="kichap">Chapter 4 · SPARQL for people who know SQL</p>
+  <div class="kigrid">
+    <div class="keyidea" id="sum-ki-6"><p class="ki">A variable is a placeholder, and a shared variable is a join.</p><p class="ki-ex">Example: <code>customer:225 :address ?addr . ?addr :city ?city</code> joins on <code>?addr</code> and returns "Milwaukee". <a href="ch04.html#ki-6">Read it in context →</a></p></div>
+    <div class="keyidea" id="sum-ki-7"><p class="ki">A missing triple is not a NULL: without OPTIONAL, the whole row disappears.</p><p class="ki-ex">Example: Marlane has no <code>:phone</code>, so <code>?c :phone ?p</code> drops her; <code>OPTIONAL { ?c :phone ?p }</code> keeps her. <a href="ch04.html#ki-7">Read it in context →</a></p></div>
+  </div>
 
-  <aside class="box blog">
-    <p>The book is a long-form companion to the AWS Machine Learning blog post <a href="https://aws.amazon.com/blogs/machine-learning/build-a-semantic-layer-for-agentic-ai-on-aws-with-stardog-and-amazon-bedrock-agentcore/">"Build a semantic layer for agentic AI on AWS with Stardog and Amazon Bedrock AgentCore"</a> (July 2026). It follows the blog's customer-360 example, with one change: the agent uses an OpenAI or OpenRouter model instead of Amazon Bedrock.</p>
-  </aside>
+  <p class="kichap">Chapter 5 · The T-Box, part 1: classes (RDFS)</p>
+  <div class="kigrid">
+    <div class="keyidea" id="sum-ki-8"><p class="ki">Schema and data are both triples: there is no DDL/DML split.</p><p class="ki-ex">Example: <code>:Customer a owl:Class</code> (T-Box) and <code>customer:225 a :Customer</code> (A-Box) are written and queried the same way. <a href="ch05.html#ki-8">Read it in context →</a></p></div>
+    <div class="keyidea" id="sum-ki-9"><p class="ki">Missing means unknown, not false.</p><p class="ki-ex">Example: no <code>:phone</code> triple for Marlane means "we don't know her phone", not "she has no phone". <a href="ch05.html#ki-9">Read it in context →</a></p></div>
+  </div>
+
+  <p class="kichap">Chapter 6 · The T-Box, part 2: properties and the c360 ontology (OWL)</p>
+  <div class="kigrid">
+    <div class="keyidea" id="sum-ki-10"><p class="ki">Object properties point to things; datatype properties point to literals. Both are predicates, and both can have a domain and a range.</p><p class="ki-ex">Example: <code>:purchasedBy</code> → a Customer; <code>:firstName</code> → a string. <a href="ch06.html#ki-10">Read it in context →</a></p></div>
+    <div class="keyidea" id="sum-ki-11"><p class="ki">rdfs:domain and rdfs:range label things; they never check. Checking is SHACL's job.</p><p class="ki-ex">Example: one bad triple <code>product:268 :purchasedBy customer:225</code> turns Wax Paper into an Order. <a href="ch06.html#ki-11">Read it in context →</a></p></div>
+  </div>
+
+  <p class="kichap">Chapter 7 · Where the data lives: materialized vs virtual</p>
+  <div class="kigrid">
+    <div class="keyidea" id="sum-ki-12"><p class="ki">Materialized is a copy; virtual is a view that runs fresh SQL every time.</p><p class="ki-ex">Example: like <code>CREATE MATERIALIZED VIEW</code> vs <code>CREATE VIEW</code>. <a href="ch07.html#ki-12">Read it in context →</a></p></div>
+  </div>
+
+  <p class="kichap">Chapter 8 · Mappings: teaching Stardog to read your tables</p>
+  <div class="kigrid">
+    <div class="keyidea" id="sum-ki-13"><p class="ki">A mapping is written FROM SQL → TO → WHERE but runs FROM SQL → WHERE → TO. WHERE only names things (TEMPLATE) and types them (casts); compute everything else in the SQL.</p><p class="ki-ex">Example: <code>BIND(TEMPLATE("…customer:{cid}") AS ?c)</code> turns cid 225 into <code>customer:225</code>. <a href="ch08.html#ki-13">Read it in context →</a></p></div>
+    <div class="keyidea" id="sum-ki-14"><p class="ki">The same template means the same node, and that is the join, even across databases.</p><p class="ki-ex">Example: the customer and address mappings both build <code>location:b80ea2ce…</code>; Aurora and Redshift both build <code>customer:225</code>. <a href="ch08.html#ki-14">Read it in context →</a></p></div>
+  </div>
+
+  <p class="kichap">Chapter 9 · Federation: where the magic happens</p>
+  <div class="kigrid">
+    <div class="keyidea" id="sum-ki-15"><p class="ki">Per database, Stardog sends one SQL query; across databases, Stardog joins the results itself.</p><p class="ki-ex">Example: the Wisconsin query in Chapter 8 became one 3-table SQL JOIN on Aurora; top spenders needs a query to Aurora, one to Redshift, then a join in Stardog. <a href="ch09.html#ki-15">Read it in context →</a></p></div>
+  </div>
 
   <nav class="pn">
-    <span></span>
-    <a href="preface.html" style="text-align:right"><small>Start reading →</small>Preface · What we are building</a>
+    <a href="glossary.html"><small>← Previous</small>Appendix · Glossary</a>
+    <a href="index.html" style="text-align:right"><small>Next</small>Contents</a>
   </nav>
 </div>
 <script src="gsap.min.js"></script>

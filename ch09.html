@@ -184,7 +184,6 @@ WHERE c.cid IN (225 /*, second cid, third cid */);</pre></div>
   </figure>
 
   <p>Each virtual graph is a <strong>name + a data source + a mapping</strong>, saved on the Stardog server (<code>GET /admin/virtual_graphs</code> lists them). The data source says <em>which database</em> (a JDBC connection, Chapter 7). The mapping's <code>TO</code> block says <em>which ontology terms</em> this graph can produce, and its <code>FROM SQL</code> says <em>from which table</em>. So when a query asks for a property, Stardog looks through the mappings for a <code>TO</code> block that produces it. You have already seen this work: your query for <code>:name</code> and <code>:hasRewards</code> was answered from the customer and rewards blocks of <code>aurora_c360_safe</code>, because those are the only mappings that produce those properties. Once you create <code>redshift_c360</code> in this chapter, a query for <code>:purchasedBy</code> will be answered from its purchase block in the same way.</p>
-  <p>Note that the ontology (the T-Box) plays no part in this lookup. Stardog simply matches the property name in your query, like <code>:name</code>, with the same name in a mapping's <code>TO</code> block. Where the data lives is decided entirely by the mappings.</p>
 
   <h2><span class="sn">9.3</span>The Redshift mapping and the line that matters</h2>
   <p>Redshift needs its own virtual graph. The full <code>redshift_c360.sms</code> is in the Try box; here's the purchase block, the one that makes federation possible:</p>

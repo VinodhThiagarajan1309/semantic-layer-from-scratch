@@ -592,9 +592,7 @@ LIMIT 10</pre></div>
     <p><strong>Pin types with casts.</strong> The kit's original mappings were written for CSV, where everything is a string, hence <code>xsd:integer(?quantity)</code> and <code>xsd:date(…)</code>. Over SQL the columns are typed already, but explicit casts make each datatype match the ontology rather than whatever the driver reports; mismatched types break comparisons, <code>YEAR()</code> and value joins.</p>
     <p><strong>Money is <code>xsd:decimal</code>, never <code>xsd:float</code>.</strong> The kit's original mapping casts purchase prices with <code>xsd:float</code>, which puts Carolyn's total at $502,529.44, <strong>2 cents</strong> off SQL (the float drift of Chapter 3). With <code>xsd:decimal</code>, matching Redshift's <code>decimal(12,2)</code>, it matches SQL to the cent: <strong>$502,529.42</strong>.</p>
   </aside>
-  <p>On cost: batch your experiments. The first query after a pause waits 15 to 20 seconds for Aurora; each Redshift wake-up bills at least 60 seconds (at 4 RPUs, about 2.5 cents), and the 1 RPU-hour daily cap is roughly 15 minutes of compute. Fine for this book, not for a script in a loop, which is why Chapter 14's agent gets a <code>LIMIT</code> and a timeout.</p>
-
-  <aside class="box blog">
+    <aside class="box blog">
     <p>The blog's federated sample, "Top ten customer spenders with their state", is the query in 9.5, and its key idea is this chapter's: an <strong>IRI template</strong> gives each customer one identity across Aurora and Redshift, so no ETL is needed. "Cooperation without coordination" follows: add Athena or another source later by minting the same IRIs, without touching existing mappings.</p>
   </aside>
 

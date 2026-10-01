@@ -132,7 +132,22 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
     <div class="rule"></div>
   </header>
 
-  <p class="lede">It's Monday, and marketing wants one number: "How many big spenders do we have, per state?" There's no <code>big_spender</code> column and no <code>large_order</code> flag. The prices are in Redshift and the states are in Aurora, so no single SQL statement can join them. The old way is to query Redshift, paste 445 customer ids into an <code>IN (…)</code> list on Aurora, group by state, and repeat it next Monday, in the dashboard, and in the agent's prompt. By the end of this chapter you'll get that answer from one short SPARQL query over live rows, using a definition written exactly once, because Stardog will <em>conclude</em> facts nobody ever stored.</p>
+  <p class="lede">It's Monday, and marketing wants one number: "How many big spenders do we have, per state?" A big spender, they tell you, is a customer with at least one order whose price is over $250. There's no <code>big_spender</code> column and no <code>large_order</code> flag anywhere; the prices are in Redshift and the states are in Aurora.</p>
+  <p><b>Without a semantic layer, you'd be stuck.</b> No single SQL statement can join Redshift and Aurora, so the old way is: query Redshift for the customers with a large order, paste those 445 ids into an <code>IN (…)</code> list on Aurora, group by state, and do it all again next Monday.</p>
+  <p><b>With what you've built in Chapters 5 to 9, you are not stuck.</b> You have the ontology, the three virtual graphs and a working federated join, so you can already answer in one query:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?state (COUNT(DISTINCT ?c) AS ?bigSpenders)
+WHERE {
+  GRAPH &lt;virtual://redshift_c360&gt; {
+    ?o :purchasedBy ?c ; :purchasePrice ?price .
+    FILTER(?price &gt; 250)                  # the definition of "big spender", inline
+  }
+  GRAPH &lt;virtual://aurora_c360_safe&gt; { ?c :address ?a . ?a :state ?state . }
+}
+GROUP BY ?state
+ORDER BY DESC(?bigSpenders)</pre></div>
+  <p>It returns Texas 46, Florida 46, California 42 and so on. Correct, live, and no ETL.</p>
+  <p><b>What's still missing is the definition.</b> "Big spender" lives only inside that query, as <code>FILTER(?price &gt; 250)</code>. The weekly dashboard needs it too, so does the churn report, and so does the AI agent's prompt, and each one will write it again. Sooner or later one says <code>&gt; 300</code>, another adds up the order totals instead, and three teams report three different numbers. This chapter moves the definition out of the queries and into the model, written once. Then every question simply asks for <code>?c a :Big_Spender</code>, and Stardog <em>concludes</em> who qualifies, over live rows, at query time. Nobody ever stores the fact.</p>
 
   <h2><span class="sn">10.1</span>Inference: facts you never stored</h2>
   <p>Every triple you've queried so far was <em>asserted</em>: a mapping or an <code>INSERT DATA</code> said it explicitly. <dfn>Inference</dfn> means deriving new triples from asserted ones plus the model. Stardog calls the machinery <dfn>reasoning</dfn>, and per its docs it "does not materialize inferences; rather, reasoning is performed at query time." With reasoning on, Stardog finds everything the model implies, answers, and throws the derivation away. Four terms carry this chapter:</p>

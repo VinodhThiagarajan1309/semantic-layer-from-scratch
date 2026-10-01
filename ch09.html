@@ -539,6 +539,39 @@ ORDER BY DESC(?spend)
 LIMIT 10</pre></div>
   <p>The subquery touches only Redshift, so Stardog can push the whole <code>GROUP BY</code> into it (roughly <code>SELECT cid, SUM(price * quantity) FROM purchase GROUP BY cid</code>), and Redshift returns about one row per customer instead of one per order. Same answer, far fewer rows. Whether your version pushes this aggregate is what the plan will tell you.</p>
 
+  <h3>The proof: how many rows reach Stardog</h3>
+  <p>All three versions below return the same top spenders (Carolyn Inworth, Wisconsin, $502,529.42 first). What differs is how many rows travel from the databases into Stardog. Redshift always reads all 2,500 purchase rows internally, because it has to add them up; the question is how much of that leaves Redshift.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Version</th><th>Redshift sends Stardog</th><th>Aurora sends Stardog</th><th>Into Stardog</th></tr></thead>
+    <tbody>
+      <tr><td><b>A.</b> The plain federated query (Figure 9.2)</td><td>2,500 purchase rows (cid, price, quantity)</td><td>500 customers</td><td>~3,000</td></tr>
+      <tr><td><b>B.</b> This section: <code>GROUP BY</code> inside the subquery</td><td>one total per customer (up to 500)</td><td>500 customers</td><td>~1,000</td></tr>
+      <tr><td><b>C.</b> Also <code>ORDER BY</code> and <code>LIMIT 10</code> inside the subquery</td><td>10 totals</td><td>10 customers</td><td>20</td></tr>
+    </tbody>
+  </table></div>
+  <p>These are the real SQL statements Redshift receives for B and C (from Stardog's query plan):</p>
+  <div class="codewrap"><pre>-- B: the sum is pushed down
+SELECT cid, SUM(price * quantity) AS spend
+FROM c360.purchase
+GROUP BY cid
+
+-- C: the sum, the sort and the limit are all pushed down
+SELECT cid, SUM(price * quantity) AS spend
+FROM c360.purchase
+GROUP BY cid
+ORDER BY SUM(price * quantity) DESC
+LIMIT 10</pre></div>
+  <p>Version C only needs one change to the query: move <code>ORDER BY DESC(?spend) LIMIT 10</code> inside the subquery, after its <code>GROUP BY ?c</code>. The plan then also changes the join: instead of matching against all 500 customers, Stardog takes the 10 customer IDs that came back from Redshift and looks up only those 10 in Aurora (a <i>bind join</i>, shown as <code>ServiceJoin</code> in the plan).</p>
+  <aside class="box gotcha">
+    <p><b>Why Stardog never does C on its own.</b> The top 10 is decided <i>after</i> the join. If a top spender had purchases in Redshift but no customer row in Aurora, the join would drop them and you would get 9 rows instead of 10, with the true 11th spender missing. No foreign key can run between two databases, so Stardog cannot know every Redshift <code>cid</code> exists in Aurora, and it stays safe. Use C when you can vouch for the data, with a safety net:</p>
+    <ul>
+      <li><b>Check the keys once:</b> count Redshift <code>cid</code>s with no matching Aurora customer. If it is 0 and stays 0, C is safe.</li>
+      <li><b>Over-fetch:</b> <code>LIMIT 20</code> inside, <code>LIMIT 10</code> outside, so a few unmatched customers still leave you 10 complete rows.</li>
+      <li><b>Keep gaps visible:</b> wrap the Aurora part in <code>OPTIONAL { … }</code>, so an unmatched top spender appears with an empty name instead of silently disappearing.</li>
+    </ul>
+    <p>Rule of thumb: B by default, because it is always correct. C when the data is large and you have checked the keys. Chapter 15 returns to this kind of silent gap.</p>
+  </aside>
+
   <h2><span class="sn">9.8</span>Seeing the real plan</h2>
   <p>Figure 9.2 shows how Stardog works in general; your endpoint can show what it actually does. Studio's Workspace can show a query's plan (the docs call it the place to "write, execute, and see query plans"); look for a plan or explain control near Run. The CLI equivalent is <code>stardog query explain</code>. In the plan text, look for:</p>
   <ul>

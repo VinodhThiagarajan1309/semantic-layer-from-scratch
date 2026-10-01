@@ -459,67 +459,7 @@ JOIN (SELECT id, city, state, zip, ... FROM c360.address) AS "t1" ON "t0"."locat
 
   <div class="keyidea" id="ki-15"><p class="ki">Per database, Stardog sends one SQL query; across databases, Stardog joins the results itself.</p><p class="ki-ex">Example: the Wisconsin query in Chapter 8 became one 3-table SQL JOIN on Aurora; top spenders needs a query to Aurora, one to Redshift, then a join in Stardog.</p></div>
 
-  <aside class="box java">
-    <p>Here is step 10 of Figure 9.2 by hand: two <code>DataSource</code>s, one query each, a <code>Map</code> keyed by <code>cid</code>, then group, sum, sort and limit in the JVM. Without a semantic layer, you'd write and maintain this for every cross-database question.</p>
-    <div class="sbs">
-      <div class="col"><p class="lbl">SPARQL (the federated query, trimmed)</p><pre>SELECT ?name ?state
-       (SUM(?price * ?qty) AS ?spend)
-WHERE {
-  GRAPH &lt;virtual://redshift_c360&gt; {
-    ?o :purchasedBy ?c ;
-       :purchasePrice ?price ;
-       :quantity ?qty .
-  }
-  GRAPH &lt;virtual://aurora_c360_safe&gt; {
-    ?c :name ?name ; :address ?a .
-    ?a :state ?state .
-  }
-}
-GROUP BY ?c ?name ?state
-ORDER BY DESC(?spend)
-LIMIT 10</pre></div>
-      <div class="col"><p class="lbl">Java 21 (Spring JdbcTemplate)</p><pre>record Order(int cid, BigDecimal price, int qty) {}
-record Cust(String name, String state) {}
-record Row(String name, String state, BigDecimal spend) {}
-
-// A: Redshift, one row per order
-List&lt;Order&gt; orders = redshift.query(
-    "SELECT cid, price, quantity FROM c360.purchase",
-    (rs, i) -&gt; new Order(rs.getInt(1),
-        rs.getBigDecimal(2), rs.getInt(3)));
-
-// B: Aurora, customers with their state, keyed by cid
-Map&lt;Integer, Cust&gt; byCid = aurora.query("""
-        SELECT c.cid, c.full_name, a.state
-        FROM c360.customer c
-        JOIN c360.address a ON a.id = c.location""",
-    (rs, i) -&gt; Map.entry(rs.getInt(1),
-        new Cust(rs.getString(2), rs.getString(3))))
-    .stream()
-    .collect(Collectors.toMap(Map.Entry::getKey,
-                              Map.Entry::getValue));
-
-// join on cid, then group + sum (exact decimals)
-Map&lt;Integer, BigDecimal&gt; spend = orders.stream()
-    .filter(o -&gt; byCid.containsKey(o.cid()))
-    .collect(Collectors.groupingBy(Order::cid,
-        Collectors.reducing(BigDecimal.ZERO,
-            o -&gt; o.price().multiply(
-                     BigDecimal.valueOf(o.qty())),
-            BigDecimal::add)));
-
-// sort + limit
-List&lt;Row&gt; top10 = spend.entrySet().stream()
-    .map(e -&gt; { var c = byCid.get(e.getKey());
-                return new Row(c.name(), c.state(), e.getValue()); })
-    .sorted(Comparator.comparing(Row::spend).reversed())
-    .limit(10)
-    .toList();</pre></div>
-    </div>
-    <p class="breaks"><b>Where the analogy breaks:</b> the Java is frozen to this one question. Ask for "top spenders in Wisconsin" and you rewrite both SQL strings and choose the join strategy yourself; Stardog generates the SQL from the mappings, pushes down what it can (Section 9.7), and picks the join per query. And your code joins on a bare <code>int cid</code>, trusting both databases mean the same thing by it; in Stardog that agreement is written down as the shared IRI template.</p>
-  </aside>
-
-  <figure class="fig">
+    <figure class="fig">
     <svg viewBox="0 0 680 250" role="img" aria-label="Where the rows physically are at each stage: at rest in Aurora (500 customers) and Redshift (2,500 purchases); on the wire as two SQL result sets; in Stardog memory as a hash table of 500 customers probed by 2,500 purchase rows giving 2,500 joined rows; aggregated into 500 groups, sorted, limited to 10; and 10 rows returned to Studio.">
       <g font-size="11">
         <rect x="8" y="30" width="118" height="190" rx="8" style="fill:var(--soft);stroke:var(--accent2)"/>

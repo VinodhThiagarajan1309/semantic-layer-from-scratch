@@ -517,6 +517,24 @@ JOIN (SELECT id, city, state, zip, ... FROM c360.address) AS "t1" ON "t0"."locat
   </table></div>
 
   <h2><span class="sn">9.7</span>Helping pushdown: put single-source work inside one source</h2>
+  <h3>Why the SUM cannot go to Redshift in the 9.5 query</h3>
+  <p><b>First, where the rows land.</b> When Redshift and Aurora answer their SQL, the rows travel over the network into <b>Stardog's memory</b>. They live there only while the query runs, for the join and the math; when the answer is sent back, the memory is freed. Nothing is copied into Stardog permanently.</p>
+  <p><b>Now the SUM.</b> The 9.5 query ends with <code>SUM(?price * ?qty)</code> and <code>GROUP BY ?c ?name ?state</code>. Look at what each database actually holds for Carolyn:</p>
+  <div class="tbl"><table>
+    <thead><tr><th colspan="3">Redshift <code>purchase</code></th><th colspan="3">Aurora <code>customer</code> + <code>address</code></th></tr>
+    <tr><th>cid</th><th>price</th><th>qty</th><th>cid</th><th>name</th><th>state</th></tr></thead>
+    <tbody>
+      <tr><td>225</td><td>10,479.00</td><td>21</td><td>225</td><td>Carolyn Inworth</td><td>Wisconsin</td></tr>
+      <tr><td>225</td><td>199.70</td><td>10</td><td></td><td></td><td></td></tr>
+      <tr><td>…</td><td>…</td><td>…</td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table></div>
+  <p>The query says "group by name and state", but <b>Redshift has no name or state columns</b>; it has never heard of "Carolyn Inworth". The grouping key only exists <i>after</i> each Redshift row has been joined with its Aurora row. So the steps must be: fetch all 2,500 purchase rows, join them to Aurora inside Stardog, and only then sum. The SUM is stuck in Stardog.</p>
+  <p><b>The fix below groups by <code>?c</code> (the cid) instead</b>, inside a subquery that touches only Redshift. Redshift does have <code>cid</code>, so it can do the sum itself (<code>SELECT cid, SUM(price * quantity) FROM purchase GROUP BY cid</code>, giving 225 → 502,529.42), and Stardog attaches the name and state afterwards, one Aurora row per total.</p>
+  <aside class="box model">
+    <p>Each cid has exactly one name and one state, so "group by cid" and "group by name and state" produce the same groups. You know that; Stardog does not, because no rule across the two databases tells it so. That is why you rewrite the query yourself, and why Stardog cannot make the rewrite on its own (the same reason it will not push the <code>LIMIT</code> in version C below).</p>
+  </aside>
+
   <p>You can <em>restructure</em> the query so most of the work is single-source: sum per customer inside Redshift first, then join the totals to Aurora:</p>
   <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
 SELECT ?name ?state ?spend

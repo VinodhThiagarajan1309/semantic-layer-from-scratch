@@ -573,7 +573,7 @@ LIMIT 10</pre></div>
   </aside>
 
   <h2><span class="sn">9.8</span>Seeing the real plan</h2>
-  <p>Figure 9.2 shows how Stardog works in general; your endpoint can show what it actually does. Studio's Workspace can show a query's plan (the docs call it the place to "write, execute, and see query plans"); look for a plan or explain control near Run. The CLI equivalent is <code>stardog query explain</code>. In the plan text, look for:</p>
+  <p>Figure 9.2 shows how Stardog works in general; your endpoint can show what it actually does. In Studio's Workspace, the <b>tree icon</b> next to Run shows a query's plan without running it; its dropdown has <b>Run Profiler</b>, which runs the query and shows the plan with timings. Note that Studio adds its own safety limit of 1,000 rows when you don't write one, so you may see <code>FETCH NEXT 1000 ROWS ONLY</code> in the SQL. The CLI equivalent is <code>stardog query explain</code>. In the plan text, look for:</p>
   <ul>
     <li><strong><code>VirtualGraphSql&lt;virtual://…&gt;</code></strong>: one per SQL statement sent to a source. <code>Query=</code> is the exact SQL; <code>Vars=</code> shows columns becoming variables, e.g. <code>?c &lt;- TEMPLATE(urn:stardog:demos:c360:customer:{cid})</code>. Both leaves binding <code>?c</code> with the same template is the IRI trick in the machine's own words.</li>
     <li><strong>A join above them</strong> (for example <code>HashJoin(?c)</code> or a <code>ServiceJoin</code>): the variable is the join key.</li>

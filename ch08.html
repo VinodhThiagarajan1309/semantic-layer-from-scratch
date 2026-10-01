@@ -728,7 +728,7 @@ INNER JOIN c360.address  ON customer.location   = address.id
     <p>This is the query optimizer you already trust in Postgres, one level up. Postgres turns your SQL into a plan over its tables. Stardog turns your SPARQL into SQL for each data source, pushing down as much as it can (joins, filters, even aggregates). Mappings stay small, one table each, and a different question simply gets a different JOIN, with no new mapping and no SQL written by you.</p>
   </aside>
   <aside class="box try">
-    <p><b>See it yourself.</b> Paste the query above into Studio's Workspace and use the <b>Explain</b> / <b>Query Plan</b> button next to Run (the label varies by Studio version). Look for <code>VirtualGraphSql</code> with a <code>Query=</code> line: that is the exact SQL sent to Aurora.</p>
+    <p><b>See it yourself.</b> Paste the query above into Studio's Workspace and click the <b>query plan</b> button (the tree icon next to Run) to see the plan without running the query, or open its dropdown and choose <b>Run Profiler</b> to run it and see the plan with timings. Look for <code>VirtualGraphSql</code> with a <code>Query=</code> line: that is the exact SQL sent to Aurora.</p>
   </aside>
   <aside class="box gotcha">
     <p>Pushdown is only as complete as the SQL translation. Simple patterns like these push down fully; some SPARQL features have no SQL equivalent, and then Stardog fetches more rows and finishes that part itself. Explain tells you which happened. And when a query needs <i>two</i> data sources, as in the next chapter, no single SQL statement can reach both, so Stardog sends one query to each and does the join itself.</p>

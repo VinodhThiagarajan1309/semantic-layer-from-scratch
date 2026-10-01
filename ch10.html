@@ -164,22 +164,7 @@ ORDER BY DESC(?bigSpenders)</pre></div>
     <p>A derived class is closest to a <strong>view</strong>: <code>CREATE VIEW large_order AS SELECT id FROM purchase WHERE price &gt; 250</code>. The analogy stretches: a view lives in one database and must be named to be used, while a rule applies across every source and fires implicitly, chaining on its own. Like a non-materialized view, it has no refresh step and no index.</p>
   </aside>
 
-  <aside class="box java"><p>A rule is a derived getter: computed on read from other fields, never stored.</p><div class="sbs"><div class="col"><p class="lbl">Stardog rule</p><pre>IF {
-  ?sub a :Customer .
-  ?o :purchasedBy ?sub .
-  ?o a :Large_Order .
-}
-THEN {
-  ?sub a :Big_Spender .
-}</pre></div><div class="col"><p class="lbl">Java</p><pre>// no boolean bigSpender field anywhere
-static final Predicate&lt;Order&gt; LARGE =
-    o -&gt; o.price().compareTo(new BigDecimal("250")) &gt; 0;
-
-boolean isBigSpender(Customer c) {
-  return orders(c).stream().anyMatch(LARGE);
-}</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> you call <code>isBigSpender()</code> by name, but a rule also changes answers to questions that never mention it (ask for <code>:Customer</code> and big spenders come in via <code>subClassOf</code>), and it runs over two databases the JVM never loaded.</p></aside>
-
-  <h2><span class="sn">10.2</span>Reasoning levels and schemas, in one page</h2>
+    <h2><span class="sn">10.2</span>Reasoning levels and schemas, in one page</h2>
   <div class="tbl"><table>
     <thead><tr><th>Reasoning type</th><th>Understands</th></tr></thead>
     <tbody>

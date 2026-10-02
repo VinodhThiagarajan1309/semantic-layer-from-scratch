@@ -274,19 +274,6 @@ THEN {
     <li><strong>Join on the IRI</strong> inside Stardog, then <code>GROUP BY</code> state.</li>
   </ol>
 
-  <aside class="box java"><p>Reasoning is like composing a JPA <code>Specification</code>: predicates are combined first, and SQL is generated only when the query executes.</p><div class="sbs"><div class="col"><p class="lbl">What the planner does</p><pre>?c a :Big_Spender
-  ↓ expand rule "big spenders"
-?c a :Customer . ?o :purchasedBy ?c .
-?o a :Large_Order
-  ↓ expand rule "large purchases"
-?o :purchasePrice ?p . FILTER(?p &gt; 250)
-  ↓ only now: SPARQL → SQL</pre></div><div class="col"><p class="lbl">Java</p><pre>Specification&lt;Order&gt; large =
-    (r, q, cb) -&gt; cb.gt(r.get("price"), 250);
-Specification&lt;Order&gt; spec =
-    large.and(byCustomerState("WI"));
-
-// nothing has hit the database yet
-repo.findAll(spec);   // SQL generated here</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> you compose Specifications yourself; the reasoner composes them from the model whenever a query mentions a derived class, and may split the result across two engines.</p></aside>
 
   <figure class="fig">
     <svg viewBox="0 0 680 250" role="img" aria-label="Your query goes to the reasoner, which expands rules into plain patterns; only then is it rewritten into SQL for Aurora and Redshift and joined on the customer IRI">

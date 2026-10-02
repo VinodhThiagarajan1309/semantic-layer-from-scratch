@@ -459,7 +459,7 @@ DELETE DATA {
   </aside>
 
   <h2><span class="sn">10.8</span>When to reach for reasoning</h2>
-  <p>Use it when a definition is <strong>shared</strong> and <strong>derivable</strong>: one definition, always fresh, applied across warehouses. Your Chapter 14 agent can then write <code>?c a :Big_Spender</code> instead of re-deriving the threshold and the join. Skip it when you need a <em>stored</em> answer (an audit snapshot), heavy aggregation on every query, or bad data <em>rejected</em>. Reasoning only adds conclusions; saying "no" is the next chapter's job.</p>
+  <p>Use it when a definition is <strong>shared</strong> and <strong>derivable</strong>: one definition, always fresh, applied across warehouses. Your Chapter 14 agent can then write <code>?c a :Big_Spender</code> instead of re-deriving the threshold and the join. Skip it when you need a <em>stored</em> answer (an audit snapshot), heavy aggregation on every query, or bad data <em>rejected</em>. Reasoning only adds conclusions.</p>
 
   <section class="check"><h2>Check yourself</h2>
     <details><summary>After the reasoning query, where is the triple "customer:225 a :Big_Spender" stored?</summary><p>Nowhere. Stardog reasons at query time and doesn't materialize inferences. Turn reasoning off and the triple is gone.</p></details>

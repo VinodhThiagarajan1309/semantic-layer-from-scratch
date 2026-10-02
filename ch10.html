@@ -189,15 +189,15 @@ THEN {
   <p>In English: "if <code>?sub</code> is a Customer, and some order purchased by <code>?sub</code> is a Large_Order, then <code>?sub</code> is a Big_Spender." Names like <code>?obj_0</code> are what Stardog Designer generates when you build a rule by drag-and-drop.</p>
 
   <h3>The prefix puzzle</h3>
-  <p>Our mappings say <code>:Customer</code>; the rule says <code>stardog:ecomm:Customer</code>. If those were different classes, every rule would silently match nothing. The kit file declares <code>@prefix stardog: &lt;tag:stardog:api:&gt;</code>, and a prefixed name is the prefix IRI plus everything after the <em>first</em> colon (Chapter 3):</p>
+  <p>The rule says <code>stardog:ecomm:Customer</code>, but your mappings say <code>:Customer</code>. Are they the same class? You have met this question before. In Chapter 9, the Redshift mapping without its <code>PREFIX</code> lines turned <code>:purchasedBy</code> into <code>http://api.stardog.com/purchasedBy</code>, and the query found nothing. A short name is only a nickname. What counts is the full IRI it expands to, so expand both:</p>
   <div class="tbl"><table>
-    <thead><tr><th>Written as</th><th>Expands to</th></tr></thead>
+    <thead><tr><th>Written as</th><th>Prefix (up to the first colon) means</th><th>The rest, called the <i>local part</i></th><th>Full IRI</th></tr></thead>
     <tbody>
-      <tr><td><code>stardog:ecomm:Customer</code></td><td><code>tag:stardog:api:</code> + <code>ecomm:Customer</code> = <code>tag:stardog:api:ecomm:Customer</code></td></tr>
-      <tr><td><code>:Customer</code> (our mappings, <code>: = tag:stardog:api:ecomm:</code>)</td><td><code>tag:stardog:api:ecomm:Customer</code></td></tr>
+      <tr><td><code>:Customer</code><br>(your mappings)</td><td><code>:</code> = <code>tag:stardog:api:ecomm:</code><br>(the <code>PREFIX :</code> line at the top of your mapping files)</td><td><code>Customer</code></td><td><code>tag:stardog:api:ecomm:Customer</code></td></tr>
+      <tr><td><code>stardog:ecomm:Customer</code><br>(the kit's rule)</td><td><code>stardog:</code> = <code>tag:stardog:api:</code><br>(an <code>@prefix</code> line at the top of the kit file)</td><td><code>ecomm:Customer</code><br>(a second colon is allowed here)</td><td><code>tag:stardog:api:ecomm:Customer</code></td></tr>
     </tbody>
   </table></div>
-  <p>Two spellings of one IRI (Turtle allows a colon inside the local part). Two traps. First, the same file also declares an unused <code>@prefix : &lt;http://api.stardog.com/&gt;</code>; write <code>:Big_Spender</code> under that header and you mint a class nobody uses. Second, the rule text is a string (<code>rule:content """…"""</code>), so Stardog resolves its prefixes with the <em>database's</em> namespaces, not the file's <code>@prefix</code> lines. <code>stardog:</code>, <code>rdf:</code> and <code>xsd:</code> are known out of the box.</p>
+  <p>Both rows end in the same full IRI, so the rule matches exactly the customers your Aurora mapping produces. Two spellings, one class. The kit file hides two more prefix traps; you'll meet them in build step 5 (Section 10.7), when the file is open in front of you.</p>
 
   <h2><span class="sn">10.4</span>The kit's five rules, and one firing</h2>
   <p><code>c360_extended_model.ttl</code> is the Chapter 6 ontology plus five derived classes, each a subclass of Order or Customer. <code>c360_extended_rules.ttl</code> holds one rule per class. The two files add up to 197 triples (172 + 25). The last column is my answer key, computed with read-only SQL against the rows you'll query.</p>
@@ -346,6 +346,13 @@ SELECT ?label ?content
 WHERE { GRAPH &lt;urn:stardog:c360_extended_rules:1.0:model&gt; {
   ?r a rule:SPARQLRule ; rdfs:label ?label ; rule:content ?content . } }
 ORDER BY ?label</pre></div>
+    <aside class="box gotcha">
+      <p><strong>Two prefix traps, now that you can see the file.</strong> Open <code>c360_extended_rules.ttl</code> in a text editor.</p>
+      <ul>
+        <li><b>Its first line is <code>@prefix : &lt;http://api.stardog.com/&gt; .</code></b> In this file, <code>:</code> does not mean what it means in your mappings. If you add a rule here and write <code>:Big_Spender</code>, it expands to <code>http://api.stardog.com/Big_Spender</code>: a new class that no data uses, so the rule matches nothing. The same mistake as Chapter 9. Write <code>stardog:ecomm:Big_Spender</code> instead.</li>
+        <li><b>The rule is a string.</b> In the result of step 3, the <code>content</code> column shows each rule as plain text, and that text is all the reasoner keeps. The file's <code>@prefix</code> lines are gone once it is loaded, so when Stardog reads <code>stardog:ecomm:Customer</code> inside the rule, it expands the prefix using the database's own prefix list. <code>stardog:</code>, <code>rdf:</code> and <code>xsd:</code> are on that list out of the box, which is why the kit's rules work as they are.</li>
+      </ul>
+    </aside>
     <p><strong>4. Register the schema.</strong> <em>Databases → kit-c360 → Properties</em>, find <code>reasoning.schemas</code>, keep <code>c360_schema=…</code>, and <em>add</em> this value (the docs say it can be changed while the database is online):</p>
     <div class="codewrap"><button class="copy" type="button">Copy</button><pre>c360_extended_rules=urn:stardog:c360_extended_rules:1.0:model</pre></div>
     <p>Save. The Models tab should now list both schemas.</p>

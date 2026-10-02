@@ -328,6 +328,19 @@ THEN {
     <p><strong>1. Load both kit files into one named graph.</strong> <em>Databases → kit-c360 → Load Data</em>. Download <code>c360_extended_model.ttl</code> and <code>c360_extended_rules.ttl</code> from Stardog's public GitHub repository (<a href="https://github.com/stardog-union/knowledge-kits/blob/main/examples/c360/models/c360_extended_model.ttl">https://github.com/stardog-union/knowledge-kits/blob/main/examples/c360/models/c360_extended_model.ttl</a> and <a href="https://github.com/stardog-union/knowledge-kits/blob/main/examples/c360/models/c360_extended_rules.ttl">https://github.com/stardog-union/knowledge-kits/blob/main/examples/c360/models/c360_extended_rules.ttl</a>, <b>Download raw file</b> button), then browse to <code>c360_extended_model.ttl</code>. In the <b>Load Data To</b> dropdown (it starts at <code>stardog:context:default</code>), type this graph name into <b>"Search or create…"</b> and choose it:</p>
     <div class="codewrap"><button class="copy" type="button">Copy</button><pre>urn:stardog:c360_extended_rules:1.0:model</pre></div>
     <p>Then load <code>c360_extended_rules.ttl</code> into the same graph.</p>
+    <p><strong>What "Load Data To" actually does.</strong> <code>kit-c360</code> is the database. Every triple in it is stored with a fourth column, its <em>graph</em>, and "Load Data To" picks the value that goes into that column for every triple in the file. After this step, part of the database looks like this:</p>
+    <div class="tbl"><table>
+      <thead><tr><th>subject</th><th>predicate</th><th>object</th><th>graph ("Load Data To")</th><th>came from</th></tr></thead>
+      <tbody>
+        <tr><td><code>:Customer</code></td><td><code>a</code></td><td><code>owl:Class</code></td><td><code>urn:stardog:training-c360:1.0:model</code></td><td><code>schema.ttl</code> (Chapter 6)</td></tr>
+        <tr><td><code>:purchasedBy</code></td><td><code>rdfs:range</code></td><td><code>:Customer</code></td><td><code>urn:stardog:training-c360:1.0:model</code></td><td><code>schema.ttl</code> (Chapter 6)</td></tr>
+        <tr><td><code>:Big_Spender</code></td><td><code>rdfs:subClassOf</code></td><td><code>:Customer</code></td><td><code>urn:stardog:c360_extended_rules:1.0:model</code></td><td><code>c360_extended_model.ttl</code> (172 triples)</td></tr>
+        <tr><td><code>:Large_Order</code></td><td><code>rdfs:subClassOf</code></td><td><code>:Order</code></td><td><code>urn:stardog:c360_extended_rules:1.0:model</code></td><td><code>c360_extended_model.ttl</code></td></tr>
+        <tr><td><code>_:rule1</code></td><td><code>rule:content</code></td><td><code>"IF { … } THEN { … }"</code></td><td><code>urn:stardog:c360_extended_rules:1.0:model</code></td><td><code>c360_extended_rules.ttl</code> (25 triples)</td></tr>
+      </tbody>
+    </table></div>
+    <p>Your customers and orders are not in this table at all; they stay in Aurora and Redshift and are read live through the virtual graphs.</p>
+    <p><strong>Why both files go into one graph.</strong> In sub-step 4 below you register one graph as one reasoning schema: <code>c360_extended_rules=urn:stardog:c360_extended_rules:1.0:model</code>. The reasoner reads only registered graphs, and it needs the new classes and the rules that fill them together, so one graph holding both files needs one line. <strong>Don't read too much into the name:</strong> it says "rules" but holds the model too. It's only a label the kit chose (<code>urn:stardog:c360_extended:1.0:model</code> would describe it better); any name works, as long as sub-step 4 uses exactly the same one.</p>
     <p><strong>2. Count</strong> (reasoning off). Expect <strong>197</strong>. If you get 172 or 25, one file is missing.</p>
     <div class="codewrap"><button class="copy" type="button">Copy</button><pre>SELECT (COUNT(*) AS ?triples)
 WHERE { GRAPH &lt;urn:stardog:c360_extended_rules:1.0:model&gt; { ?s ?p ?o } }</pre></div>

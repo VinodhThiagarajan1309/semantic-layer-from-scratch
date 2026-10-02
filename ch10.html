@@ -308,7 +308,7 @@ THEN {
   </aside>
 
   <h2><span class="sn">10.6</span>The Studio switches, and why the answer changes</h2>
-  <p>Reasoning is <strong>off by default</strong>, per query: <code>--reasoning</code> on the CLI, <code>reasoning=true</code> over HTTP, and a <strong>Reasoning toggle</strong> in Studio's query toolbar. When a database has named schemas, Studio also lets you pick the schema (its release notes list "Support specifying a particular schema when querying"); in current versions the picker sits by the toggle. If yours looks different, tell Claude what you see.</p>
+  <p>Reasoning is <strong>off by default</strong>, per query: <code>--reasoning</code> on the CLI, <code>reasoning=true</code> over HTTP, and a <strong>Reasoning toggle</strong> in Studio's query toolbar. In Studio it takes two clicks, both in the query toolbar: turn the <b>Reasoning toggle</b> on (it turns green), then click the <b>gear icon</b> right next to it and choose <b>Reasoning Schema → <code>c360_extended_rules</code></b>. The same gear menu holds <b>Query Timeout (ms)</b>, 60000 by default.</p>
   <p>The schema choice decides everything. Flip the toggle without picking one and you get the schema called <code>default</code>, which here is the special graph <code>tag:stardog:api:context:schema</code>, and it's empty: no rules, no big spenders. Pick <code>c360_extended_rules</code>. It's self-contained, because the extended model repeats the whole Chapter 6 ontology.</p>
   <p>This is the open world (Chapter 5) at work. With reasoning <strong>off</strong>, no asserted <code>?c rdf:type :Big_Spender</code> triples exist, so you get <strong>zero rows</strong>, not an error. With reasoning <strong>on</strong>, the identical text returns 42 rows. Only Stardog's permission to conclude changed.</p>
 
@@ -380,7 +380,7 @@ WHERE {
 GROUP BY ?state
 ORDER BY DESC(?bigSpenders) ?state</pre></div>
     <p>The two <code>FROM</code> lines merge both virtual graphs into the query's default graph, so a rule can join across them.</p>
-    <p><strong>6. Same text, reasoning ON, schema <code>c360_extended_rules</code>.</strong> You should see approximately this: <strong>42 rows, 445 big spenders in total</strong>, starting</p>
+    <p><strong>6. Same text, reasoning ON, schema <code>c360_extended_rules</code></strong> (toggle on, then gear icon → Reasoning Schema). The first run can take close to a minute, against a 60-second default timeout: Aurora and Redshift may be waking up, and the rule expands into more SQL. If it times out, raise Query Timeout in the same gear menu to <code>120000</code>, and run it a second time to see the warm speed. You should see approximately this: <strong>42 rows, 445 big spenders in total</strong>, starting</p>
     <div class="tbl"><table>
       <thead><tr><th>state</th><th>bigSpenders</th><th>state</th><th>bigSpenders</th></tr></thead>
       <tbody>

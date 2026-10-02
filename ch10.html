@@ -300,7 +300,12 @@ THEN {
     </svg>
     <figcaption>Figure 10.2: Reasoning happens first, federation second. The rules become ordinary patterns, and the patterns become SQL on two live engines.</figcaption>
   </figure>
-  <p><code>reasoning.virtual.graph.enabled</code> (default and here <code>true</code>) is what lets reasoning reach virtual graphs. Reasoning queries may send more SQL than plain ones, so don't loop them against a 1 RPU-hour daily cap.</p>
+  <p><code>reasoning.virtual.graph.enabled</code> (default and here <code>true</code>) is what lets reasoning reach virtual graphs.</p>
+  <aside class="box gotcha">
+    <p><strong>Reasoning can cost more Redshift time.</strong> With reasoning on, one pattern such as <code>?c a :Big_Spender</code> can expand into several alternatives joined by UNION, and each alternative can become its own SQL statement. So one SPARQL query may wake Redshift more than once.</p>
+    <p>Redshift Serverless charges for compute in <b>RPUs</b> (Redshift Processing Units, its unit of computing power), billed per <b>RPU-hour</b>. A small workgroup runs at 4 RPUs, and every wake-up is billed for at least 60 seconds. As a safety net for a learning setup, you can give the workgroup a daily usage limit; ours is <b>1 RPU-hour a day</b>, which at 4 RPUs is 15 minutes of compute, about 15 one-minute wake-ups. Go past it and AWS switches the workgroup off, and every Redshift query fails until the limit resets.</p>
+    <p>So run reasoning queries by hand while you learn. Don't put them in a loop or a script that fires them hundreds of times.</p>
+  </aside>
 
   <h2><span class="sn">10.6</span>The Studio switches, and why the answer changes</h2>
   <p>Reasoning is <strong>off by default</strong>, per query: <code>--reasoning</code> on the CLI, <code>reasoning=true</code> over HTTP, and a <strong>Reasoning toggle</strong> in Studio's query toolbar. When a database has named schemas, Studio also lets you pick the schema (its release notes list "Support specifying a particular schema when querying"); in current versions the picker sits by the toggle. If yours looks different, tell Claude what you see.</p>

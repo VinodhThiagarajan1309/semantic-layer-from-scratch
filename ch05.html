@@ -297,6 +297,14 @@ boolean yes = c instanceof Customer;   // true
 <div class="codewrap"><button class="copy" type="button">Copy</button><pre>:Big_Spender rdfs:subClassOf :Customer .</pre></div>
 
   <p>The pay-off is <dfn>inference</dfn>: a new fact concluded from existing ones. Given <code>customer:225 a :Big_Spender</code>, a reasoner concludes <code>customer:225 a :Customer</code>, although nobody stored it.</p>
+  <aside class="box model">
+    <p><strong>A word you'll meet from here on: <dfn>axiom</dfn>.</strong> In ordinary English an axiom is a statement taken as true without proof. In an ontology it just means <b>one statement in the model that the reasoner is allowed to use</b>. <code>:Big_Spender rdfs:subClassOf :Customer .</code> is a subclass axiom: one T-Box triple saying "every Big_Spender is a Customer". Two kinds you'll see later:</p>
+    <ul>
+      <li><b>Subclass axiom</b>: <code>:Large_Order rdfs:subClassOf :Order .</code> (Chapter 10)</li>
+      <li><b>Inverse axiom</b>: <code>:placedOrder owl:inverseOf :purchasedBy .</code> ("these are the same link read in opposite directions", Chapter 6)</li>
+    </ul>
+    <p>In database terms, an axiom is closest to a line in your schema, except that it never rejects a row. With reasoning on, Stardog uses it to add facts; with reasoning off, it does nothing.</p>
+  </aside>
   <aside class="box java">
     <p><code>rdfs:subClassOf</code> is closer to <code>implements</code> than <code>extends</code>: a class may have several parents, and only membership is inherited.</p>
     <div class="sbs">

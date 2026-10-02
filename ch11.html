@@ -181,21 +181,6 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
     </tbody>
   </table></div>
 
-  <aside class="box java"><p>A shape is Jakarta Bean Validation for graph data, almost one for one.</p><div class="sbs"><div class="col"><p class="lbl">SHACL</p><pre>:CustomerShape a sh:NodeShape ;
-  sh:targetClass :Customer ;
-  sh:property [ sh:path :email ;
-    sh:minCount 1 ; sh:maxCount 1 ;
-    sh:pattern "^[^@ ]+@[^@ ]+[.][^@ ]+$" ] ;
-  sh:property [ sh:path :address ;
-    sh:minCount 1 ; sh:class :Address ] .</pre></div><div class="col"><p class="lbl">Java</p><pre>class Customer {
-  // RDF is multi-valued, so model it as a list
-  @NotEmpty @Size(max = 1)                    // min/maxCount
-  List&lt;@Pattern(regexp = "^[^@ ]+@[^@ ]+[.][^@ ]+$")
-       String&gt; emails;                        // sh:pattern
-
-  @NotEmpty
-  List&lt;@Valid Address&gt; addresses;             // ~ sh:class
-}</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> annotations live <em>on the class</em>, and the compiler guarantees the element type. A shape sits <em>outside</em> the data, in its own graph, checks things Java gets for free (is the value really an Address?), and can be swapped without touching the data.</p></aside>
 
   <aside class="box sql">
     <p>The biggest difference is <em>when</em> the check happens. A SQL constraint runs on every <code>INSERT</code> and blocks the bad row. SHACL, as normally used, is <strong>a report you run on demand</strong>, closer to a dbt test or a Great Expectations suite: the data is already there, and SHACL tells you what's wrong with it.</p>

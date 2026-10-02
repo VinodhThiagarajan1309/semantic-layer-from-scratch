@@ -145,12 +145,12 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
   <p><strong>Agent loop</strong> (<a href="ch14.html">Ch. 14</a>): call the model, run the tool calls it requests, append the results, and repeat until it replies with text.</p>
   <p><strong>AgentCore (Amazon Bedrock AgentCore)</strong> (<a href="ch14.html">Ch. 14</a>): AWS's managed service for running agents. <em>Runtime</em> hosts the agent, <em>Gateway</em> authenticates callers and routes tool calls, and <em>Identity</em> holds credentials so agent code never does.</p>
   <p><strong>Answer contract</strong> (<a href="ch15.html#contract">Ch. 15</a>): a fixed JSON shape for an agent's answer, <code>{value, complete, expected, included, missing: [{source, reason}]}</code>, built by code. The agent must repeat its summary verbatim, so "partial" can't get lost in prose.</p>
-  <p><strong>Axiom</strong> (<a href="ch05.html">Ch. 5</a>): one statement in the model (T-Box) that the reasoner may use to conclude new facts, such as the subclass axiom <code>:Big_Spender rdfs:subClassOf :Customer</code> or the inverse axiom <code>:placedOrder owl:inverseOf :purchasedBy</code>. Closest SQL idea: a line of schema, except it adds facts instead of rejecting rows, and only with reasoning on.</p>
   <p><strong>Apache Calcite</strong> (<a href="ch14.html">Ch. 14</a>): an open-source framework for optimizing and generating SQL, which Stardog has described using to produce SQL in each database's dialect.</p>
   <p><strong>ASK</strong> (<a href="ch04.html">Ch. 4</a>): a SPARQL query form that returns only true or false, like <code>SELECT EXISTS(…)</code>.</p>
   <p><strong>Aurora Serverless v2</strong> (<a href="ch07.html">Ch. 7</a>): the PostgreSQL service holding the c360 customers, addresses, cards and rewards accounts. It pauses when idle, so the first query after a pause takes 15 to 20 seconds.</p>
 
   <h2 id="g-b">B</h2>
+  <p><strong>Axiom</strong> (<a href="ch05.html">Ch. 5</a>): one statement in the model (T-Box) that the reasoner may use to conclude new facts, such as the subclass axiom <code>:Big_Spender rdfs:subClassOf :Customer</code> or the inverse axiom <code>:placedOrder owl:inverseOf :purchasedBy</code>. Closest SQL idea: a line of schema, except it adds facts instead of rejecting rows, and only with reasoning on.</p>
   <p><strong>Big_Spender</strong> (<a href="ch10.html">Ch. 10</a>): a derived class from the kit's rules: any customer with at least one <code>:Large_Order</code>. It exists only when reasoning is on.</p>
   <p><strong>Bind join</strong> (<a href="ch14.html">Ch. 14</a>): a join that fetches one side first, then sends its keys to the other as a filter (<code>WHERE cid IN (28, 38, …)</code>).</p>
 

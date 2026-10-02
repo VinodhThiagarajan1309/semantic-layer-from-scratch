@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corrections log</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <aside class="box java"><p>intro</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>…</pre></div><div class="col"><p class="lbl">Java</p><pre>…</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> …</p></aside>   side-by-side Java analogy
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.keyidea{position:relative;margin:30px 0;padding:18px 22px 16px 22px;border-radius:12px;background:linear-gradient(135deg,#fbf5e6 0%,#f4ead3 100%);border:1px solid #e2cf9f;border-left:5px solid #a8741a}
+.keyidea::before{content:"\2726  Key idea";display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8a5d10;margin-bottom:10px}
+.keyidea .ki{font:600 1.18rem/1.45 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;color:#2b2112;margin:0 0 8px}
+.keyidea .ki-ex{font:14px/1.5 -apple-system,sans-serif;color:#5b4a2c;margin:0}
+.keyidea .ki-ex code{background:rgba(168,116,26,.10)}
+@media (prefers-color-scheme: dark){.keyidea{background:linear-gradient(135deg,#2a2317 0%,#221c12 100%);border-color:#5a4520;border-left-color:#d9a441}.keyidea::before{color:#e3b45a}.keyidea .ki{color:#f3e6c8}.keyidea .ki-ex{color:#cdb88f}}
+.kigrid{display:grid;gap:14px}
+.kichap{font:700 12px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:30px 0 8px}
+table.log td.d{white-space:nowrap;color:var(--muted)}
+table.log td.w{font-weight:600;width:20%}
+table.log th:nth-child(3),table.log th:nth-child(4){width:36%}
+h2 a{color:inherit;text-decoration:none} h2 a:hover{text-decoration:underline}
+.logsum{font:14px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;color:var(--muted)}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Corrections log</span></div>
+
+  <header class="opener">
+    <div class="num">Afterword</div>
+    <h1>Corrections log</h1>
+    <p class="sub">What a reader flagged while working through the build, and what changed.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">This book is read by a real person. Vinodh reads it chapter by chapter and does every build step himself in Stardog Studio and DBeaver. Whenever a passage confuses him, or Studio shows something different from the page, he says so, and the passage is fixed in place in the same session. This page records those fixes.</p>
+  <p>Each entry gives the date, the part of the book, what the reader flagged, and what changed. Entries are grouped by chapter in reading order, newest first within each chapter. Small typo and wording fixes are not listed one by one.</p>
+  <p class="logsum"><b>56 corrections</b> so far, from September 23 to October 1, 2026. Chapters after 10 have not been read closely yet, so their entries will come later.</p>
+
+  <h2 id="log-index"><a href="index.html">The whole book</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-29">Sep 29</time></td><td class="w">Key idea callouts, Chapters 1 to 9, and a new summary page</td><td>Ideas like &ldquo;a shared variable is a join&rdquo; are easy to forget, and the reader asked for them to stand out so he could find them again later.</td><td>Each chapter from 1 to 9 now has gold &ldquo;Key idea&rdquo; callouts, and the new <a href="keyideas.html">Key ideas at a glance</a> page collects them, each with a link back to where it is taught.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Contents page, time per chapter</td><td>The reader asked for an estimated time for each chapter on the contents page, and later for the times to be rounded to whole quarter hours.</td><td>The contents table has a Time column split into reading and hands-on minutes, plus a total for the book. Each time is rounded up to the next 15 minutes.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Every page, the &#9776; chapter menu</td><td>The reader wanted to jump to any chapter without going back to the contents page.</td><td>Every page now has a &#9776; button at the top left that opens a list of all chapters.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">End of every chapter</td><td>The reader did not see why he should paste a &ldquo;Chapter N done&rdquo; message after every chapter, since he already asks questions as soon as something is unclear.</td><td>Reading chapters no longer have the button. Build chapters have a &ldquo;Build step N done&rdquo; button instead, used only to confirm results before the next build step relies on them.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-preface"><a href="preface.html">Preface</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">&ldquo;You'll see &lsquo;like a JOIN&rsquo; a lot&rdquo; paragraph</td><td>The sentence &ldquo;this world assumes what isn't stated might still be true&rdquo; was too abstract to follow.</td><td>It now uses one example: there is no phone number for Carolyn. A database reads that as &ldquo;she has no phone&rdquo;; a graph reads it as &ldquo;we don't know her phone&rdquo;.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Technology table, OWL row</td><td>The reader asked what R2RML stands for, and could not make sense of the example that called <code>:hasRewards</code> the reverse of <code>:rewardsAccountUsed</code>.</td><td>That example was wrong. It now uses a correct pair: <code>:purchasedBy</code> links an order to a customer, and <code>:placedOrder</code> is the same link read the other way. R2RML is spelled out at first use.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Technology table, RDFS row</td><td>The reader put it in his own words: SQL splits DDL and DML, and you read the shape with DESCRIBE, but in RDF the shape is just more triples you can SELECT.</td><td>The RDFS row was rewritten around that comparison.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Technology table, &ldquo;Why it exists&rdquo; column</td><td>The reasons assumed the reader already knew the answer, for example &ldquo;one shape for all data, so facts combine without reconciling schemas&rdquo;.</td><td>All ten rows were rewritten. Each now starts from a problem a database engineer already knows, then says how the technology solves it.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">&ldquo;Think of Stardog as a shared view layer&rdquo; paragraph</td><td>The reader summed up the idea in one line of his own and asked for it to be added.</td><td>The paragraph now ends: &ldquo;an ETL-free business view over many databases, where the ontology supplies the meaning and the mappings supply the connections.&rdquo;</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-ch01"><a href="ch01.html">Chapter 1 &middot; One question, five systems</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">1.3 What a semantic layer is</td><td>The reader asked whether a semantic layer and a knowledge graph are the same thing, and what other ways there are to build a semantic layer.</td><td>The definition now separates the job (a semantic layer) from one technology that can do it (a knowledge graph). A new part, &ldquo;Other ways to build a semantic layer&rdquo;, compares the main approaches.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-ch02"><a href="ch02.html">Chapter 2 &middot; The triple: the atom of knowledge</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Note under the first INSERT DATA</td><td>The reader asked whether <code>urn:</code> means a thing and <code>tag:</code> means a property, which seemed to clash with &ldquo;anything in angle brackets is a thing&rdquo;.</td><td>A note now says: everything in angle brackets is a thing; <code>urn:</code> and <code>tag:</code> are only naming formats; a name's role comes from its position in the triple. The first wording read like a contradiction, so it was reworded the same day.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Terms table, &ldquo;Variable&rdquo;</td><td>The table called a variable a &ldquo;blank&rdquo;, and the reader asked where the blank was when all he could see was a question mark and a name.</td><td>A variable is now described as a placeholder name for a value you don't know yet, with two real lines of data and the value Stardog fills in (<code>?city</code> = &ldquo;Milwaukee&rdquo;).</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">&ldquo;Three table shapes you know&rdquo; box</td><td>The sentence about child tables and join tables made the reader picture the tables in his head instead of showing them.</td><td>Each case now shows real rows and the exact triples they become.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-ch03"><a href="ch03.html">Chapter 3 &middot; Names, values and files</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Loading the practice file</td><td>The reader could not see where to enter the named graph in Studio's Load Data dialog, so his first load went into the default graph.</td><td>The step now points to the &ldquo;Search or create&hellip;&rdquo; box in the graph drop-down, where you type the new graph name.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Chapter opening, the &ldquo;two cents&rdquo; story</td><td>The opening described a federated query &ldquo;the first time it ran&rdquo;, which the reader had never seen. A preview of Chapter 9 also broke the flow of Chapter 3.</td><td>The opening now stands on its own: write 502,529.42 once as a decimal and once as a float, read both back, and see the float come back wrong. Other references to an earlier, unseen build were removed across the book.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-ch04"><a href="ch04.html">Chapter 4 &middot; SPARQL for people who know SQL</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Step 1, loading the practice data</td><td>Loading the practice file with Load Data failed with <code>Expected ':', found ' '</code>.</td><td>A note now explains that this file is a SPARQL update, not a Turtle file: paste it into the Workspace and press Run. A small table shows how to tell the two apart.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-ch05"><a href="ch05.html">Chapter 5 &middot; The T-Box, part 1: classes (RDFS)</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Introducing schema.ttl (also Chapter 6)</td><td>The reader asked for a direct link to the kit's ontology file, since the kit is public.</td><td><code>schema.ttl</code> now links straight to the file on GitHub.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">5.2 OWL paragraph</td><td>Words like &ldquo;reverse&rdquo;, &ldquo;overlap&rdquo; and &ldquo;same thing&rdquo; were abstract as written.</td><td>The list became a table of three worked examples from the c360 data, each showing what you write and what you gain.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-ch06"><a href="ch06.html">Chapter 6 &middot; The T-Box, part 2: properties and the c360 ontology (OWL)</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-25">Sep 25</time></td><td class="w">Build step 2, Check 3</td><td>The expected counts said 11 relationships and 22 attributes, and the reader asked which properties those words meant.</td><td>Check 3 now says that a relationship is an object property (like <code>:purchasedBy</code>) and an attribute is a datatype property (like <code>:firstName</code>).</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">The reasoner paragraph</td><td>The text said the reasoner's &ldquo;default level SL&rdquo; without ever explaining it.</td><td>It now says in plain words that you can choose how much of OWL the reasoner applies, that the default (SL) covers everything in this book, and that you never need to change it.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">&ldquo;Why this matters&rdquo; box</td><td>Phrases like &ldquo;inference rules that re-type things are a liability&rdquo; were big words for a simple point.</td><td>The box now uses one example: if a bad row ever gives Wax Paper a <code>:purchasedBy</code> value, <code>rdfs:domain</code> would label Wax Paper an Order in every answer; with <code>so:domainIncludes</code> the bad row stays just a bad row.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">The so: documentation paragraph</td><td>The discussion was about <code>:name</code>, and the paragraph suddenly switched to <code>:email</code>.</td><td>The paragraph keeps the <code>:name</code> example throughout.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">6.4 owl:inverseOf</td><td>The reader asked how to read the <code>:rewardsAccountUsed</code> and <code>:hasRewards</code> pair with a real order and account.</td><td>Explained with a real triple and the triple Stardog concludes from it, with no formula.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">6.2 rdfs:domain and rdfs:range</td><td>The reader asked for domain and range to be explained the way they were explained to him in conversation, not with placeholder formulas.</td><td>Rewritten in plain words: one real triple, and what Stardog concludes from it on the left and right side.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Loading the kit files (also Chapter 10)</td><td>The load steps pointed to a folder on the author's machine that a reader would not have.</td><td>The steps now download the kit files from GitHub.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Why the kit uses so: instead of rdfs:</td><td>The text promised to explain why the kit uses <code>so:</code>, then never said where.</td><td>It now says what <code>so:</code> is (schema.org) and points straight to sections 6.2 and 6.3.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-23">Sep 23</time></td><td class="w">Chapter opening on rdfs:domain</td><td>The opening riddle compared the problem to a foreign-key error, which added more to think about instead of less.</td><td>The opening now says directly what <code>rdfs:domain</code> does, without the foreign-key comparison.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-ch07"><a href="ch07.html">Chapter 7 &middot; Where the data lives: materialized vs virtual</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-25">Sep 25</time></td><td class="w">Materialized vs virtual box</td><td>The comparison was shown in Java, and the reader suggested SQL would say it better.</td><td>The box now compares <code>CREATE MATERIALIZED VIEW</code> with <code>CREATE VIEW</code>, using a real query on the c360 tables.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-ch08"><a href="ch08.html">Chapter 8 &middot; Mappings: teaching Stardog to read your tables</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-30">Sep 30</time></td><td class="w">Reading a query plan (also Chapter 9)</td><td>The reader's Studio showed different plan controls from the ones the book described.</td><td>The text now describes Studio's real controls (the plan tree icon and Run Profiler) and notes that Studio returns at most 1000 rows by default.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-29">Sep 29</time></td><td class="w">New section 8.9, how it works</td><td>While reading Chapter 9, the reader asked whether separate mapping blocks really end up as one SQL query, and said Chapter 8 should explain this.</td><td>New section 8.9 shows the real plan for the Wisconsin query: small mappings in, one SQL query with joins out.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-27">Sep 27</time></td><td class="w">The command-line box</td><td>The reader asked what the curl and jq box was for, since the book does every step in Studio.</td><td>It is now labelled as optional automation that you can skip. A leftover reference to &ldquo;the working build&rdquo; was also removed.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-27">Sep 27</time></td><td class="w">Create Virtual Graph steps (also Chapters 9 and 15)</td><td>The reader's screenshots showed that Studio's Create Virtual Graph form did not match the steps.</td><td>The steps now follow the real form: upload the mapping file, and untick Auto-generate mapping.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-26">Sep 26</time></td><td class="w">8.4, the .sms file</td><td>The reader asked what &ldquo;.sms&rdquo; means.</td><td>It is now explained at first use: a mapping file written in Stardog's SMS2 mapping language.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-26">Sep 26</time></td><td class="w">8.4, the safe and PII graphs</td><td><code>aurora_c360_safe</code> was used before the book said what &ldquo;safe&rdquo; meant.</td><td>Both graphs are introduced at first mention: the safe graph leaves out SSNs and card numbers, and the PII graph holds only those.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-26">Sep 26</time></td><td class="w">Reading a template backwards</td><td>The reader asked what &ldquo;building 500 IRIs&rdquo; referred to.</td><td>Explained as a slow way and a fast way: build an IRI for every customer and compare text, or strip the fixed prefix and send <code>WHERE cid = 225</code> to the database.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-26">Sep 26</time></td><td class="w">Where the join happens</td><td>The reader asked how customers get joined to addresses when no mapping contains a JOIN.</td><td>New text: mappings never join. Two mappings that build the same IRI produce the same node, and Stardog writes the SQL join at query time.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-26">Sep 26</time></td><td class="w">Figure in 8.3</td><td>Reading the TO block, the reader asked where <code>?loc_iri</code> comes from.</td><td>The figure was missing the BIND that builds <code>?loc_iri</code>. It was added.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-26">Sep 26</time></td><td class="w">8.3, the order a mapping runs in</td><td>The FROM SQL block made sense, but the TO and WHERE blocks did not.</td><td>New text: a mapping is written FROM SQL, TO, WHERE but runs FROM SQL, WHERE, TO, followed with one real row and a SQL equivalent.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-25">Sep 25</time></td><td class="w">8.1 What a mapping is</td><td>The section talked about FROM SQL, TO and WHERE before showing any mapping.</td><td>A tiny real mapping now comes first.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-ch09"><a href="ch09.html">Chapter 9 &middot; Federation: where the magic happens</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-30">Sep 30</time></td><td class="w">9.7, where the rows land</td><td>The reader asked where the rows go inside Stardog, and why the SUM in the 9.5 query cannot be done inside Redshift.</td><td>New text with real rows: rows stream into Stardog's memory for the life of the query and nothing is stored. The SUM is grouped by name and state, which only Aurora has, so it has to wait for the join.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-30">Sep 30</time></td><td class="w">The different-template bug</td><td>The reader did not follow &ldquo;if Redshift minted <code>urn:c360:buyer:{cid}</code>&rdquo; and asked for an example.</td><td>A concrete example now shows one side calling her a customer and the other a buyer: the IRIs never match, and the query returns 0 rows with no error.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-30">Sep 30</time></td><td class="w">Cost paragraph</td><td>The reader found the paragraph about cloud cost per query off topic for this chapter.</td><td>Removed.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-30">Sep 30</time></td><td class="w">9.7, the proof table</td><td>The reader asked how many rows each version of the query brings into Stardog, whether LIMIT can be pushed down, and wanted the comparison in the book.</td><td>9.7 now has a table comparing three versions with the real SQL each one sends, plus a third option and the safety nets it needs.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-30">Sep 30</time></td><td class="w">Build step, the Redshift mapping</td><td>The reader's Redshift graph returned nothing: his mapping file was missing its prefix lines.</td><td>The build step warns about this and lists the symptoms: predicates under <code>api.stardog.com</code> and an empty plan.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-30">Sep 30</time></td><td class="w">&ldquo;Step 10 by hand&rdquo; Java box</td><td>The reader asked for the hand-written Java version of the federated query to be removed.</td><td>Removed.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-29">Sep 29</time></td><td class="w">Figure 9.2</td><td>The numbers in the figure read like counts, not step numbers.</td><td>Each step now has a circled badge and a &ldquo;Step N:&rdquo; caption.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-29">Sep 29</time></td><td class="w">&ldquo;Stardog operators above the SQL leaves&rdquo;</td><td>The reader asked what this phrase means.</td><td>Explained in plain words with a small plan tree: what one database can answer is sent to it as SQL, and only the cross-database work is done in Stardog. A stray tag was fixed too.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-29">Sep 29</time></td><td class="w">Calcite and the &ldquo;not found within c360&rdquo; error</td><td>The reader asked to be reminded why that Chapter 7 error happened.</td><td>The text now says plainly what caused it and what the plan operators are.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-29">Sep 29</time></td><td class="w">Product, category and vendor mappings</td><td>The text discussed these blocks before the reader had seen them.</td><td>The blocks are now shown before they are discussed.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-29">Sep 29</time></td><td class="w">Vendors by name, percent-encoding, list price</td><td>The reader asked whether percent-encoding was something he had to worry about, and what the vendor and float details meant.</td><td>Explained with real rows, for example how the brand Charmin Ultra Soft becomes <code>vendor:Charmin%20Ultra%20Soft</code> in both mappings.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-29">Sep 29</time></td><td class="w">Where the cross-database join comes from</td><td>The text quoted &ldquo;the Redshift DDL's comment&rdquo;, and the reader asked where that comment was.</td><td>The point is now stated directly: the join comes from the shared IRI template, not from a foreign key.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-29">Sep 29</time></td><td class="w">How Stardog finds the right mapping</td><td>The passage talked about a &ldquo;routing table&rdquo;, Voicebox and Trino, none of which the reader had met yet. A note on the T-Box was also fuzzy.</td><td>Rewritten using only what the reader had built: the query for <code>:name</code> and <code>:hasRewards</code> was answered from the customer and rewards blocks. The fuzzy note was dropped.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-ch10"><a href="ch10.html">Chapter 10 &middot; Reasoning: teaching the graph to conclude</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-10-01">Oct 1</time></td><td class="w">10.3, the kit's rules file</td><td>The text quoted <code>c360_extended_rules.ttl</code> as if the reader knew where that file was.</td><td>The kit's model and rules files are now introduced, with GitHub links, before they are quoted.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-30">Sep 30</time></td><td class="w">&ldquo;A rule is a derived getter&rdquo; Java box</td><td>The reader asked for this box to be removed.</td><td>Removed.</td></tr>
+      <tr><td class="d"><time datetime="2026-09-30">Sep 30</time></td><td class="w">Chapter opening</td><td>The opening described a &ldquo;before&rdquo; world the reader had already left: after Chapter 9 he could answer the question with one federated query.</td><td>The opening now starts from that federated query, with the rule written inline, and shows what is still missing: a definition of &ldquo;big spender&rdquo; written once and reused everywhere.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="log-ch14"><a href="ch14.html">Chapter 14 &middot; The agent: from question to answer</a></h2>
+  <div class="tbl"><table class="log">
+    <thead><tr><th>Date</th><th>Where</th><th>What the reader flagged</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="d"><time datetime="2026-09-29">Sep 29</time></td><td class="w">Figure 14.2</td><td>Same issue as Figure 9.2: step numbers read like counts.</td><td>Gold step badges and &ldquo;Step N:&rdquo; captions, matching Figure 9.2.</td></tr>
+    </tbody>
+  </table></div>
+
+  <p class="logsum">Spotted something unclear? Fixes go in the same way: the passage is rewritten where it stands, and a line is added here.</p>
+
+  <nav class="pn">
+    <a href="keyideas.html"><small>← Previous</small>Summary · Key ideas at a glance</a>
+    <a href="index.html" style="text-align:right"><small>Next</small>Contents</a>
+  </nav>
+</div>
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+
+<!-- chapter-nav -->
+<style>
+#cnav-btn{position:fixed;top:14px;left:14px;z-index:1000;width:44px;height:44px;border-radius:10px;border:1px solid var(--line,#e4ddcf);background:var(--paper,#fffdf8);color:var(--ink,#1f1d1a);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+#cnav-btn svg{width:22px;height:22px}
+#cnav-shade{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1001;display:none}
+#cnav{position:fixed;top:0;left:0;bottom:0;width:min(340px,86vw);z-index:1002;background:var(--paper,#fffdf8);color:var(--ink,#1f1d1a);border-right:1px solid var(--line,#e4ddcf);transform:translateX(-102%);transition:transform .2s ease;overflow-y:auto;padding:16px 0 24px;font:15px/1.4 system-ui,-apple-system,Segoe UI,sans-serif}
+#cnav.open{transform:none} #cnav.open ~ #cnav-shade{display:block}
+#cnav .h{display:flex;justify-content:space-between;align-items:center;padding:4px 16px 12px;font-weight:700}
+#cnav .h button{border:0;background:none;color:inherit;font-size:24px;cursor:pointer;line-height:1}
+#cnav a{display:block;padding:9px 16px;color:inherit;text-decoration:none;border-left:3px solid transparent}
+#cnav a:hover{background:var(--soft,#f1ebe0)}
+#cnav a.cur{border-left-color:var(--accent,#7a2e1f);background:var(--soft,#f1ebe0);font-weight:600}
+@media print{#cnav-btn,#cnav,#cnav-shade{display:none!important}}
+</style>
+<button id="cnav-btn" type="button" aria-label="Open chapter menu" aria-expanded="false" aria-controls="cnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+<nav id="cnav" aria-label="Chapters"><div class="h"><span>Chapters</span><button type="button" aria-label="Close menu">&times;</button></div><a href="index.html" data-p="index.html">Cover and contents</a><a href="preface.html" data-p="preface.html">Preface · What we are building</a><a href="ch01.html" data-p="ch01.html">Chapter 1 · One question, five systems</a><a href="ch02.html" data-p="ch02.html">Chapter 2 · The triple: the atom of knowledge</a><a href="ch03.html" data-p="ch03.html">Chapter 3 · Names, values and files</a><a href="ch04.html" data-p="ch04.html">Chapter 4 · SPARQL for people who know SQL</a><a href="ch05.html" data-p="ch05.html">Chapter 5 · The T-Box, part 1: classes (RDFS)</a><a href="ch06.html" data-p="ch06.html">Chapter 6 · The T-Box, part 2: properties and the c360 ontology (OWL)</a><a href="ch07.html" data-p="ch07.html">Chapter 7 · Where the data lives: materialized vs virtual</a><a href="ch08.html" data-p="ch08.html">Chapter 8 · Mappings: teaching Stardog to read your tables</a><a href="ch09.html" data-p="ch09.html">Chapter 9 · Federation: where the magic happens</a><a href="ch10.html" data-p="ch10.html">Chapter 10 · Reasoning: teaching the graph to conclude</a><a href="ch11.html" data-p="ch11.html">Chapter 11 · SHACL: when you do want rules to reject data</a><a href="ch12.html" data-p="ch12.html">Chapter 12 · Governance: same question, different answers</a><a href="ch13.html" data-p="ch13.html">Chapter 13 · The Stardog toolbox</a><a href="ch14.html" data-p="ch14.html">Chapter 14 · The agent: from question to answer</a><a href="ch15.html" data-p="ch15.html">Chapter 15 · At scale: huge ontologies and answers you can trust</a><a href="glossary.html" data-p="glossary.html">Appendix · Glossary</a><a href="keyideas.html" data-p="keyideas.html">Summary · Key ideas at a glance</a><a href="corrections.html" data-p="corrections.html">Corrections log</a></nav>
+<div id="cnav-shade"></div>
+<script>
+(function(){var n=document.getElementById("cnav"),b=document.getElementById("cnav-btn"),s=document.getElementById("cnav-shade");
+var p=(location.pathname.split("/").pop()||"index.html");
+n.querySelectorAll("a").forEach(function(a){if(a.getAttribute("data-p")===p){a.classList.add("cur");a.setAttribute("aria-current","page");}});
+function set(o){n.classList.toggle("open",o);b.setAttribute("aria-expanded",o);if(o){var c=n.querySelector("a.cur")||n.querySelector("a");c&&c.focus();}}
+b.onclick=function(){set(!n.classList.contains("open"));};s.onclick=function(){set(false);};
+n.querySelector(".h button").onclick=function(){set(false);b.focus();};
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&n.classList.contains("open")){set(false);b.focus();}});})();
+</script>
+<!-- /chapter-nav -->
+</body>
+</html>

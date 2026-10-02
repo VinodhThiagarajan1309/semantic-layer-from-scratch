@@ -267,7 +267,7 @@ THEN {
 
   <h2><span class="sn">10.5</span>Where reasoning runs: before the SQL is written</h2>
   <p>The big-spender rule needs Aurora ("?sub is a Customer") <em>and</em> Redshift ("an order over $250 purchased by ?sub"). The rule doesn't know that. It's written against the model, and the join works because both mappings mint the same customer IRI (Chapter 9's IRI trick).</p>
-  <p>The key point is <strong>when</strong> the rules run: inside Stardog's query planner, <em>before</em> the SPARQL-to-SQL rewrite. They aren't a batch job over copied data, and they aren't installed in Aurora or Redshift. The planner expands them into extra query patterns, and only then is the query split, turned into SQL, and sent to the live databases, so the rule logic always sees current rows. The docs support this picture (no materialization, and <code>reasoning.rewriting</code> "allows one to choose how query patterns are rewritten for reasoning") but don't publish the planner's internals, so treat these steps as a mental model rather than a spec:</p>
+  <p>The key point is <strong>when</strong> the rules run: inside Stardog's query planner, <em>before</em> the SPARQL-to-SQL rewrite. They aren't a batch job over copied data, and they aren't installed in Aurora or Redshift. The planner expands them into extra query patterns, and only then is the query split, turned into SQL, and sent to the live databases, so the rule logic always sees current rows. The docs support this picture (no materialization, and <code>reasoning.rewriting</code> "allows one to choose how query patterns are rewritten for reasoning") but don't publish the planner's internals, so the steps below are a model of what happens, and the profiler output after Figure 10.2 shows it happening on our data:</p>
   <ol>
     <li><strong>Expand.</strong> <code>?c a :Big_Spender</code> becomes the big-spenders rule's <code>IF</code> pattern. That pattern mentions <code>:Large_Order</code>, which becomes the large-purchases pattern, including its <code>FILTER</code>.</li>
     <li><strong>Rewrite to SQL.</strong> Now it's plain triple patterns, exactly what Chapter 9 federated. The Redshift part becomes something like <code>… FROM c360.purchase WHERE price &gt; 250</code>, and the Aurora part becomes a select on <code>customer</code> joined to <code>address</code>.</li>
@@ -300,6 +300,39 @@ THEN {
     </svg>
     <figcaption>Figure 10.2: Reasoning happens first, federation second. The rules become ordinary patterns, and the patterns become SQL on two live engines.</figcaption>
   </figure>
+
+  <h3>The proof: what the profiler shows</h3>
+  <p>This is the real plan for build step 5's big-spender query, with reasoning on and schema <code>c360_extended_rules</code> (Studio: the dropdown next to the plan icon → <b>Run Profiler</b>). It ran in 238 ms on warm databases. Trimmed to the parts that matter:</p>
+  <div class="codewrap"><pre>Group(by=[?state] aggregates=[(COUNT(DISTINCT ?c) AS ?bigSpenders)])   results: 42
+`─ Distinct                                                             results: 445
+   `─ HashJoin(?c)                                                      results: 1.1K
+      +─ VirtualGraphSql&lt;virtual://redshift_c360&gt;
+      │     SELECT "cid"
+      │     FROM "dev"."c360"."purchase"
+      │     WHERE "price" &gt; 250 AND "cid" IS NOT NULL
+      │     ?c &lt;- TEMPLATE(urn:stardog:demos:c360:customer:{cid})
+      `─ VirtualGraphSql&lt;virtual://aurora_c360_safe&gt;
+            SELECT "customer"."cid", "customer"."location", "address"."state"
+            FROM "c360"."c360"."customer"
+            INNER JOIN "c360"."c360"."address" ON "customer"."location" = "address"."id"
+                                               AND "address"."state" IS NOT NULL
+            ?c &lt;- TEMPLATE(urn:stardog:demos:c360:customer:{cid})</pre></div>
+  <p><b>How reasoning changed the query.</b> You wrote four patterns. Here is where each one went:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>What you wrote, or what the rules added</th><th>What actually ran</th></tr></thead>
+    <tbody>
+      <tr><td><code>?c a :Big_Spender</code> (yours)</td><td><b>Gone.</b> No SQL mentions big spenders. The planner replaced it with the big-spenders rule's IF part.</td></tr>
+      <tr><td><code>?o a :Large_Order</code> (added by the big-spenders rule)</td><td><b>Gone too.</b> Replaced in turn by the large-purchases rule's IF part: <code>?o :purchasePrice ?p . FILTER(?p &gt; 250)</code>.</td></tr>
+      <tr><td><code>FILTER(?p &gt; 250)</code> (added by the large-purchases rule)</td><td><code>WHERE "price" &gt; 250</code> in the Redshift SQL. The rule's threshold was pushed down into Redshift.</td></tr>
+      <tr><td><code>?o :purchasedBy ?c</code> (added by the big-spenders rule)</td><td><code>SELECT "cid"</code>, turned into the customer IRI by the template. The order itself (<code>?o</code>) is never fetched, because nothing downstream needs it.</td></tr>
+      <tr><td><code>?c a :Customer</code> (added by the big-spenders rule)</td><td>Folded into the Aurora scan of <code>customer</code>: the mapping already says every row of that table is a <code>:Customer</code>.</td></tr>
+      <tr><td><code>?c :address ?addr . ?addr :state ?state</code> (yours)</td><td>The Aurora <code>customer JOIN address</code>, pushed down as one statement.</td></tr>
+    </tbody>
+  </table></div>
+  <p>What's left for Stardog is the part no single database can do: join the two results on <code>?c</code> (1.1K rows: one per purchase line over $250, so a customer with three such lines appears three times), remove duplicates (445 customers), and count per state (42 rows). One SQL statement went to each database.</p>
+  <aside class="box model">
+    <p>Compare this with the query in this chapter's opening, where you wrote <code>FILTER(?price &gt; 250)</code> by hand. The SQL sent to Redshift and Aurora is essentially the same. That's the whole point: the rule doesn't add a new kind of work, it writes the filter for you, from one definition kept in the model. And with reasoning <b>off</b>, nothing expands, no mapping produces <code>:Big_Spender</code>, and you get zero rows.</p>
+  </aside>
   <p><code>reasoning.virtual.graph.enabled</code> (default and here <code>true</code>) is what lets reasoning reach virtual graphs.</p>
   <aside class="box gotcha">
     <p><strong>Reasoning can cost more Redshift time.</strong> With reasoning on, one pattern such as <code>?c a :Big_Spender</code> can expand into several alternatives joined by UNION, and each alternative can become its own SQL statement. So one SPARQL query may wake Redshift more than once.</p>

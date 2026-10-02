@@ -361,6 +361,12 @@ ORDER BY ?label</pre></div>
     <p><strong>4. Register the schema.</strong> <em>Databases → kit-c360 → Properties</em>, find <code>reasoning.schemas</code>, keep <code>c360_schema=…</code>, and <em>add</em> this value (the docs say it can be changed while the database is online):</p>
     <div class="codewrap"><button class="copy" type="button">Copy</button><pre>c360_extended_rules=urn:stardog:c360_extended_rules:1.0:model</pre></div>
     <p>Save. The Models tab should now list both schemas.</p>
+    <p><strong>What you'll see on the Models screen.</strong> Pick <code>kit-c360</code>, then a schema from the second dropdown.</p>
+    <ul>
+      <li><b>Overview draws only subclass links</b> (<code>rdfs:subClassOf</code>). For <code>c360_schema</code> it shows "No visualization results", because the Chapter 6 classes are all flat: zero subclass triples. For <code>c360_extended_rules</code> it shows 7 nodes and 5 edges: <code>Big_Spender</code>, <code>2022_Orderer</code> and <code>Sports_Category_Shopper</code> point at <code>Customer</code>; <code>Large_Order</code> and <code>2022_Order</code> point at <code>Order</code>. <code>Customer</code> and <code>Order</code> are drawn even though they are defined in the Chapter 6 graph; this graph only mentions them by the same IRI.</li>
+      <li><b>There is no Rules tab.</b> (Constraints is for SHACL, Chapter 11.) To see the rules, open <b>Text Editor</b> on <code>c360_extended_rules</code> and scroll to the five <code>a rule:SPARQLRule</code> blocks, or run the query from sub-step 3.</li>
+      <li><b>The Text Editor's <code>@prefix</code> lines come from the database, not your file.</b> You'll see <code>@prefix : &lt;http://api.stardog.com/&gt;</code> and <code>@prefix ecomm: &lt;tag:stardog:api:ecomm:&gt;</code>, so Studio writes <code>ecomm:Customer</code>: a third spelling of the same IRI as your mappings' <code>:Customer</code> and the rule's <code>stardog:ecomm:Customer</code>.</li>
+    </ul>
     <p><strong>5. Ask with reasoning OFF.</strong> Expect <strong>no rows</strong>.</p>
     <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
 SELECT ?state (COUNT(DISTINCT ?c) AS ?bigSpenders)

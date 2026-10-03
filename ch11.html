@@ -434,7 +434,21 @@ WHERE { GRAPH ?g { ?s ?p ?o } FILTER(STRSTARTS(STR(?g), "urn:book:ch11")) }</pre
     sh:value "not-an-email" ;
     sh:resultMessage "A customer needs exactly one well-formed email."
   ] ] .</pre></div>
-  <p>Read it like a failed test: <code>sh:focusNode</code> is the bad row's primary key, <code>sh:resultPath</code> is the column, <code>sh:value</code> is the bad cell (when there is one), <code>sh:sourceConstraintComponent</code> says which check failed, and <code>sh:resultSeverity</code> says how much to care. <code>sh:conforms</code> is <code>true</code> only with zero results.</p>
+  <p>Read it like a failed test: <code>sh:focusNode</code> is the bad row's primary key, <code>sh:resultPath</code> is the column, <code>sh:value</code> is the bad cell (when there is one), <code>sh:sourceConstraintComponent</code> says which check failed, and <code>sh:resultSeverity</code> says how much to care.</p>
+  <p><b><code>sh:conforms</code> is the verdict, not a setting.</b> Every report starts with it, and what follows depends on it:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Before the fix (step 3)</th><th>After the fix</th></tr></thead>
+    <tbody><tr>
+      <td><pre style="margin:0">[ a sh:ValidationReport ;
+  sh:conforms false ;
+  sh:result [ … pattern, customer:9999 … ] ;
+  sh:result [ … maxCount, customer:9999 … ] ;
+  sh:result [ … class, customer:9999 … ] ] .</pre></td>
+      <td><pre style="margin:0">[ a sh:ValidationReport ;
+  sh:conforms true ] .</pre></td>
+    </tr></tbody>
+  </table></div>
+  <p><code>false</code> comes with one <code>sh:result</code> per problem; <code>true</code> comes alone. Nodes that pass, like Jolynn and Carolyn, never appear in either. There is no setting that makes it <code>true</code>: you fix the data and run <code>VALIDATE</code> again.</p>
 
   <aside class="box java"><p>Same shape of call in both worlds: a collection of violations back, and empty means valid.</p><div class="sbs"><div class="col"><p class="lbl">Stardog</p><pre>VALIDATE GRAPH &lt;urn:book:ch11&gt;
 USING SHAPES GRAPH &lt;urn:book:ch11:shapes&gt;

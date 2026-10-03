@@ -341,7 +341,7 @@ INSERT DATA {
         :address &lt;urn:stardog:demos:c360:location:does-not-exist&gt; .
   }
 }</pre></div>
-    <p>Expect success and 17 triples (check with <code>SELECT (COUNT(*) AS ?n) { GRAPH &lt;urn:book:ch11&gt; { ?s ?p ?o } }</code>). Stardog accepted customer 9999 without complaint: the open world in action.</p>
+    <p>Expect success and 19 triples: Jolynn 4, her address 3, Carolyn 4, her address 3, customer 9999 5 (two emails). Check with <code>SELECT (COUNT(*) AS ?n) { GRAPH &lt;urn:book:ch11&gt; { ?s ?p ?o } }</code> and <b>reasoning off</b>. If Studio's Reasoning toggle is still on from Chapter 10 you'll see more (67 with the <code>default</code> schema): the extra 48 are inferred "is an <code>owl:Thing</code>" facts (OWL's word for "anything at all"), not stored data. Stardog accepted customer 9999 without complaint: the open world in action.</p>
 
     <p><strong>2. Store the shape.</strong></p>
     <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX :    &lt;tag:stardog:api:ecomm:&gt;

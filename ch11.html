@@ -452,22 +452,22 @@ WHERE { GRAPH ?g { ?s ?p ?o } FILTER(STRSTARTS(STR(?g), "urn:book:ch11")) }</pre
 
 
   <h3>Optional stretch (read-only): try the virtual graph, with a lie detector</h3>
-  <p>Curious whether direct virtual-graph validation works on our server? <code>VALIDATE</code> only reads, so this is safe. The trick is a <strong>canary</strong>: a check you know for certain must fail, named after the canaries miners carried to warn them of gas. If a canary passes, the checking itself is broken. Ours is a shape that <em>must</em> fail: <code>aurora_c360_safe</code> has no <code>:ssn</code> (Chapter 8), so "every customer has an ssn" must fail. If it reports <code>conforms true</code>, validation isn't really seeing the virtual data, so ignore any "all clear."</p>
+  <p>Curious whether direct virtual-graph validation works on our server? <code>VALIDATE</code> only reads, so this is safe. The trick is a <strong>must-fail check</strong>: a check you know for certain should fail. If it passes anyway, the checking itself is broken, and you can't trust its "all clear". Ours is a shape that <em>must</em> fail: <code>aurora_c360_safe</code> has no <code>:ssn</code> (Chapter 8), so "every customer has an ssn" must fail. If it reports <code>conforms true</code>, validation isn't really seeing the virtual data, so ignore any "all clear."</p>
   <div class="codewrap"><button class="copy" type="button">Copy</button><pre>#pragma simple.target on
 PREFIX :   &lt;tag:stardog:api:ecomm:&gt;
 PREFIX sh: &lt;http://www.w3.org/ns/shacl#&gt;
 VALIDATE GRAPH &lt;virtual://aurora_c360_safe&gt;
 USING SHAPES {
-  :CanaryShape a sh:NodeShape ;
+  :MustFailShape a sh:NodeShape ;
     sh:targetClass :Customer ;
     sh:property [ sh:path :ssn ; sh:minCount 1 ] .
 }
 LIMIT 5</pre></div>
-  <p>Expected if it works: <code>conforms false</code> with 5 results (capped by <code>LIMIT 5</code>; the true number is 500). Aurora may take about 20 seconds to wake. If that works, swap the canary for the two <code>sh:property</code> blocks of <code>:CustomerShape</code> and rerun. My read-only SQL check found all 500 real customers have exactly one well-formed email and an existing address row, so a working validator should report <code>conforms true</code>. If Studio rejects the syntax or the canary passes, tell Claude; that's useful information, not a failure on your part.</p>
+  <p>Expected if it works: <code>conforms false</code> with 5 results (capped by <code>LIMIT 5</code>; the true number is 500). Aurora may take about 20 seconds to wake. If that works, swap the must-fail shape for the two <code>sh:property</code> blocks of <code>:CustomerShape</code> and rerun. My read-only SQL check found all 500 real customers have exactly one well-formed email and an existing address row, so a working validator should report <code>conforms true</code>. If Studio rejects the syntax or the must-fail shape passes, note it: that's useful information, not a failure on your part.</p>
 
   <aside class="box gotcha">
     <ul>
-      <li><strong>Empty report ≠ good data if the target matched nothing.</strong> Misspell the class in <code>sh:targetClass</code> and every node is skipped: <code>conforms true</code>. Canaries help everywhere.</li>
+      <li><strong>Empty report ≠ good data if the target matched nothing.</strong> Misspell the class in <code>sh:targetClass</code> and every node is skipped: <code>conforms true</code>. A must-fail check helps everywhere.</li>
       <li><strong>sh:class checks the data graph you validate.</strong> A customer in one graph with its Address type in another fails <code>sh:class</code> if you validate only one graph.</li>
       <li><strong>Reasoning and SHACL are separate switches.</strong> Validation runs without reasoning (<code>icv.reasoning.enabled</code> is <code>false</code> on <code>kit-c360</code>), so derived classes like <code>:Big_Spender</code> aren't targets by default.</li>
     </ul>
@@ -478,7 +478,7 @@ LIMIT 5</pre></div>
     <details><summary>Translate <code>email varchar NOT NULL</code> plus "one value per row" into SHACL.</summary><p><code>sh:property [ sh:path :email ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ]</code> inside a node shape that targets <code>:Customer</code>.</p></details>
     <details><summary>Our bad customer had two emails, one malformed. Why did deleting one triple clear two violations?</summary><p>The extra value (maxCount) and the malformed value (pattern) were the same triple, <code>:email "not-an-email"</code>.</p></details>
     <details><summary>Does a SHACL shape in Stardog stop a bad row from arriving through a virtual graph?</summary><p>No. Writes go to Aurora and Redshift directly, never through Stardog, and guard mode (<code>icv.enabled</code>) only applies to transactions on data stored in Stardog. For virtual graphs, SHACL is a report you run.</p></details>
-    <details><summary>Is validating a virtual graph directly supported? Cite your source.</summary><p>Not in the main docs (Data Quality Constraints doesn't mention it). Stardog staff on the community forum describe <code>stardog icv report --named-graph virtual://…</code> and <code>#pragma simple.target on</code> + <code>VALIDATE GRAPH &lt;virtual://…&gt;</code>, but one user reported false <code>conforms true</code>. Possible, not officially documented; test it with a canary.</p></details>
+    <details><summary>Is validating a virtual graph directly supported? Cite your source.</summary><p>Not in the main docs (Data Quality Constraints doesn't mention it). Stardog staff on the community forum describe <code>stardog icv report --named-graph virtual://…</code> and <code>#pragma simple.target on</code> + <code>VALIDATE GRAPH &lt;virtual://…&gt;</code>, but one user reported false <code>conforms true</code>. Possible, not officially documented; test it with a must-fail check.</p></details>
     <details><summary>Why did the exercise drop the shapes graph, not just the data graph?</summary><p><code>shacl.shape.graphs</code> defaults to all local graphs, so leftover shapes would join future <code>VALIDATE ALL</code> runs.</p></details>
   </section>
 
@@ -487,7 +487,7 @@ LIMIT 5</pre></div>
     <li>Vocabulary: node shape, property shape (<code>sh:path</code>), target, constraint component, focus node, validation report, severity.</li>
     <li>SQL mapping: NOT NULL → <code>minCount 1</code>, scalar → <code>maxCount 1</code>, type → <code>datatype</code>, FK → <code>class</code>, CHECK → <code>pattern</code>/<code>minExclusive</code>/<code>in</code>.</li>
     <li>In Stardog (ICV): <code>VALIDATE GRAPH … USING SHAPES …</code>, <code>SERVICE icv:validate</code> for a table, <code>stardog icv report</code>, HTTP <code>icv/validate</code>. Shapes live in named graphs (<code>shacl.shape.graphs</code>) or inline.</li>
-    <li>In a federation SHACL is a report, not a gate, and especially good at catching mapping mistakes. Direct virtual-graph validation is only described on the forum; test it with a canary.</li>
+    <li>In a federation SHACL is a report, not a gate, and especially good at catching mapping mistakes. Direct virtual-graph validation is only described on the forum; test it with a must-fail check.</li>
     <li>You validated, broke, fixed and dropped <code>&lt;urn:book:ch11&gt;</code> and <code>&lt;urn:book:ch11:shapes&gt;</code>.</li>
   </ul></section>
 

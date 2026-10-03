@@ -360,6 +360,7 @@ float      bad   = 439.78f;  // 439.7799987…</pre></div></div>
 &lt;urn:stardog:demos:c360:customer:225&gt; a :Customer ;
     :firstName "Carolyn" ;
     :lastName  "Inworth" .</pre></div>
+  <div class="keyidea" id="ki-16"><p class="ki">Turtle punctuation: <code>;</code> means "same subject, next predicate", <code>.</code> means "done with this subject", <code>,</code> means "same subject and predicate, another object". Indentation means nothing.</p><p class="ki-ex">Example: <code>customer:1 a :Customer ; :name "Jolynn Bithany" .</code> is two triples, written out in full as <code>customer:1 a :Customer .</code> and <code>customer:1 :name "Jolynn Bithany" .</code> In SQL terms, <code>;</code> is the next column of the same row and <code>.</code> ends the row.</p></div>
 
   <p><b>A comma</b> means "same subject and predicate, another object". This line from the kit's <code>schema.ttl</code> is four triples:</p>
   <div class="codewrap"><pre>:name so:domainIncludes :Category, :Customer, :Product, :Vendor .</pre></div>

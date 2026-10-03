@@ -150,6 +150,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
   <div class="kigrid">
     <div class="keyidea" id="sum-ki-4"><p class="ki">An IRI is a globally unique primary key, for things and for properties alike.</p><p class="ki-ex">Example: <code>customer:225</code> and <code>product:225</code> never collide, while Aurora's and Redshift's cid 225 become the same node. <a href="ch03.html#ki-4">Read it in context →</a></p></div>
     <div class="keyidea" id="sum-ki-5"><p class="ki">Money is xsd:decimal, never xsd:float.</p><p class="ki-ex">Example: 502,529.42 stored as a float comes back as 502,529.40625. <a href="ch03.html#ki-5">Read it in context →</a></p></div>
+    <div class="keyidea" id="sum-ki-16"><p class="ki">Turtle punctuation: <code>;</code> means "same subject, next predicate", <code>.</code> means "done with this subject", <code>,</code> means "same subject and predicate, another object". Indentation means nothing.</p><p class="ki-ex">Example: <code>customer:1 a :Customer ; :name "Jolynn Bithany" .</code> is two triples, written out in full as <code>customer:1 a :Customer .</code> and <code>customer:1 :name "Jolynn Bithany" .</code> In SQL terms, <code>;</code> is the next column of the same row and <code>.</code> ends the row. <a href="ch03.html#ki-16">Read it in context →</a></p></div>
   </div>
 
   <p class="kichap">Chapter 4 · SPARQL for people who know SQL</p>

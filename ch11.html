@@ -452,7 +452,7 @@ WHERE { GRAPH ?g { ?s ?p ?o } FILTER(STRSTARTS(STR(?g), "urn:book:ch11")) }</pre
 
 
   <h3>Optional stretch (read-only): try the virtual graph, with a lie detector</h3>
-  <p>Curious whether direct virtual-graph validation works on our server? <code>VALIDATE</code> only reads, so this is safe. The trick is a <strong>canary</strong> shape that <em>must</em> fail: <code>aurora_c360_safe</code> has no <code>:ssn</code> (Chapter 8), so "every customer has an ssn" must fail. If it reports <code>conforms true</code>, validation isn't really seeing the virtual data, so ignore any "all clear."</p>
+  <p>Curious whether direct virtual-graph validation works on our server? <code>VALIDATE</code> only reads, so this is safe. The trick is a <strong>canary</strong>: a check you know for certain must fail, named after the canaries miners carried to warn them of gas. If a canary passes, the checking itself is broken. Ours is a shape that <em>must</em> fail: <code>aurora_c360_safe</code> has no <code>:ssn</code> (Chapter 8), so "every customer has an ssn" must fail. If it reports <code>conforms true</code>, validation isn't really seeing the virtual data, so ignore any "all clear."</p>
   <div class="codewrap"><button class="copy" type="button">Copy</button><pre>#pragma simple.target on
 PREFIX :   &lt;tag:stardog:api:ecomm:&gt;
 PREFIX sh: &lt;http://www.w3.org/ns/shacl#&gt;

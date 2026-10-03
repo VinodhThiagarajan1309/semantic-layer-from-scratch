@@ -164,7 +164,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
       <tr><td><code>metadata</code>, <code>admin</code>, <code>dbms-admin</code>, <code>stored-query</code>, <code>icv-constraints</code>…</td><td></td><td>database options, admin tasks, and the rest</td></tr>
     </tbody>
   </table></div>
-  <p>Your server (read with a read-only API call) has two roles. <strong><code>cloud</code></strong> has every action on every resource type and belongs to <code>stardog_admin</code>, which is why nothing in this chapter locks <em>you</em> out. <strong><code>reader</code></strong> has <code>read</code> on <code>db</code>, <code>named-graph</code>, <code>virtual-graph</code>, <code>data-source</code>, <code>metadata</code>, <code>stored-query</code> and <code>icv-constraints</code>, all with the wildcard <code>*</code>. Remember that <code>named-graph *</code> line; it comes back in a gotcha.</p>
+  <p>Your server (read with a read-only API call) has two roles. <strong><code>cloud</code></strong> has every action on every resource type and belongs to <code>stardog_admin</code>, which is why nothing in this chapter locks <em>you</em> out. <strong><code>reader</code></strong> has <code>read</code> on <code>db</code>, <code>named-graph</code>, <code>virtual-graph</code>, <code>data-source</code>, <code>metadata</code>, <code>stored-query</code> and <code>icv-constraints</code>, all with the wildcard <code>*</code>. (<code>*</code> means "every resource of that type": every database, every named graph, and so on.)</p>
 
   <figure class="fig">
     <svg viewBox="0 0 680 220" role="img" aria-label="Users are assigned roles; roles hold permissions; each permission is an action on a resource of a resource type">
@@ -329,8 +329,8 @@ unset SDPW</pre></div>
 
   <aside class="box gotcha">
     <ul>
-      <li><strong>The <code>reader</code> trap.</strong> The built-in <code>reader</code> role has <code>read</code> on <code>named-graph *</code>. Give it to <code>marketing_user</code> and the PII graph comes straight back: permissions only add up.</li>
-      <li><strong>Silence is the failure mode.</strong> A typo in a permission's graph IRI doesn't error; the graph just comes back empty. If <code>marketing_user</code> gets no rows even for the name, check the spelling and the backslash first. If it's still empty, try also granting <code>read</code> on resource type <code>virtual-graph</code> with resource <code>virtual://aurora_c360_safe</code> (the built-in <code>reader</code> role includes that type, and the docs don't say whether querying needs it), then tell Claude which one fixed it.</li>
+      <li><strong>The <code>reader</code> trap.</strong> The built-in <code>reader</code> role can read <em>every</em> named graph (its permission is <code>read</code> on <code>named-graph *</code>, and <code>*</code> means "all of them"), PII included. Give <code>marketing_user</code> the <code>reader</code> role "just to be safe" and the SSNs come straight back. Roles only ever add permissions; one role can't take away what another grants.</li>
+      <li><strong>Silence is the failure mode.</strong> A typo in a permission's graph IRI doesn't error; the graph just comes back empty. If <code>marketing_user</code> gets no rows even for the name, check the spelling and the backslash first. If it's still empty, try also granting <code>read</code> on resource type <code>virtual-graph</code> with resource <code>virtual://aurora_c360_safe</code> (the built-in <code>reader</code> role includes that type, and the docs don't say whether querying needs it), and note which one fixed it.</li>
       <li><strong>No wildcards for graphs.</strong> A new virtual graph is invisible to both roles until you grant it.</li>
     </ul>
   </aside>

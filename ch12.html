@@ -150,15 +150,6 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
     <p>You know this pattern from Postgres: a user is a login role, a Stardog role is a group role, and a permission is a <code>GRANT</code>, so <code>GRANT SELECT ON c360.customer TO marketing</code> becomes <code>read</code> on a named graph. The differences: Stardog grants are on <em>graphs</em> (or sensitive <em>properties</em>), not tables or columns, and apply to meaning that can span two warehouses. And a graph you can't read doesn't raise "permission denied"; it silently disappears from your query, closer to row-level security than to a failed <code>SELECT</code>.</p>
   </aside>
 
-  <aside class="box java"><p>Roles and permissions work like Spring Security: you declare them, and the framework enforces them before your code runs.</p><div class="sbs"><div class="col"><p class="lbl">Stardog</p><pre>role  hr
-  read · db          · kit-c360
-  read · named-graph · kit-c360\virtual://aurora_c360_safe
-  read · named-graph · kit-c360\virtual://aurora_c360_pii
-user  hr_user  → role hr</pre></div><div class="col"><p class="lbl">Java</p><pre>@PreAuthorize("hasRole('HR')")
-public String ssn(int cid) {
-  return customerRepo.ssn(cid);
-}
-// marketing_user → AccessDeniedException</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> <code>@PreAuthorize</code> guards a <em>method</em> and throws. Stardog guards <em>data</em> (graphs) whichever query touches it, and for <code>GRAPH</code>/<code>FROM</code> silently removes the graph; only <code>SERVICE</code> throws.</p></aside>
 
   <h2><span class="sn">12.2</span>The Stardog security model</h2>
   <p>Stardog's docs define a permission as an <strong>action</strong> on a <strong>resource</strong> of some <strong>resource type</strong>. The valid actions are <code>read</code>, <code>write</code>, <code>create</code>, <code>delete</code>, <code>grant</code>, <code>revoke</code>, <code>execute</code>, and <code>all</code>. The resource types you'll meet most:</p>

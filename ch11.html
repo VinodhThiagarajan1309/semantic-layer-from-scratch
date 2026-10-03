@@ -257,7 +257,15 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
   [USING SHAPES (&lt;IRI&gt;+ | GRAPH &lt;IRI&gt;+ | &lt;QuadData&gt;)]
   [LIMIT &lt;int&gt;] [LIMIT PER SHAPE &lt;int&gt;]</pre></div>
   <p>In words: say <em>what data</em> to check (all, specific nodes, or named graphs) and <em>which shapes</em> to use (shape IRIs, shapes stored in named graphs, or shapes inline in curly braces). <code>LIMIT</code> caps the number of results.</p>
-  <p><strong>Where shapes live.</strong> Shapes are ordinary triples, and the docs' best practice is to store them in a named graph. The option <code>shacl.shape.graphs</code> says which graphs a plain <code>VALIDATE ALL</code> reads shapes from; on <code>kit-c360</code> it's the default, <code>tag:stardog:api:context:local</code>, meaning all local graphs. So any shape left lying around in a local graph joins future <code>VALIDATE ALL</code> runs: clean up scratch shapes, and name the shapes graph explicitly with <code>USING SHAPES GRAPH</code>, as we will.</p>
+  <p><strong>Where shapes live, and why you name them.</strong> Shapes are ordinary triples, stored in a named graph like anything else. In the 11.7 exercise you'll put yours in a scratch graph, <code>&lt;urn:book:ch11:shapes&gt;</code>. The question is which shapes a validation uses. There are two ways to run it:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>You run</th><th>Shapes used</th></tr></thead>
+    <tbody>
+      <tr><td><code>VALIDATE ALL</code></td><td>Every shape found in <b>any graph stored in Stardog</b>. Today that means <code>training-c360</code>, <code>c360_extended_rules</code> and, after the 11.7 exercise, your scratch shapes graph. (A database setting, <code>shacl.shape.graphs</code>, controls this; on <code>kit-c360</code> it is left at the default, <code>tag:stardog:api:context:local</code>, "all stored graphs".)</td></tr>
+      <tr><td><code>VALIDATE GRAPH &lt;urn:book:ch11&gt;<br>USING SHAPES GRAPH &lt;urn:book:ch11:shapes&gt;</code></td><td>Only the shapes in the graph you name.</td></tr>
+    </tbody>
+  </table></div>
+  <p>It works like <code>dbt test</code>, which runs every test file it finds in the project. Forget a scratch test file and it runs too, every time. Same here: if you forget to drop <code>&lt;urn:book:ch11:shapes&gt;</code>, next month's <code>VALIDATE ALL</code> still checks every customer against this chapter's practice <code>:CustomerShape</code>, and reports violations nobody asked for. So the 11.7 exercise always names its shapes graph with <code>USING SHAPES GRAPH</code>, and drops the scratch graphs at the end.</p>
 
   <h2><span class="sn">11.6</span>Where SHACL fits in a federated setup</h2>
   <p>In our architecture the data isn't in Stardog; it's SQL rows seen through mappings. What could go wrong, and where?</p>

@@ -450,18 +450,6 @@ WHERE { GRAPH ?g { ?s ?p ?o } FILTER(STRSTARTS(STR(?g), "urn:book:ch11")) }</pre
   </table></div>
   <p><code>false</code> comes with one <code>sh:result</code> per problem; <code>true</code> comes alone. Nodes that pass, like Jolynn and Carolyn, never appear in either. There is no setting that makes it <code>true</code>: you fix the data and run <code>VALIDATE</code> again.</p>
 
-  <aside class="box java"><p>Same shape of call in both worlds: a collection of violations back, and empty means valid.</p><div class="sbs"><div class="col"><p class="lbl">Stardog</p><pre>VALIDATE GRAPH &lt;urn:book:ch11&gt;
-USING SHAPES GRAPH &lt;urn:book:ch11:shapes&gt;
-
-# → sh:conforms false
-#   sh:result [ sh:focusNode customer:9999 ;
-#               sh:resultPath :email ; … ]</pre></div><div class="col"><p class="lbl">Java</p><pre>Set&lt;ConstraintViolation&lt;Customer&gt;&gt; v =
-    validator.validate(customer);
-
-// v.isEmpty()            ~ sh:conforms true
-// cv.getRootBean()       ~ sh:focusNode
-// cv.getPropertyPath()   ~ sh:resultPath
-// cv.getInvalidValue()   ~ sh:value</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> <code>validator.validate()</code> checks one object in memory. <code>VALIDATE</code> scans every target node in a graph, and the report is RDF you can query or store.</p></aside>
 
   <h3>Optional stretch (read-only): try the virtual graph, with a lie detector</h3>
   <p>Curious whether direct virtual-graph validation works on our server? <code>VALIDATE</code> only reads, so this is safe. The trick is a <strong>canary</strong> shape that <em>must</em> fail: <code>aurora_c360_safe</code> has no <code>:ssn</code> (Chapter 8), so "every customer has an ssn" must fail. If it reports <code>conforms true</code>, validation isn't really seeing the virtual data, so ignore any "all clear."</p>

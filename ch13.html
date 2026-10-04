@@ -199,17 +199,6 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
     <p>You know this split from RDS: the AWS console user who can click "Modify DB instance" is not a Postgres role. Portal = console, native user = database role. The Chapter 12 users live on the endpoint, next to <code>stardog_admin</code>.</p>
   </aside>
 
-  <aside class="box java"><p>A program reaching the endpoint is like one reaching a database through a <code>DataSource</code>: its own URL, database user and password.</p><div class="sbs"><div class="col"><p class="lbl">Stardog HTTP API</p><pre>POST https://&lt;your-endpoint&gt;.stardog.cloud:5820
-     /kit-c360/query
-Authorization: Basic &lt;stardog_admin:…&gt;
-Accept: application/sparql-results+json
-
-query=SELECT …</pre></div><div class="col"><p class="lbl">Java</p><pre>var ds = new PGSimpleDataSource();
-ds.setUrl("jdbc:postgresql://host:5432/c360");
-ds.setUser("app_reader");   // a DB role,
-                            // not your SSO login
-ds.setPassword(System.getenv("PGPASSWORD"));
-try (var c = ds.getConnection()) { … }</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> there's no driver or connection pool, just stateless HTTPS requests with Basic auth on each. And behind the endpoint, Stardog may be talking to Aurora and Redshift at once.</p></aside>
 
   <aside class="box gotcha">
     <p>Keep the stardog_admin password in an environment variable or a password manager, never in a committed file. Chapter 14 reads it from <code>STARDOG_PASSWORD</code>.</p>

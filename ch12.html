@@ -211,20 +211,6 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
       <tr><td><code>SERVICE &lt;virtual://aurora_c360_pii&gt; { … }</code></td><td>an error</td></tr>
     </tbody>
   </table></div>
-  <aside class="box java"><p>The silent disappearance is closer to a Hibernate <code>@Filter</code> switched on per session than to an access check.</p><div class="sbs"><div class="col"><p class="lbl">What marketing effectively runs</p><pre>SELECT ?name ?ssn WHERE {
-  GRAPH &lt;virtual://aurora_c360_safe&gt; { … }
-  OPTIONAL {
-    GRAPH &lt;virtual://aurora_c360_pii&gt; { … }  # dropped
-  }
-}
-# → Jolynn Bithany | (empty)</pre></div><div class="col"><p class="lbl">Java</p><pre>@Entity
-@FilterDef(name = "noPii")
-@Filter(name = "noPii", condition = "1 = 0")
-class CustomerPii { … }
-
-session.enableFilter("noPii");  // marketing
-// queries on CustomerPii return nothing,
-// no exception</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> a Hibernate filter lives in one application and one database. Stardog enforces the permission in the data layer, for every client and every source behind it, so no application code can forget it.</p></aside>
 
   <p>This is why Chapter 8 split Aurora into <code>aurora_c360_safe</code> and <code>aurora_c360_pii</code>: security works per graph, and the PII mapping holds only <code>:ssn</code> and <code>:cardNumber</code>, so hiding that graph hides exactly those two properties.</p>
 

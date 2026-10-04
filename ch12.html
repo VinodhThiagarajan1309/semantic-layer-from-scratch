@@ -316,7 +316,7 @@ unset SDPW</pre></div>
   <aside class="box gotcha">
     <ul>
       <li><strong>Wildcards don't open named graphs.</strong> The built-in <code>reader</code> role's <code>read</code> on <code>named-graph *</code> sounds like "every graph", but tested on this build (Stardog 12.1.4), a user with <code>reader</code> saw no graph at all once named-graph security was on, and neither did the all-powerful <code>cloud</code> role. Only permissions naming each graph work, for everyone, admins included. Roles still only ever add permissions: one role can't take away what another grants.</li>
-      <li><strong>Silence is the failure mode.</strong> A typo in a permission's graph IRI doesn't error; the graph just comes back empty. If <code>marketing_user</code> gets no rows even for the name, check the spelling and the backslash first. If it's still empty, try also granting <code>read</code> on resource type <code>virtual-graph</code> with resource <code>virtual://aurora_c360_safe</code> (the built-in <code>reader</code> role includes that type, and the docs don't say whether querying needs it), and note which one fixed it.</li>
+      <li><strong>Silence is the failure mode.</strong> A typo in a permission's graph IRI doesn't error; the graph just comes back empty. If <code>marketing_user</code> gets no rows even for the name, check the spelling and the backslash first. You don't need a <code>virtual-graph</code> permission: tested on this build, <code>marketing</code> reads the safe graph with only its <code>db</code> and <code>named-graph</code> permissions.</li>
       <li><strong>No wildcards for graphs.</strong> A new virtual graph is invisible to both roles until you grant it.</li>
     </ul>
   </aside>
@@ -331,7 +331,7 @@ unset SDPW</pre></div>
   </section>
 
   <section class="recap"><h2>Chapter recap</h2><ul>
-    <li><strong>Users</strong> get <strong>roles</strong>; roles hold <strong>permissions</strong> (action + resource type + resource). Your server has <code>cloud</code> (everything, on <code>stardog_admin</code>) and <code>reader</code> (read on everything, every named graph included).</li>
+    <li><strong>Users</strong> get <strong>roles</strong>; roles hold <strong>permissions</strong> (action + resource type + resource). Your server has <code>cloud</code> (everything, on <code>stardog_admin</code>) and <code>reader</code> (read on everything with <code>*</code>, which, tested, opens no named graph once named-graph security is on).</li>
     <li><code>security.named.graphs=true</code> makes each graph a resource: <code>named-graph:kit-c360\&lt;IRI&gt;</code>, read/write only, no wildcards. Unreadable graphs are silently dropped.</li>
     <li>Virtual graphs are covered the same way: <code>GRAPH</code>/<code>FROM</code> give empty results, <code>SERVICE</code> an error.</li>
     <li>The safe/PII split from Chapter 8 is what makes graph-level security precise.</li>

@@ -157,7 +157,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
 
   <p>Stardog Cloud has two things with two addresses. The <strong>portal</strong>, <code>cloud.stardog.com</code>, is where you sign in with your email: a control panel that lists your endpoints, launches the web apps, and manages API keys. The <strong>endpoint</strong>, <code>https://&lt;your-endpoint&gt;.stardog.cloud:5820</code>, is the actual Stardog 12.1.4 server in us-west-2. It has its own HTTP API (<code>POST /kit-c360/query</code> runs SPARQL) and <em>its own users</em>, unrelated to portal accounts.</p>
 
-  <p>That's the answer to the puzzle. In Studio, the portal connects to the endpoint on your behalf. A Python script has no portal in the middle, so it must bring credentials the endpoint knows, which your email isn't. Hence this project's native Stardog user, <code>stardog_admin</code>, with the role <code>cloud</code>. Every program in this book, including the Chapter 14 agent, signs in as <code>stardog_admin</code> (or as one of the narrower users from Chapter 12).</p>
+  <p>That's the answer to the puzzle. In Studio, the portal connects to the endpoint on your behalf. A Python script has no portal in the middle, so it must bring credentials the endpoint knows, which your email isn't. Hence this project's native Stardog user, <code>stardog_admin</code>, with the role <code>cloud</code>, plus <code>hr</code> since Chapter 12: with named-graph security on, <code>cloud</code> alone reads no graphs, and <code>hr</code> grants each graph by name. Every program in this book, including the Chapter 14 agent, signs in as <code>stardog_admin</code> (or as one of the narrower users from Chapter 12).</p>
 
   <figure class="fig">
     <svg viewBox="0 0 640 300" role="img" aria-label="Portal and endpoint: two logins">
@@ -179,7 +179,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
       <text x="535" y="170" text-anchor="middle" font-size="11" fill="var(--ink)">&lt;your-endpoint&gt;.stardog.cloud:5820</text>
       <text x="535" y="196" text-anchor="middle" font-size="12" fill="var(--muted)">database kit-c360</text>
       <text x="535" y="216" text-anchor="middle" font-size="12" fill="var(--muted)">its own users and roles</text>
-      <text x="535" y="236" text-anchor="middle" font-size="12" fill="var(--muted)">stardog_admin (role cloud),</text>
+      <text x="535" y="236" text-anchor="middle" font-size="12" fill="var(--muted)">stardog_admin (cloud + hr),</text>
       <text x="535" y="254" text-anchor="middle" font-size="12" fill="var(--muted)">hr_user, marketing_user</text>
       <line x1="190" y1="85" x2="246" y2="85" stroke="var(--accent2)" stroke-width="2"/>
       <polygon points="246,80 254,85 246,90" fill="var(--accent2)"/>

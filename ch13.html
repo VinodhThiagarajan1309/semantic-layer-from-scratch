@@ -282,21 +282,6 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
     <li><strong>The engine.</strong> Stardog runs the finished query the normal way, virtual graphs and pushdown included (Chapter 9).</li>
   </ol>
 
-  <aside class="box java"><p>Voicebox reads your ontology the way your IDE reads a JPA entity: names, types and Javadoc say what connects to what.</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>:purchasedBy a owl:ObjectProperty ;
-  rdfs:label "purchased by" ;
-  so:domainIncludes :Order ;
-  so:rangeIncludes  :Customer .
-
-:purchasePrice a owl:DatatypeProperty ;
-  rdfs:label "price" ;
-  so:rangeIncludes xsd:decimal .</pre></div><div class="col"><p class="lbl">Java</p><pre>@Entity
-class Order {
-  /** purchased by */
-  @ManyToOne Customer purchasedBy;
-
-  /** price */
-  BigDecimal purchasePrice;
-}</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> <code>so:domainIncludes</code> is a hint, not a type (Chapter 6). One property can serve several classes (<code>:name</code> is on Customer, Vendor, Category and Product), and no compiler catches a mistake.</p></aside>
 
   <p>Here is one of the kit's 317 stored queries, trimmed; each pairs English with SPARQL:</p>
 

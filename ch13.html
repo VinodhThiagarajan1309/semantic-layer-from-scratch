@@ -206,7 +206,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
 
   <h2><span class="sn">13.3</span>Studio, Designer and Explorer: one graph, three audiences</h2>
 
-  <p><strong>Studio</strong> is the engineer's IDE, the tool you've lived in since Chapter 2: DBeaver that speaks SPARQL. It holds the query editor with its reasoning toggle (Chapter 10), Databases for loading data and setting properties (Chapter 6), the Models view, the Data area for data sources and virtual graphs (Chapters 7 to 9), and Security (Chapter 12).</p>
+  <p><strong>Studio</strong> is the engineer's IDE, the tool you've lived in since Chapter 2. What DBeaver is for SQL, Studio's Workspace is for SPARQL. It holds the query editor with its reasoning toggle (Chapter 10), Databases for loading data and setting properties (Chapter 6), the Models view, the Data area for data sources and virtual graphs (Chapters 7 to 9), and Security (Chapter 12).</p>
 
   <p><strong>Designer</strong> is for modelers. You draw classes as boxes and relationships as arrows, attach a table or CSV to each class, and publish; Designer writes the ontology into a named graph and creates the mappings. Its fingerprints are in the kit: in <code>c360_extended_rules.ttl</code>, each <code>rule:content</code> has a <code>&lt;tag:stardog:designer:rule:content&gt;</code> copy and a compressed <code>designer:rule:data</code> blob from Designer's rule editor. So why write everything by hand? Because when something breaks (a missing <code>sql.schemas</code>, the reserved word <code>date</code>, a float drifting by two cents), you need to know what Designer generates underneath: the same triples, just faster.</p>
 

@@ -320,17 +320,6 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
 
   <p>A stored query is SPARQL saved on the server under a name, with metadata. The kit ships its 317 as Turtle, since Stardog keeps stored queries as triples in its system catalog. The types: <code>system:StoredQuery</code> (saved), <code>system:SharedQuery</code> (visible to others; Voicebox learns only from shared ones), and <code>system:ReasoningQuery</code> (run with reasoning on). In Studio you save one from the editor. Chapter 14's five competency questions, with their verified queries, are ideal candidates: a regression suite, Voicebox examples, and reference answers for the agent.</p>
 
-  <aside class="box java"><p>A stored query is the graph world's <code>@NamedQuery</code>: written once, given a name, reused everywhere.</p><div class="sbs"><div class="col"><p class="lbl">SPARQL (stored)</p><pre>system:QueryTopSpenders
-  a system:StoredQuery, system:SharedQuery ;
-  system:queryName "top-spenders" ;
-  system:voiceboxQuestion
-    "Who are the top spenders?" ;
-  system:queryString """SELECT … """ .</pre></div><div class="col"><p class="lbl">Java</p><pre>@Entity
-@NamedQuery(name = "Customer.topSpenders",
-  query = "select c.name, sum(o.price * o.quantity) "
-        + "from Order o join o.purchasedBy c "
-        + "group by c.name order by 2 desc")
-class Customer { … }</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> a <code>@NamedQuery</code> ships with your app. A stored query lives on the server (in SQL terms, a shared saved query, not a stored procedure), so Studio, Voicebox and every user see it, and it can carry example questions that teach an LLM.</p></aside>
 
   <p>A knowledge kit is a semantic layer in a box. Its manifest, <code>kit.yaml</code>, reads like this book's summary:</p>
 

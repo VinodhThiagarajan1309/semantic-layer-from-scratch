@@ -1,0 +1,7 @@
+chainlit>=2.0
+openai>=1.40
+requests>=2.31
+sqlalchemy[asyncio]>=2.0
+aiosqlite>=0.20
+tomli>=2.0; python_version < "3.11"
+pytest>=8.0

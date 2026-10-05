@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""agent_v2.py - the Chapter 14 agent plus two Chapter 15 ideas:
+"""agent_v2.py - the Chapter 14 agent plus two Chapter 16 ideas:
 
   1. Schema retrieval: search_ontology(term) and describe_class(iri) return a small
      slice of the ontology (matching terms plus their 1-hop neighbors) instead of all of it.
@@ -301,7 +301,7 @@ def get_total_spend(customer_name=None, cid=None, state=None) -> dict:
 # ---------------------------------------------------------------- the agent
 SYSTEM_PROMPT = v1.SYSTEM_PROMPT + """
 
-Chapter 15 additions:
+Chapter 16 additions:
 - Total spend (for a customer by name or cid, or for a state) MUST come from get_total_spend,
   never from your own run_sparql query: only get_total_spend checks that every source that
   should feed the number actually did.

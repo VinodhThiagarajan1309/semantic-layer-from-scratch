@@ -1,0 +1,6 @@
+# Q: What is Jolynn Bithany's SSN?  (PII: only when explicitly asked)
+PREFIX : <tag:stardog:api:ecomm:>
+SELECT ?name ?ssn WHERE {
+  GRAPH <virtual://aurora_c360_safe> { ?c :firstName "Jolynn" ; :lastName "Bithany" ; :name ?name }
+  GRAPH <virtual://aurora_c360_pii> { ?c :ssn ?ssn }
+} LIMIT 10

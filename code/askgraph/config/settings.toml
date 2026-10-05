@@ -1,0 +1,39 @@
+# askgraph settings. No secrets here: see README "Secrets".
+
+[llm]
+provider = "openrouter"                                  # "openrouter" | "openai"
+model    = "nvidia/nemotron-3-super-120b-a12b:free"      # default model
+# Tried in order after `model` when it keeps failing (429 / 5xx / provider errors).
+fallback_models = ["openai/gpt-4o-mini"]
+# Models offered in the UI settings panel (first = default).
+ui_models = ["nvidia/nemotron-3-super-120b-a12b:free", "openai/gpt-4o-mini"]
+retry_backoff_s = 8           # wait before the single retry on 429
+max_tool_turns  = 8           # model round-trips before giving up
+
+# Optional USD price per 1M tokens [input, output], used only when the provider
+# does not report a cost itself. Free models cost 0.
+[llm.prices]
+"openai/gpt-4o-mini" = [0.15, 0.60]
+"gpt-4o-mini"        = [0.15, 0.60]
+
+[stardog]
+# Your Stardog Cloud endpoint (Studio shows it). Or set STARDOG_ENDPOINT, which wins.
+endpoint = "https://<your-endpoint>.stardog.cloud:5820"
+database = "kit-c360"
+schema   = "c360_extended_rules"           # reasoning schema (used only when reasoning=true)
+schemas  = ["c360_extended_rules", "default"]
+timeout_s = 120                            # query timeout (first query wakes Aurora/Redshift)
+max_rows  = 100                            # LIMIT cap enforced by the guard
+max_chars = 8000                           # tool result size handed back to the model
+
+[users]
+default = "hr"
+# short name -> native Stardog user. All demo users share one password (see README).
+hr        = "hr_user"
+marketing = "marketing_user"
+
+[secrets]
+# Paths to private files that hold secrets (read at runtime, never copied here).
+# Env vars win over files: OPENROUTER_API_KEY, OPENAI_API_KEY, STARDOG_PASSWORD.
+openrouter_env    = "~/.config/semantic-layer/openrouter.env"   # SEMANTIC_LAYER_OPENROUTER_KEY=...
+stardog_users_env = "~/.config/semantic-layer/stardog-users.env"  # STARDOG_DEMO_USERS_PASSWORD=... (a relative path is relative to askgraph/)

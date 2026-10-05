@@ -1,0 +1,7 @@
+# Q: How many big spenders are there per state?  (run with reasoning=true)
+PREFIX : <tag:stardog:api:ecomm:>
+SELECT ?state (COUNT(DISTINCT ?c) AS ?big_spenders)
+FROM <virtual://aurora_c360_safe>
+FROM <virtual://redshift_c360>
+WHERE { ?c a :Big_Spender ; :address ?a . ?a :state ?state }
+GROUP BY ?state ORDER BY DESC(?big_spenders) LIMIT 100

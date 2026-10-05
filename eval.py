@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""eval.py - golden tests for the c360 agent (Chapter 15).
+"""eval.py - golden tests for the c360 agent (Chapter 16).
 
 Each case is a competency question with an answer verified in plain SQL (DBeaver).
 The harness asks agent_v2, pulls the numbers out of the answer, compares them within a
@@ -13,7 +13,7 @@ Exit code 0 when every case passes, so you can run it in CI.
 import json, re, sys
 import agent_v2
 
-CASES = [  # expected values: SQL over Aurora + Redshift, after Chapter 15 step 6
+CASES = [  # expected values: SQL over Aurora + Redshift, after Chapter 16 step 6
     {"q": "What is Carolyn Inworth's total spend?", "number": 504779.42,
      "spend": {"customer_name": "Carolyn Inworth"}},
     {"q": "What is the total spend of all customers in Wisconsin?", "number": 839445.23,

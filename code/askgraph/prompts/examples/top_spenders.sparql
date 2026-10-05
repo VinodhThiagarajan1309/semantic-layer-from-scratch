@@ -1,0 +1,6 @@
+# Q: Who are the top spenders in Wisconsin?
+PREFIX : <tag:stardog:api:ecomm:>
+SELECT ?name (SUM(?p * ?q) AS ?spend) WHERE {
+  GRAPH <virtual://aurora_c360_safe> { ?c :name ?name ; :address ?a . ?a :state "Wisconsin" }
+  GRAPH <virtual://redshift_c360> { ?o :purchasedBy ?c ; :purchasePrice ?p ; :quantity ?q }
+} GROUP BY ?name ORDER BY DESC(?spend) LIMIT 10

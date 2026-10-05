@@ -306,22 +306,6 @@ WHERE {
 
   <p>You could go further. The database option <dfn>virtual transparency</dfn> (<code>virtual.transparency=true</code>, with <code>query.all.graphs</code>) includes the virtual graphs in queries over all graphs, so a query can drop the <code>GRAPH</code> blocks and let Stardog route every pattern, and the prompt wouldn't need graph names. It has some documented limits (for example, around <code>*</code> and <code>+</code> property paths), so this book keeps explicit <code>GRAPH</code> blocks, but it's the natural next step.</p>
 
-  <aside class="box java"><p>If you use Hibernate, this layering is familiar; what differs is its reach.</p><div class="sbs"><div class="col"><p class="lbl">SPARQL (what the LLM writes)</p><pre>SELECT ?name (SUM(?p * ?q) AS ?spend)
-WHERE {
-  GRAPH &lt;virtual://aurora_c360_safe&gt; {
-    ?c :name ?name ; :address ?a .
-    ?a :state "Wisconsin" }
-  GRAPH &lt;virtual://redshift_c360&gt; {
-    ?o :purchasedBy ?c ;
-       :purchasePrice ?p ; :quantity ?q }
-} GROUP BY ?name</pre></div><div class="col"><p class="lbl">Java (JPA + Hibernate)</p><pre>// entities map to tables; Hibernate writes SQL
-em.createQuery("""
-  select o.purchasedBy.name,
-         sum(o.purchasePrice * o.quantity)
-  from Order o
-  where o.purchasedBy.address.state = 'Wisconsin'
-  group by o.purchasedBy.name""")
-  .getResultList();</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> Hibernate works against one database; here Stardog joins across Aurora and Redshift. The mappings are data (SMS2), not compiled annotations, and the LLM plays the developer writing JPQL.</p></aside>
 
   <p>Each layer knows one thing:</p>
 

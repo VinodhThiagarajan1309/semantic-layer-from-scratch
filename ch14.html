@@ -344,20 +344,6 @@ WHERE {
     <p><strong>Code checks are the second line of defense, not the first.</strong> A regex can be fooled, and can be overcautious (a variable named <code>?copy</code> would be rejected). The real protection is database security: run the agent as a read-only Stardog user that can't read <code>&lt;virtual://aurora_c360_pii&gt;</code>, like <code>marketing_user</code> from Chapter 12. Then even a crafted malicious query fails, and SSNs never reach the LLM provider. <code>stardog_admin</code> is fine on your laptop, not for anything others can reach.</p>
   </aside>
 
-  <aside class="box java"><p>You know this from JDBC: the client can ask for read-only, but only the database can enforce it.</p><div class="sbs"><div class="col"><p class="lbl">Stardog</p><pre># agent.py: a client-side check
-guard("DELETE WHERE { ?s ?p ?o }")
-  → Rejected: only read-only …
-
-# the real fence: Chapter 12
-user marketing_user: read on kit-c360,
-  no access to virtual://aurora_c360_pii</pre></div><div class="col"><p class="lbl">Java</p><pre>conn.setReadOnly(true);   // a hint; some drivers
-                          // ignore it
-
-// the real fence lives in the database (SQL):
-//   GRANT SELECT ON ALL TABLES IN SCHEMA c360
-//     TO app_reader;
-//   REVOKE SELECT ON c360.customer_pii
-//     FROM app_reader;</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> a regex over generated text is weaker than <code>setReadOnly</code>, because the model can phrase things you didn't anticipate, so the database-side permission matters even more here.</p></aside>
 
   <h2><span class="sn">14.6</span>The code</h2>
 

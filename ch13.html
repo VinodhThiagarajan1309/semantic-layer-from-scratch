@@ -307,7 +307,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var
   <aside class="box try">
     <p><strong>Ask Voicebox, then read its SPARQL (read-only).</strong></p>
     <ol>
-      <li>First check Studio → Databases → kit-c360 → Properties → <code>voicebox.enabled</code>. If it's <code>false</code>, turning it on is a configuration change and your call; if you'd rather not, skip to step 5 and read along.</li>
+      <li>First check Studio → Databases → kit-c360 → Properties → <code>voicebox.enabled</code>. On <code>kit-c360</code> it is already on (the box is ticked; the kit set it when it created the database), so there is nothing to change. If yours is <code>false</code>, turning it on is a configuration change and your call; if you'd rather not, skip to step 5 and read along.</li>
       <li>At <code>cloud.stardog.com</code>, open Voicebox (listed next to Studio, Designer and Explorer) and connect it to your endpoint and <code>kit-c360</code>. If you can't see it on the Free tier, or it asks for a license, stop and tell Claude what you see.</li>
       <li>Ask: <code>Who are the top spenders in Wisconsin?</code></li>
       <li>Open the generated SPARQL. Look for three things: a path to the state through <code>:address</code> and <code>:state</code>; a <code>SUM</code> over <code>:purchasePrice</code> times <code>:quantity</code>; and some way of reaching both warehouses (<code>GRAPH &lt;virtual://…&gt;</code> blocks or the app's data-graph setting).</li>

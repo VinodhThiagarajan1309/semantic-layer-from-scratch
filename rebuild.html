@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Appendix · Rebuild the AWS sandbox</title>
+<!--
+  BOOK TEMPLATE, "The Semantic Layer, From Scratch".
+  Copy this whole file for each chapter. Change only: <title>, the header block, the
+  chapter body, and the prev/next links. Keep the CSS and JS identical across chapters
+  so the book looks like one book. No external resources: everything stays inline.
+
+  Components available (use them, don't invent new ones):
+    <p class="lede">                      opening paragraph (gets the drop cap)
+    <aside class="box sql">               "If you know SQL…" analogy box
+    <aside class="box model">             "Mental model" box
+    <aside class="box try">               "Try it in Studio" hands-on box (optional, read-only or scratch-graph only)
+    <aside class="box gotcha">            "Gotcha" box
+    <aside class="box blog">              "In the AWS blog" box (ties the chapter to the blog)
+    <div class="codewrap"><button class="copy" type="button">Copy</button><pre>…</pre></div>   code with copy button
+    <figure class="fig"><svg …></svg><figcaption>Figure N.M: …</figcaption></figure>   inline SVG diagrams; use CSS vars for colors
+    <div class="tbl"><table>…</table></div>   tables
+    <span class="s">subject</span> <span class="p">predicate</span> <span class="o">object</span>   triple coloring
+    <section class="check"><h2>Check yourself</h2><details><summary>Q</summary><p>A</p></details>…</section>
+    <section class="recap"><h2>Chapter recap</h2><ul>…</ul></section>
+    <aside class="box java"><p>intro</p><div class="sbs"><div class="col"><p class="lbl">RDF / RDFS / OWL</p><pre>…</pre></div><div class="col"><p class="lbl">Java</p><pre>…</pre></div></div><p class="breaks"><b>Where the analogy breaks:</b> …</p></aside>   side-by-side Java analogy
+    <dfn>term</dfn>                       first definition of a glossary term
+    <section class="done">…sendback button with data-chapter="N" data-step="S"…</section>   ONLY on build-step chapters (5,6,8,9,10,12,14,15,16), before nav
+    <figure class="fig anim" id="f-N-M">…</figure> + bookAnim(...)   GSAP animated figure (see the helper in the script block).
+      GSAP is loaded from the local file gsap.min.js next to the chapters (no CDN). Put chapter-specific
+      bookAnim(...) calls in a second <script> placed AFTER the template's script.
+-->
+<style>
+:root{
+  --bg:#f7f4ee; --paper:#fffdf8; --ink:#1f1d1a; --muted:#6a655c; --line:#e4ddcf;
+  --accent:#7a2e1f; --accent2:#2f5d8a; --soft:#f1ebe0; --code:#f2eee6;
+  --subj:#9a3b2c; --pred:#2d6a48; --obj:#6b4a8e;
+  --sql:#2f5d8a; --model:#7a5a12; --try:#2e7d4f; --gotcha:#a33b2a; --blog:#5a4a8a;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141311; --paper:#1c1a17; --ink:#ece6da; --muted:#a39c90; --line:#35312b;
+    --accent:#e39a84; --accent2:#8fb8e3; --soft:#26231f; --code:#24211d;
+    --subj:#f0a08f; --pred:#86d2a6; --obj:#c9aef0;
+    --sql:#8fb8e3; --model:#e2c47a; --try:#7fcf9f; --gotcha:#f08f7f; --blog:#b9a8ef;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);min-height:100vh;padding:32px 56px 80px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.running{display:flex;justify-content:space-between;font:12px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.running a{color:inherit;text-decoration:none}
+.opener{text-align:center;margin:56px 0 36px}
+.opener .num{font:600 13px/1 -apple-system,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:var(--accent)}
+.opener h1{font-size:2.2rem;line-height:1.15;margin:14px 0 10px;font-weight:600;text-wrap:balance}
+.opener .sub{color:var(--muted);font-style:italic;margin:0}
+.opener .rule{width:60px;height:2px;background:var(--accent);margin:22px auto 0}
+h2{font-size:1.4rem;margin:44px 0 12px;font-weight:600;text-wrap:balance}
+h2 .sn{color:var(--accent);font-weight:600;margin-right:8px}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:0 0 14px;hyphens:auto}
+.lede::first-letter{float:left;font-size:3.4em;line-height:.85;padding:6px 8px 0 0;color:var(--accent);font-weight:600}
+a{color:var(--accent2)}
+dfn{font-style:normal;font-weight:700;border-bottom:2px solid var(--soft)}
+ul,ol{padding-left:24px} li{margin:4px 0}
+code{font:.82em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 5px;border-radius:4px}
+.codewrap{position:relative;margin:14px 0}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
+.copy{position:absolute;top:8px;right:8px;font:600 11px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:6px 9px;cursor:pointer}
+@media (prefers-color-scheme: dark){.copy{color:#10161d}}
+.box{border:1px solid var(--line);border-left:5px solid var(--c);background:var(--soft);border-radius:8px;padding:12px 16px 4px;margin:20px 0;font-size:.95rem}
+.box::before{display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.box.sql{--c:var(--sql)} .box.sql::before{content:"If you know SQL"}
+.box.model{--c:var(--model)} .box.model::before{content:"Mental model"}
+.box.try{--c:var(--try)} .box.try::before{content:"Try it in Studio"}
+.box.gotcha{--c:var(--gotcha)} .box.gotcha::before{content:"Gotcha"}
+.box.blog{--c:var(--blog)} .box.blog::before{content:"In the AWS blog"}
+.s{color:var(--subj);font-weight:700}.p{color:var(--pred);font-weight:700}.o{color:var(--obj);font-weight:700}
+.fig{margin:24px 0;text-align:center}
+.fig svg{max-width:100%;height:auto}
+figcaption{font:13px/1.4 -apple-system,sans-serif;color:var(--muted);margin-top:8px}
+svg text{font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font:14.5px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.check details{border:1px solid var(--line);border-radius:8px;padding:9px 14px;margin:9px 0;background:var(--paper)}
+.check summary{cursor:pointer;font-weight:600}
+.recap{background:var(--soft);border-radius:10px;padding:4px 18px 10px;margin-top:40px}
+.recap h2{margin-top:18px}
+.fig.anim{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 10px 10px;background:var(--paper)}
+.fig.anim .play{position:absolute;top:10px;right:10px;font:600 12px/1 -apple-system,sans-serif;background:var(--accent2);color:#fff;border:0;border-radius:99px;padding:7px 12px;cursor:pointer}
+@media (prefers-color-scheme: dark){.fig.anim .play{color:#10161d}}
+.fig.anim .stepcap{font:13px/1.4 -apple-system,sans-serif;color:var(--ink);min-height:2.8em;margin:6px 8px 0}
+.box.java{--c:#a35a12} .box.java::before{content:"If you know Java"}
+@media (prefers-color-scheme: dark){.box.java{--c:#f0ad62}}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 12px}
+.sbs .col{min-width:0}
+.sbs .lbl{font:700 11px/1 -apple-system,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sbs pre{font-size:12.5px;height:100%}
+.box .breaks{font-size:.9rem;color:var(--muted)}
+@media (max-width:760px){.sbs{grid-template-columns:1fr}}
+.keyidea{position:relative;margin:30px 0;padding:18px 22px 16px 22px;border-radius:12px;background:linear-gradient(135deg,#fbf5e6 0%,#f4ead3 100%);border:1px solid #e2cf9f;border-left:5px solid #a8741a}
+.keyidea::before{content:"\2726  Key idea";display:block;font:700 11px/1 -apple-system,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8a5d10;margin-bottom:10px}
+.keyidea .ki{font:600 1.18rem/1.45 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;color:#2b2112;margin:0 0 8px}
+.keyidea .ki-ex{font:14px/1.5 -apple-system,sans-serif;color:#5b4a2c;margin:0}
+.keyidea .ki-ex code{background:rgba(168,116,26,.10)}
+@media (prefers-color-scheme: dark){.keyidea{background:linear-gradient(135deg,#2a2317 0%,#221c12 100%);border-color:#5a4520;border-left-color:#d9a441}.keyidea::before{color:#e3b45a}.keyidea .ki{color:#f3e6c8}.keyidea .ki-ex{color:#cdb88f}}
+.kigrid{display:grid;gap:14px}
+.kichap{font:700 12px/1 -apple-system,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:30px 0 8px}
+table.log td.d{white-space:nowrap;color:var(--muted)}
+table.log td.w{font-weight:600;width:20%}
+table.log th:nth-child(3),table.log th:nth-child(4){width:36%}
+h2 a{color:inherit;text-decoration:none} h2 a:hover{text-decoration:underline}
+.logsum{font:14px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;color:var(--muted)}
+.done{margin-top:36px;text-align:center}
+.sendback{font:600 14px/1 -apple-system,sans-serif;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+@media (prefers-color-scheme: dark){.sendback{color:#1a1410}}
+.sbmsg{font:13px -apple-system,sans-serif;color:var(--muted)}
+.donehint{font:13px/1.4 -apple-system,sans-serif;color:var(--muted)}
+nav.pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font:14px/1.4 -apple-system,sans-serif}
+nav.pn a{text-decoration:none;color:var(--accent2);max-width:48%}
+nav.pn small{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+@media (max-width:600px){body{font-size:17px}.opener h1{font-size:1.8rem}.page{padding:20px 16px 60px}}
+</style>
+</head>
+<div class="page">
+  <div class="running"><a href="index.html">The Semantic Layer, From Scratch</a><span>Rebuild the AWS sandbox</span></div>
+
+  <header class="opener">
+    <div class="num">Appendix</div>
+    <h1>Rebuild the AWS sandbox</h1>
+    <p class="sub">The two warehouses were shut down on November 7, 2026, so they stop costing money. This page explains how to bring them back exactly as the book used them, in about 30 minutes.</p>
+    <div class="rule"></div>
+  </header>
+
+  <p class="lede">Everything the book built in Stardog is still there: the ontology, the rules, the roles, the two data sources and the three virtual graphs. What's gone is the AWS side, meaning the Aurora PostgreSQL cluster, the Redshift Serverless workgroup and their network. Until you rebuild them, any query that reaches a virtual graph fails with a connection error. Queries over the model graphs still work, for example the ontology query in Chapter 16.</p>
+
+  <p>Rebuilding is five scripts, a data load and one password change in Studio. The scripts are in the repo under <a href="https://github.com/VinodhThiagarajan1309/semantic-layer-from-scratch/tree/main/code/aws"><code>code/aws/</code></a>. Every script can safely be run twice: each one reuses anything that already exists.</p>
+
+  <h2 id="r-what">1. What existed, and the settings it used</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Piece</th><th>Settings</th><th>Why that setting</th></tr></thead>
+    <tbody>
+      <tr><td><b>Region and names</b></td><td><code>us-west-2</code>; every name starts with <code>c360-stardog</code>; every resource is tagged <code>Project=stardog-c360</code></td><td>Stardog Cloud's virtual-graph traffic comes from us-west-2, so the warehouses sit next to it. The tag lets teardown find every leftover.</td></tr>
+      <tr><td><b>Network</b> (<code>01_network.sh</code>)</td><td>3 new public subnets in the default VPC (2a, 2b, 2c). One security group opening ports 5432 and 5439 only to Stardog Cloud's egress IP, <code>44.238.183.206/32</code>, and to the IP you run the script from. One RDS DB subnet group.</td><td>Redshift Serverless needs subnets in 3 availability zones. No NAT gateway and no private networking: they would cost more than the whole sandbox.</td></tr>
+      <tr><td><b>Aurora PostgreSQL</b> (<code>02_aurora.sh</code>)</td><td>Cluster <code>c360-stardog-aurora</code>, engine 16.14, <b>Serverless v2 with 0 to 1 ACU</b>, auto-pause after 300 seconds idle. Standard storage, 1-day backups, no deletion protection. Database <code>c360</code>, user <code>c360admin</code>. One public <code>db.serverless</code> instance, <code>c360-stardog-aurora-1</code>.</td><td>A minimum of 0 ACU means it costs nothing while paused. The first query after a pause takes about 15 seconds and can fail once with "The connection attempt failed". Retry it.</td></tr>
+      <tr><td><b>Redshift Serverless</b> (<code>03_redshift.sh</code>)</td><td>Namespace <code>c360-stardog-ns</code> (database <code>dev</code>, user <code>admin</code>). Workgroup <code>c360-stardog-wg</code>, <b>base = max = 4 RPU</b>, public. Usage limit: <b>1 RPU-hour per day, deactivate on breach</b>. During the build it was raised to 3, because automated tests used up 1.</td><td>4 RPU is the smallest size. The daily limit caps the worst case at about $0.38 a day ($1.13 at 3).</td></tr>
+      <tr><td><b>Cost guard</b> (<code>00_budget.sh</code>)</td><td>A Cost Anomaly Detection monitor with a daily email at $5 of impact. Create a monthly AWS Budget with an email alert yourself, in the console; this book used $15.</td><td>So a forgotten resource shows up in your inbox, not on next month's bill.</td></tr>
+      <tr><td><b>Data</b> (<code>load.py</code>)</td><td>The c360 CSVs from Stardog's knowledge-kits repo. Aurora: <code>c360.address</code>, <code>customer</code>, <code>credit_card</code>, <code>rewards_account</code>. Redshift: <code>c360.vendor</code>, <code>category</code>, <code>product</code>, <code>purchase</code>.</td><td>The DDL is in <code>code/aws/sql/</code>. Money is <code>numeric</code>, not float, so totals come out to the cent.</td></tr>
+      <tr><td><b>Stardog data sources</b> (still in Stardog)</td><td><code>aurora_c360</code> and <code>redshift_c360</code>, with <code>sql.schemas=c360</code> and the pool set to <code>minIdle=0</code>, <code>maxIdle=0</code>, <code>timeBetweenEvictionRunsMillis=0</code>, <code>testOnBorrow=true</code>. Templates are in <code>code/aws/stardog/*.properties</code>.</td><td>Without <code>sql.schemas</code> Stardog sees only <code>public</code>. Without the empty pool, Stardog holds a connection open and Aurora never pauses.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="r-steps">2. Bring it back</h2>
+  <p><b>Before you start:</b> you need AWS CLI v2, signed in with <code>aws login</code>, and Python 3.12 with <code>psycopg2-binary</code>, <code>redshift_connector</code> and <code>python-dotenv</code>. You also need a copy of Stardog's knowledge-kits repo for the CSVs. In <code>config.sh</code>, set <code>BUDGET_EMAIL</code> to your address.</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>cd code/aws
+bash 00_budget.sh      # once per account: anomaly monitor + daily email
+bash 01_network.sh     # subnets, security group, DB subnet group (~1 min)
+bash 02_aurora.sh      # Aurora PG 16.14 Serverless v2, 0-1 ACU (~10-15 min)
+bash 03_redshift.sh    # Redshift Serverless 4 RPU + daily usage limit (~5 min)
+C360_DATA=&lt;knowledge-kits&gt;/examples/c360/data python load.py all</pre></div>
+  <p>The scripts generate new passwords and write them, along with the new host names, to <code>code/aws/.env.aws</code> (chmod 600; never commit it). <code>load.py</code> should print 500 customers and 2,500 purchases.</p>
+
+  <p><b>Then reconnect Stardog.</b> The data sources still hold the old passwords. In Studio, go to Data Sources, edit <code>aurora_c360</code> and then <code>redshift_c360</code>, and paste the new <code>jdbc.password</code> from <code>.env.aws</code>. Check that <code>jdbc.url</code> matches the new host. Because the cluster and workgroup names are the same, the host names usually come back the same too. Leave the other options as they are. If you deleted the data sources, recreate them from the two <code>.properties</code> templates, then recreate the virtual graphs from the <code>.sms</code> files in <code>code/aws/stardog/</code> (Chapters 8 and 9; untick "Auto-generate mapping").</p>
+
+  <p><b>Check it worked</b> with the catch-all query, in Studio as an admin or as <code>hr_user</code>:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>PREFIX : &lt;tag:stardog:api:ecomm:&gt;
+SELECT ?name (SUM(?price * ?qty) AS ?spend)
+FROM &lt;tag:stardog:api:context:virtual&gt;
+WHERE {
+  ?c a :Customer ; :name ?name ; :address/:state "Wisconsin" .
+  ?o :purchasedBy ?c ; :purchasePrice ?price ; :quantity ?qty .
+} GROUP BY ?name ORDER BY DESC(?spend) LIMIT 3</pre></div>
+  <p>Expect Carolyn Inworth at <b>$502,529.42</b> first. If you get it, both warehouses, the mappings and the join are all back. If Aurora was paused, the first one or two runs can fail with "The connection attempt failed" for up to a minute while it wakes; run it again. (Stardog may print the sum with float noise, such as 502529.4200000000419; that is the same number.)</p>
+
+  <aside class="box gotcha">
+    <p><b>Your IP changed?</b> The security group lets in only Stardog Cloud and the IP you ran <code>01_network.sh</code> from. If DBeaver or <code>load.py</code> can't connect from a new network, run <code>01_network.sh</code> again: it adds your current IP and keeps the existing rules. Stardog itself is not affected.</p>
+  </aside>
+
+  <h2 id="r-cost">3. What it costs, and how to shut it down again</h2>
+  <p>While it exists, the sandbox costs about <b>$0.25 to $0.50 a day even when idle</b>. Almost all of that is AWS's public IPv4 charge ($0.005 an hour per address) on the Aurora instance and the Redshift endpoint, plus a little Aurora storage. Compute is close to zero while both are paused. Each query that wakes Redshift is billed for at least 60 seconds at 4 RPU, which is about 2.5 cents.</p>
+  <p>What this sandbox actually cost, from AWS Cost Explorer (amounts are rounded to the cent):</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Period</th><th>Bill</th><th>Where it went</th></tr></thead>
+    <tbody>
+      <tr><td>Sep 23 to 30, 2026 (the build)</td><td>$3.74</td><td>Mostly public IPv4 and Aurora</td></tr>
+      <tr><td><b>October 2026</b> (a full month)</td><td><b>$10.55</b></td><td>Public IPv4 (VPC) $7.44 · Aurora (RDS) $2.18 · S3 $0.23 · Cost Explorer API $0.05 · tax $0.65 · Redshift $0.00</td></tr>
+      <tr><td>Nov 1 to 6, 2026</td><td>$1.63</td><td>Same pattern, until the teardown on Nov 7</td></tr>
+    </tbody>
+  </table></div>
+  <p>Note what dominates: <b>public IPv4 addresses cost more than both databases put together.</b> An idle sandbox is cheap per day but not free, so tear it down between uses.</p>
+  <p>When you're done, tear it all down:</p>
+  <div class="codewrap"><button class="copy" type="button">Copy</button><pre>bash 99_teardown.sh          # Redshift, Aurora (no final snapshot), SG, subnets, then a leftover check
+bash 99_teardown.sh --all    # also removes the cost-anomaly monitor</pre></div>
+  <p>Teardown keeps no snapshot, because the data reloads from the CSVs in a minute. The last section of the script lists anything still tagged <code>Project=stardog-c360</code>, and it should print nothing.</p>
+
+  <nav class="pn">
+    <a href="corrections.html"><small>← Previous</small>Corrections log</a>
+    <a href="index.html" style="text-align:right"><small>Next</small>Contents</a>
+  </nav>
+</div>
+
+<script src="gsap.min.js"></script>
+<script>
+/* Animated figures: <figure class="fig anim" id="f-x"><button class="play" type="button">▶ Play</button><svg>…</svg>
+   <p class="stepcap"></p><figcaption>…</figcaption></figure>
+   then in a chapter script:  bookAnim('f-x', (tl, cap) => { tl.from('#f-x .a', {opacity:0, y:10}); cap(tl,'Step 1: …'); … });
+   Starts at its final (static) state so the page reads fine without motion; Play replays it.
+   prefers-reduced-motion or no GSAP → it stays static. */
+window.bookAnim=function(id,build){const f=document.getElementById(id);if(!f)return;
+  const capEl=f.querySelector('.stepcap');
+  const cap=(tl,text,pos)=>tl.call(()=>{if(capEl)capEl.textContent=text},null,pos);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap||reduce){const b=f.querySelector('.play');if(b)b.remove();return;}
+  const tl=gsap.timeline({paused:true});build(tl,cap);tl.progress(1);if(capEl)capEl.textContent='Press ▶ Play to watch this step by step.';
+  const b=f.querySelector('.play');if(b)b.addEventListener('click',()=>{tl.restart()});};
+document.querySelectorAll('.codewrap').forEach(w=>{const b=w.querySelector('.copy');if(!b)return;
+  b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(w.querySelector('pre').innerText);b.textContent='Copied'}catch(e){b.textContent='Select & copy'}setTimeout(()=>b.textContent='Copy',1500)})});
+document.querySelectorAll('.sendback').forEach(b=>b.addEventListener('click',async()=>{
+  const n=b.dataset.chapter, s=b.dataset.step, m=b.parentElement.querySelector('.sbmsg');
+  const t=`Build step ${s} done (Chapter ${n}). What I saw (counts / results / anything different in Studio): `;
+  try{await navigator.clipboard.writeText(t);m.textContent='Copied, paste it to Claude.'}catch(e){m.textContent=t}}));
+</script>
+
+<!-- chapter-nav -->
+<style>
+#cnav-btn{position:fixed;top:14px;left:14px;z-index:1000;width:44px;height:44px;border-radius:10px;border:1px solid var(--line,#e4ddcf);background:var(--paper,#fffdf8);color:var(--ink,#1f1d1a);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+#cnav-btn svg{width:22px;height:22px}
+#cnav-shade{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1001;display:none}
+#cnav{position:fixed;top:0;left:0;bottom:0;width:min(340px,86vw);z-index:1002;background:var(--paper,#fffdf8);color:var(--ink,#1f1d1a);border-right:1px solid var(--line,#e4ddcf);transform:translateX(-102%);transition:transform .2s ease;overflow-y:auto;padding:16px 0 24px;font:15px/1.4 system-ui,-apple-system,Segoe UI,sans-serif}
+#cnav.open{transform:none} #cnav.open ~ #cnav-shade{display:block}
+#cnav .h{display:flex;justify-content:space-between;align-items:center;padding:4px 16px 12px;font-weight:700}
+#cnav .h button{border:0;background:none;color:inherit;font-size:24px;cursor:pointer;line-height:1}
+#cnav a{display:block;padding:9px 16px;color:inherit;text-decoration:none;border-left:3px solid transparent}
+#cnav a:hover{background:var(--soft,#f1ebe0)}
+#cnav a.cur{border-left-color:var(--accent,#7a2e1f);background:var(--soft,#f1ebe0);font-weight:600}
+@media print{#cnav-btn,#cnav,#cnav-shade{display:none!important}}
+</style>
+<button id="cnav-btn" type="button" aria-label="Open chapter menu" aria-expanded="false" aria-controls="cnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+<nav id="cnav" aria-label="Chapters"><div class="h"><span>Chapters</span><button type="button" aria-label="Close menu">&times;</button></div><a href="index.html" data-p="index.html">Cover and contents</a><a href="preface.html" data-p="preface.html">Preface · What we are building</a><a href="ch01.html" data-p="ch01.html">Chapter 1 · One question, five systems</a><a href="ch02.html" data-p="ch02.html">Chapter 2 · The triple: the atom of knowledge</a><a href="ch03.html" data-p="ch03.html">Chapter 3 · Names, values and files</a><a href="ch04.html" data-p="ch04.html">Chapter 4 · SPARQL for people who know SQL</a><a href="ch05.html" data-p="ch05.html">Chapter 5 · The T-Box, part 1: classes (RDFS)</a><a href="ch06.html" data-p="ch06.html">Chapter 6 · The T-Box, part 2: properties and the c360 ontology (OWL)</a><a href="ch07.html" data-p="ch07.html">Chapter 7 · Where the data lives: materialized vs virtual</a><a href="ch08.html" data-p="ch08.html">Chapter 8 · Mappings: teaching Stardog to read your tables</a><a href="ch09.html" data-p="ch09.html">Chapter 9 · Federation: where the magic happens</a><a href="ch10.html" data-p="ch10.html">Chapter 10 · Reasoning: teaching the graph to conclude</a><a href="ch11.html" data-p="ch11.html">Chapter 11 · SHACL: when you do want rules to reject data</a><a href="ch12.html" data-p="ch12.html">Chapter 12 · Governance: same question, different answers</a><a href="ch13.html" data-p="ch13.html">Chapter 13 · The Stardog toolbox</a><a href="ch14.html" data-p="ch14.html">Chapter 14 · The agent: from question to answer</a><a href="ch15.html" data-p="ch15.html">Chapter 15 · Build your own Voicebox</a><a href="ch16.html" data-p="ch16.html">Chapter 16 · At scale: huge ontologies and answers you can trust</a><a href="glossary.html" data-p="glossary.html">Appendix · Glossary</a><a href="keyideas.html" data-p="keyideas.html">Summary · Key ideas at a glance</a><a href="corrections.html" data-p="corrections.html">Corrections log</a><a href="rebuild.html" data-p="rebuild.html">Appendix · Rebuild the AWS sandbox</a></nav>
+<div id="cnav-shade"></div>
+<script>
+(function(){var n=document.getElementById("cnav"),b=document.getElementById("cnav-btn"),s=document.getElementById("cnav-shade");
+var p=(location.pathname.split("/").pop()||"index.html");
+n.querySelectorAll("a").forEach(function(a){if(a.getAttribute("data-p")===p){a.classList.add("cur");a.setAttribute("aria-current","page");}});
+function set(o){n.classList.toggle("open",o);b.setAttribute("aria-expanded",o);if(o){var c=n.querySelector("a.cur")||n.querySelector("a");c&&c.focus();}}
+b.onclick=function(){set(!n.classList.contains("open"));};s.onclick=function(){set(false);};
+n.querySelector(".h button").onclick=function(){set(false);b.focus();};
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&n.classList.contains("open")){set(false);b.focus();}});})();
+</script>
+<!-- /chapter-nav -->
+</body>
+</html>

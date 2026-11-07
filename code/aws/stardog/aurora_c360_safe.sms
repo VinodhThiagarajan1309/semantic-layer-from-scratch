@@ -1,0 +1,49 @@
+# Virtual graph: aurora_c360_safe — Aurora operational data WITHOUT PII (no ssn, no card numbers).
+# IRIs are identical to the materialized kit, so federation joins on customer:{cid}.
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+prefix : <tag:stardog:api:ecomm:>
+
+MAPPING <urn:c360:aurora:customer>
+FROM SQL { SELECT cid, first_name, last_name, email, phone, location, full_name FROM c360.customer }
+TO {
+  ?iri a :Customer ;
+    :email ?email ; :firstName ?first_name ; :lastName ?last_name ;
+    :phone ?phone ; :address ?loc_iri ; :name ?full_name ; rdfs:label ?full_name .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?iri)
+  BIND(TEMPLATE("urn:stardog:demos:c360:location:{location}") AS ?loc_iri)
+}
+;
+MAPPING <urn:c360:aurora:address>
+FROM SQL {
+  SELECT id, city, state, zip,
+         street_number || ' ' || street_name || ' ' || street_suffix AS street_addr,
+         street_number || ' ' || street_name || ', ' || state       AS label
+  FROM c360.address
+}
+TO {
+  ?iri a :Address ; :city ?city ; :streetAddress ?street_addr ; :zipCode ?zip ; :state ?state ; rdfs:label ?label .
+}
+WHERE { BIND(TEMPLATE("urn:stardog:demos:c360:location:{id}") AS ?iri) }
+;
+MAPPING <urn:c360:aurora:card>
+FROM SQL { SELECT id, cid, card_type, card_type || ' ' || right(card_num, 4) AS label FROM c360.credit_card }
+TO { ?cc a :CreditCard ; rdfs:label ?label ; :cardType ?card_type ; :cardHolder ?cust_iri . }
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:cards:{id}") AS ?cc)
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust_iri)
+}
+;
+MAPPING <urn:c360:aurora:rewards>
+FROM SQL { SELECT id, cid, account_id, create_date FROM c360.rewards_account }
+TO {
+  ?r a :RewardsAccount ; :openDate ?open_dt ; :accountId ?account_id ; rdfs:label ?account_id .
+  ?cust :hasRewards ?r .
+}
+WHERE {
+  BIND(TEMPLATE("urn:stardog:demos:c360:customer:{cid}") AS ?cust)
+  BIND(TEMPLATE("urn:stardog:demos:c360:rewards:{id}") AS ?r)
+  BIND(xsd:date(?create_date) AS ?open_dt)
+}
